@@ -1,0 +1,7 @@
+0.1.0-alpha: bản thử nghiệm kín đầu tiên. Đây là bản thử giai đoạn đầu, có thể còn lỗi và tiến trình có thể bị xóa.
+- Chơi theo từng ngày kinh doanh với 6 trạm làm bánh
+- 10 món bánh, cấp tiệm 1-15, nâng cấp lò và dụng cụ, trang trí tiệm
+- Sổ công thức, 3 nhiệm vụ mỗi ngày, quà đăng nhập 7 ngày
+- Truyện chương 1 cùng Mai và các khách quen
+- Tiếng Anh và tiếng Việt
+Rất mong nhận góp ý của bạn. Cảm ơn bạn đã thử nghiệm!

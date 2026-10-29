@@ -1,0 +1,7 @@
+0.1.0-alpha: first closed test build. This is an early test version, so expect rough edges and possible progress resets.
+- Day-by-day bakery play with 6 hands-on baking stations
+- 10 treats, shop levels 1-15, oven and tool upgrades, shop decor
+- Recipe book, 3 daily quests, 7-day login gift
+- Story chapter 1 with Mai and the regulars
+- English and Vietnamese
+Please send us your feedback. Thank you for testing!
