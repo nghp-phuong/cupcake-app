@@ -169,7 +169,7 @@ class BakeryGame extends FlameGame {
   late final List<ArtRef> _firstArt = [
     ArtSprites.station(StationId.mould),
     ArtSprites.bakingTray,
-    for (final m in mouldChoices(recipe.mould, seededRandom(order, 1))) ArtSprites.mould(m),
+    for (final m in mouldChoices(recipe.mould, seededRandom(order, 1), unlockLevel: recipe.unlockLevel)) ArtSprites.mould(m),
   ];
   double _artWait = 0;
 
@@ -183,7 +183,7 @@ class BakeryGame extends FlameGame {
   Future<void> onLoad() async {
     // Nạp sẵn ảnh vẽ tay của phiên (không chặn: trạm 1 chờ tối đa [maxArtWait] cho ảnh của nó, các trạm sau chưa
     // có ảnh thì vẽ hình code dự phòng).
-    unawaited(ArtSprites.preloadKitchen(ovenLevel: ovenLevel, mould: recipe.mould, batter: recipe.batter));
+    unawaited(ArtSprites.preloadKitchen(ovenLevel: ovenLevel, mould: recipe.mould, batter: recipe.batter, recipe: recipe.id));
     add(KitchenBackdrop(station: () => hud.station, loading: () => waitingForArt));
     add(effects);
   }
@@ -205,7 +205,7 @@ class BakeryGame extends FlameGame {
   double get bakedLevel => bakedVisual(record.bakeRelease, recipe.bakeTarget);
 
   /// Bánh sau khi nướng (chưa kem).
-  CakeVisual get bakedCake => CakeVisual(mould: recipe.mould, batter: recipe.batter, baked: bakedLevel);
+  CakeVisual get bakedCake => CakeVisual(mould: recipe.mould, batter: recipe.batter, baked: bakedLevel, recipe: recipe.id);
 
   /// Bánh sau khi phủ kem.
   CakeVisual get frostedCake => bakedCake.copyWith(frosting: order.frosting, frostCoverage: record.frostCoverage);

@@ -8,6 +8,9 @@ abstract class SaveRepository {
 
   /// Chép chuỗi lưu hỏng sang chỗ dự phòng (không đè bản dự phòng đã có) trước khi ván mới ghi đè.
   Future<void> backupCorrupt(String data);
+
+  /// Chép nguyên chuỗi bản lưu v1 trước khi quy đổi sang v2. Đã có bản chép → bỏ qua (không bao giờ ghi đè).
+  Future<void> backupPreV2(String data);
 }
 
 /// Lưu bằng shared_preferences (Android: SharedPreferences, web: localStorage).
@@ -18,6 +21,9 @@ class PrefsSaveRepository implements SaveRepository {
 
   /// Bản dự phòng đầu tiên; các lần hỏng sau đặt thêm hậu tố thời điểm (ms) để không đè.
   static const corruptKey = 'sugarleaf_save_v1_corrupt';
+
+  /// Bản v1 nguyên gốc trước khi quy đổi sang v2 (ghi một lần).
+  static const preV2Key = 'sugarleaf_save_v1_pre_v2';
 
   Future<SharedPreferences>? _prefs;
 
@@ -52,6 +58,13 @@ class PrefsSaveRepository implements SaveRepository {
     final target = prefs.containsKey(corruptKey) ? '${corruptKey}_${DateTime.now().millisecondsSinceEpoch}' : corruptKey;
     await prefs.setString(target, data);
   }
+
+  @override
+  Future<void> backupPreV2(String data) async {
+    final prefs = await _instance;
+    if (prefs.containsKey(preV2Key)) return;
+    await prefs.setString(preV2Key, data);
+  }
 }
 
 /// Lưu trong bộ nhớ — dùng cho test.
@@ -66,6 +79,9 @@ class MemorySaveRepository implements SaveRepository {
 
   /// Số lần `write` được gọi (test kiểm autosave).
   int writeCount = 0;
+
+  /// Bản v1 chép trước khi quy đổi sang v2 (null = chưa có).
+  String? preV2Backup;
 
   @override
   Future<String?> read() async => data;
@@ -84,5 +100,10 @@ class MemorySaveRepository implements SaveRepository {
   @override
   Future<void> backupCorrupt(String data) async {
     backups.add(data);
+  }
+
+  @override
+  Future<void> backupPreV2(String data) async {
+    preV2Backup ??= data;
   }
 }

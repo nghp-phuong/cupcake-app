@@ -12,11 +12,21 @@ import '../common/art.dart';
 import '../common/panel.dart';
 import '../sugarleaf/sugarleaf.dart';
 
-/// Cảnh nền vẽ tay: mở đầu và kết thúc ở phố biển, các cảnh khác trong bếp cũ của bà.
-ArtScene _backdropOf(StorySceneId id) => switch (id) {
-  StorySceneId.prologue || StorySceneId.finale => ArtScene.storyTown,
-  _ => ArtScene.storyGrandmaKitchen,
-};
+/// Cảnh nền vẽ tay theo `scene.backdrop` (catalog). Nền có dự phòng (vườn / gác / lễ hội GĐ8, đang vẽ) mà ảnh thiếu
+/// (`isMissing`) hoặc chưa nạp xong → nền dự phòng `ArtScene.fallback` (phố biển / bếp của bà), không để trống.
+ArtScene backdropOf(StoryScene scene) {
+  final b = scene.backdrop;
+  final fallback = b.fallback;
+  if (fallback == null) return b;
+  final art = ArtSprites.scene(b);
+  return art.isMissing || art.image == null ? fallback : b;
+}
+
+/// Người đứng bên trái: bạn quen của cảnh, hoặc bà Rosa (không phải `FriendId`) khi bà có thoại trong cảnh.
+Speaker? guestSpeakerOf(StoryScene scene) {
+  if (scene.featuredFriend case final f?) return _speakerOf(f);
+  return scene.lines.any((x) => x.speaker == Speaker.rosa) ? Speaker.rosa : null;
+}
 
 Speaker _speakerOf(FriendId f) => switch (f) {
   FriendId.hoa => Speaker.hoa,
@@ -26,7 +36,7 @@ Speaker _speakerOf(FriendId f) => switch (f) {
 
 /// Hội thoại truyện trước khách đầu tiên: bong bóng thoại giấy ở dưới (đuôi chỉ về người đang nói, người kể thì
 /// không đuôi), dải vải tên người nói, chạm để tiếp, nút bỏ qua nhãn dán.
-/// Bạn quen đứng trái, Mai đứng phải; người đang nói sáng, người kia mờ.
+/// Bạn quen (hoặc bà Rosa) đứng trái, Mai đứng phải; người đang nói sáng, người kia mờ.
 class StoryOverlay extends StatefulWidget {
   const StoryOverlay({super.key, required this.scene, required this.onFinished});
 
@@ -40,6 +50,18 @@ class StoryOverlay extends StatefulWidget {
 class _StoryOverlayState extends State<StoryOverlay> {
   int _line = 0;
   bool _done = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Nền có dự phòng: nạp ảnh chính (không chặn), xong (có ảnh hoặc biết là thiếu) → dựng lại để chọn nền.
+    final b = widget.scene.backdrop;
+    if (b.fallback != null) {
+      ArtSprites.preload([ArtSprites.scene(b)]).then((_) {
+        if (mounted) setState(() {});
+      });
+    }
+  }
 
   void _advance() {
     if (_done) return;
@@ -62,7 +84,7 @@ class _StoryOverlayState extends State<StoryOverlay> {
     final l = AppLocalizations.of(context);
     final scene = widget.scene;
     final line = scene.lines[_line];
-    final friend = scene.featuredFriend == null ? null : _speakerOf(scene.featuredFriend!);
+    final friend = guestSpeakerOf(scene);
     final maiInScene = scene.lines.any((x) => x.speaker == Speaker.mai);
     final leftSpeaker = friend ?? (line.speaker == Speaker.narrator ? Speaker.narrator : null);
     final name = l.speakerName(line.speaker);
@@ -77,7 +99,7 @@ class _StoryOverlayState extends State<StoryOverlay> {
       child: Stack(
         children: [
           // Chưa có ảnh nền → trong suốt, thấy cảnh tiệm của màn ngày bên dưới.
-          Positioned.fill(child: SceneBackdrop(scene: _backdropOf(scene.id))),
+          Positioned.fill(child: SceneBackdrop(scene: backdropOf(scene))),
           const Positioned.fill(child: ColoredBox(color: Color(0x405A3E36))),
           if (scene.id == StorySceneId.prologue && _line == 0)
             Positioned(
@@ -158,7 +180,8 @@ class _StoryOverlayState extends State<StoryOverlay> {
                       const Spacer(),
                       Text(
                         l.storyTapToContinue,
-                        style: SLTextStyles.of(context).label.copyWith(fontSize: 17, color: SLColors.inkSoft),
+                        key: const ValueKey('story-tap-hint'),
+                        style: SLTextStyles.of(context).label.copyWith(fontSize: 19, fontWeight: FontWeight.w800, color: SLColors.ink),
                       ),
                       const SizedBox(width: 4),
                       const _BobbingArrow(),
@@ -178,7 +201,11 @@ class _StoryOverlayState extends State<StoryOverlay> {
                 height: 46,
                 fontSize: 22,
                 maxWidth: 360,
-                color: line.speaker == Speaker.mai ? SLColors.strawberry : SLColors.mint,
+                color: switch (line.speaker) {
+                  Speaker.mai => SLColors.strawberry,
+                  Speaker.rosa => SLColors.butter,
+                  _ => SLColors.mint,
+                },
                 seed: line.speaker.index,
               ),
             ),
@@ -279,7 +306,7 @@ class _BobbingArrowState extends State<_BobbingArrow> with SingleTickerProviderS
           animation: _c,
           builder: (context, child) =>
               Transform.translate(offset: Offset(0, 4 * math.sin(_c.value * math.pi)), child: child),
-          child: const SLIcon('arrow_down', size: 28, color: SLColors.inkSoft),
+          child: const SLIcon('arrow_down', size: 30, color: SLColors.ink),
         ),
       );
 }

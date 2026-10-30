@@ -65,7 +65,7 @@ void main() {
     expect(CustomerArt.spriteId(const Customer(kind: CustomerKind.vip, appearanceSeed: 4)), 'vip_01');
     expect(CustomerArt.spriteId(const Customer(kind: CustomerKind.vip, appearanceSeed: -5)), 'vip_02');
     expect(CustomerArt.speakerSpriteId(Speaker.narrator), isNull);
-    expect([for (final s in Speaker.values.skip(1)) CustomerArt.speakerSpriteId(s)], ['mai', 'hoa', 'linh', 'kenji']);
+    expect([for (final s in Speaker.values.skip(1)) CustomerArt.speakerSpriteId(s)], ['mai', 'hoa', 'linh', 'kenji', 'vip_00']);
 
     // id theo seed: chia đều cho số kiểu ảnh.
     for (var seed = -40; seed < 200; seed++) {

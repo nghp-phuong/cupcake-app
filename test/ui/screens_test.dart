@@ -1,8 +1,7 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sugarleaf_bakery/app.dart';
+import 'package:sugarleaf_bakery/core/catalog.dart';
 import 'package:sugarleaf_bakery/core/game_state.dart';
 import 'package:sugarleaf_bakery/core/models/ids.dart';
 import 'package:sugarleaf_bakery/core/routes.dart';
@@ -10,10 +9,10 @@ import 'package:sugarleaf_bakery/core/models/bake.dart';
 import 'package:sugarleaf_bakery/core/models/customer.dart';
 import 'package:sugarleaf_bakery/core/models/order.dart';
 import 'package:sugarleaf_bakery/core/scoring.dart';
-import 'package:sugarleaf_bakery/ui/day/day_screen.dart';
 import 'package:sugarleaf_bakery/ui/day/result_card.dart';
-import 'package:sugarleaf_bakery/ui/menu/main_menu_screen.dart';
+import 'package:sugarleaf_bakery/ui/map/level_map_screen.dart';
 import 'package:sugarleaf_bakery/ui/ui_routes.dart';
+import 'package:sugarleaf_bakery/ui/upgrades/upgrades_screen.dart';
 
 import 'ui_test_helpers.dart';
 
@@ -22,35 +21,46 @@ GameState _englishState() => GameState.newGame()
   ..claimLogin();
 
 void main() {
-  testWidgets('nâng cấp: thiếu xu báo lỗi, đủ xu thì lên cấp lò', (tester) async {
-    final state = _englishState()..addXp(80); // lên cấp 2 (+100 xu)
+  testWidgets('nâng cấp (thiết bị): thiếu xu báo lỗi, đủ xu thì lên cấp lò vùng vàng', (tester) async {
+    // Qua L1–2 (+100 xu mỗi lượt): lò vùng vàng cấp 2 (qua L2) mở nhưng chưa đủ xu; phới cấp 2 cần qua L4.
+    final state = _englishState();
+    winLevels(state, [1, 2], coins: 100);
+    final oven = testUnlockConfig().equipmentById('goldenOven')!;
+    expect(state.coins, lessThan(oven.tiers[1].price));
     await pumpSugarApp(tester, state);
-    navigator(tester).pushNamed(AppRoutes.upgrades);
+    navigator(tester).pushNamed(AppRoutes.upgrades, arguments: const UpgradesArgs(tab: UpgradesTab.equipment));
     await tester.pumpAndSettle();
 
-    expect(find.text('Oven'), findsOneWidget);
-    expect(find.text('Whisk'), findsOneWidget);
+    expect(find.text(oven.name('en')), findsOneWidget);
+    expect(find.text(testUnlockConfig().equipmentById('whisk')!.name('en')), findsOneWidget);
     expect(find.text('Perfect zone ±5%'), findsOneWidget);
-    expect(find.text('Unlocks at level 3'), findsNWidgets(2)); // phới, túi kem
+    expect(find.text('±6%'), findsOneWidget); // cấp sau (bỏ chữ lặp: "Perfect zone ±5% → ±6%")
+    final whisk2 = testUnlockConfig().equipmentById('whisk')!.tiers[1].level;
+    expect(find.byKey(const ValueKey('upg-locked-whisk')), findsOneWidget);
+    expect(find.text('Clear level $whisk2 to unlock'), findsWidgets);
 
-    await tester.tap(find.text('Upgrade').first);
+    await tester.tap(find.byKey(const ValueKey('upg-buy-goldenOven')));
     await tester.pumpAndSettle();
     expect(find.text('Not enough coins'), findsOneWidget);
-    expect(state.ovenLevel, 1);
+    expect(state.equipmentTier('goldenOven'), 1);
 
     state.addCoins(1000);
     await settleToasts(tester);
-    await tester.tap(find.text('Upgrade').first);
+    final before = state.coins;
+    await tester.tap(find.byKey(const ValueKey('upg-buy-goldenOven')));
     await tester.pumpAndSettle();
-    expect(state.ovenLevel, 2);
+    expect(state.equipmentTier('goldenOven'), 2);
+    expect(state.coins, before - oven.tiers[1].price);
     expect(find.text('Upgraded!'), findsOneWidget);
-    expect(find.text('Level 2/5'), findsOneWidget);
+    expect(find.text('Tier 2/${oven.maxTier}'), findsOneWidget);
     await settleToasts(tester);
     expect(tester.takeException(), isNull);
   });
 
   testWidgets('trang trí: mua bình hoa thì tự đặt, tổng % tip tăng', (tester) async {
-    final state = _englishState()..addCoins(400);
+    final state = _englishState();
+    winLevels(state, [1], coins: 300); // đồ trang trí khoá theo màn đã qua
+
     await pumpSugarApp(tester, state);
     navigator(tester).pushNamed(AppRoutes.decor);
     await tester.pumpAndSettle();
@@ -59,7 +69,8 @@ void main() {
     await tester.tap(find.text('Counter'));
     await tester.pumpAndSettle();
     expect(find.text('Flower vase'), findsOneWidget);
-    expect(find.text('Unlocks at level 5'), findsOneWidget); // kệ bánh
+    // Kệ bánh: khoá tới khi qua màn `unlockLevel` của nó.
+    expect(find.text('Clear level ${Catalog.decorItem(DecorId.counterCakeStand).unlockLevel} to unlock'), findsOneWidget);
     await tester.tap(find.text('Buy'));
     await tester.pumpAndSettle();
     expect(state.ownedDecor, contains(DecorId.counterFlowers));
@@ -82,59 +93,14 @@ void main() {
     expect(find.text('Vanilla cupcake'), findsNWidgets(2)); // ô lưới + trang chi tiết
     expect(find.text('Price: 30'), findsOneWidget);
     expect(find.text('Ingredients'), findsOneWidget);
-    expect(find.text('Missing page. Unlocks at level 12'), findsOneWidget);
+    // Món mở theo level đã mở: bánh sinh nhật có từ L12 — ô lưới ghi ngắn "Level 12", trang chi tiết ghi câu đầy đủ.
+    expect(find.text('Level 12'), findsOneWidget);
+    expect(find.text('Missing page. Reach level 12 to find it'), findsNothing);
 
-    await tester.tap(find.text('Missing page. Unlocks at level 12'));
+    await tester.tap(find.text('Level 12'));
     await tester.pumpAndSettle();
-    expect(find.text('Missing page. Unlocks at level 12'), findsNWidgets(2));
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('ngày kinh doanh: cảnh mở đầu → giới thiệu ngày → khách gọi món → thoát', (tester) async {
-    tester.view.physicalSize = const Size(1280, 720);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    MainMenuScreen.giftShownThisSession = true;
-    final state = _englishState();
-    await tester.pumpWidget(
-      SugarleafApp(
-        services: testServices(state),
-        useGoogleFonts: false,
-        onGenerateRoute: (settings) => settings.name == AppRoutes.day
-            ? fadeRoute(settings, DayScreen(random: math.Random(7)))
-            : onGenerateUiRoute(settings),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Open the bakery'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
-    expect(find.text('Chapter 1: The Seaside Bakery'), findsOneWidget);
-    expect(find.text('Tap to continue'), findsOneWidget);
-
-    // Chạm qua 1 dòng rồi bỏ qua phần còn lại.
-    await tester.tap(find.text('Tap to continue'));
-    await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('Mai'), findsOneWidget);
-    await tester.tap(find.text('Skip'));
-    await tester.pump(const Duration(milliseconds: 600));
-    expect(state.seenScenes, contains(StorySceneId.prologue));
-    expect(find.text('4 customers are coming today'), findsOneWidget);
-
-    await tester.pump(const Duration(milliseconds: 2500));
-    await tester.pumpAndSettle();
-    expect(find.text('Start baking'), findsOneWidget);
-    expect(find.text('Order'), findsOneWidget);
-    expect(find.text('Customer 1/4'), findsOneWidget);
-
-    await tester.tap(find.byTooltip('Leave for now?'));
-    await tester.pumpAndSettle();
-    expect(find.text("Coins earned so far are kept, but today won't count as completed."), findsOneWidget);
-    await tester.tap(find.text('Confirm'));
-    await tester.pumpAndSettle();
-    expect(find.text('Open the bakery'), findsOneWidget);
-    expect(state.dayNumber, 1);
+    expect(find.text('Level 12'), findsOneWidget);
+    expect(find.text('Missing page. Reach level 12 to find it'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -169,7 +135,7 @@ void main() {
     tester.view.physicalSize = const Size(1280, 720);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    MainMenuScreen.giftShownThisSession = true;
+    LevelMapScreen.giftShownThisSession = true;
     await tester.pumpWidget(
       SugarleafApp(
         services: testServices(_englishState()),
@@ -210,12 +176,18 @@ void main() {
     final state = GameState.newGame()
       ..setLanguage(LanguagePref.vi)
       ..claimLogin()
-      ..addXp(1400); // cấp 8: nhiều thẻ ở trạng thái mua được
+      ..addCoins(3000);
+    winLevels(state, [for (var id = 1; id <= 13; id++) id]); // nhiều thẻ mua được
     await pumpSugarApp(tester, state);
     for (final route in [AppRoutes.upgrades, AppRoutes.decor, AppRoutes.recipes, AppRoutes.store, AppRoutes.settings]) {
       navigator(tester).pushNamed(route);
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull, reason: route);
+      if (route == AppRoutes.upgrades) {
+        await tester.tap(find.text('Thiết bị'));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull, reason: 'thiết bị');
+      }
       navigator(tester).pop();
       await tester.pumpAndSettle();
     }

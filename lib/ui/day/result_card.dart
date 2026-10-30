@@ -32,6 +32,8 @@ CakeVisual madeCakeVisual(Order order, BakeOutcome outcome) {
     frosting: order.frosting,
     frostCoverage: outcome.frostCoverage.clamp(0.0, 1.0),
     toppings: outcome.toppingsPlaced,
+    // Món cùng khuôn + bột (croissant / pain au chocolat) có ảnh đế riêng theo món.
+    recipe: order.recipe,
   );
 }
 

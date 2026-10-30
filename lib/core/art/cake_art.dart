@@ -7,6 +7,7 @@ import '../../ui/sugarleaf/paint/hand_drawn.dart';
 import '../../ui/sugarleaf/paint/sl_cache.dart';
 import '../../ui/sugarleaf/paint/sl_random.dart';
 import '../catalog.dart';
+import '../constants.dart';
 import '../models/ids.dart';
 import '../models/order.dart';
 import 'art_sprites.dart';
@@ -22,12 +23,13 @@ class CakeVisual {
     this.frosting,
     this.frostCoverage = 1,
     this.toppings = const {},
+    this.recipe,
   });
 
   /// Bánh hoàn chỉnh của một món (kem mặc định, không topping nếu không truyền).
   factory CakeVisual.recipe(RecipeId id, {FrostingId? frosting, Map<ToppingId, int> toppings = const {}}) {
     final r = Catalog.recipe(id);
-    return CakeVisual(mould: r.mould, batter: r.batter, frosting: frosting ?? r.frostings.first, toppings: toppings);
+    return CakeVisual(mould: r.mould, batter: r.batter, frosting: frosting ?? r.frostings.first, toppings: toppings, recipe: id);
   }
 
   /// Bánh hoàn chỉnh đúng như đơn gọi.
@@ -55,6 +57,10 @@ class CakeVisual {
   /// Topping trên mặt bánh.
   final Map<ToppingId, int> toppings;
 
+  /// Món (nếu biết): chọn ảnh đế nướng riêng của món (`ArtSprites.baked`) và hình code khi hai món chung khuôn + bột
+  /// (croissant / pain au chocolat). null = vẽ theo khuôn.
+  final RecipeId? recipe;
+
   CakeVisual copyWith({
     double? batterFill,
     double? baked,
@@ -70,6 +76,7 @@ class CakeVisual {
         frosting: frosting ?? this.frosting,
         frostCoverage: frostCoverage ?? this.frostCoverage,
         toppings: toppings ?? this.toppings,
+        recipe: recipe,
       );
 }
 
@@ -82,10 +89,11 @@ abstract final class CakeArt {
   static const _outline = ItemArt.outline;
 
   /// Vùng mặt bánh (elip) trong [rect] — game dùng để đặt topping/vẽ kem trùng với hình. Đo trên ảnh đế đã
-  /// nướng (không phụ thuộc ảnh đã nạp hay chưa).
-  static Rect topSurface(Rect rect, MouldType mould) {
+  /// nướng (không phụ thuộc ảnh đã nạp hay chưa). Truyền [recipe] để dùng số đo ảnh riêng của món (tart trái cây,
+  /// pain au chocolat — xem [_recipeFits]).
+  static Rect topSurface(Rect rect, MouldType mould, {RecipeId? recipe}) {
     final r = ItemArt.square(rect);
-    final fit = _fits[mould]!;
+    final fit = _fitOf(mould, recipe);
     final k = fit.scale(r.width);
     final o = fit.origin(r);
     return Rect.fromLTRB(
@@ -98,9 +106,9 @@ abstract final class CakeArt {
 
   /// Khung vật thể trong ảnh (alpha) quy ra [rect] — trùng bề rộng/đáy hình code.
   @visibleForTesting
-  static Rect artBodyRect(Rect rect, MouldType mould) {
+  static Rect artBodyRect(Rect rect, MouldType mould, {RecipeId? recipe}) {
     final r = ItemArt.square(rect);
-    final fit = _fits[mould]!;
+    final fit = _fitOf(mould, recipe);
     final k = fit.scale(r.width);
     final o = fit.origin(r);
     return Rect.fromLTRB(o.dx - fit.body.width / 2 * k, o.dy - fit.body.height * k, o.dx + fit.body.width / 2 * k, o.dy);
@@ -108,7 +116,7 @@ abstract final class CakeArt {
 
   static void paint(Canvas canvas, Rect rect, CakeVisual v) {
     final r = ItemArt.square(rect);
-    final image = v.batterFill > 0 ? ArtSprites.baked(v.mould, v.batter).image : null;
+    final image = v.batterFill > 0 ? ArtSprites.baked(v.mould, v.batter, recipe: v.recipe).image : null;
     if (image != null) {
       _paintArt(canvas, r, v, image);
       return;
@@ -127,6 +135,18 @@ abstract final class CakeArt {
         _tallCake(canvas, r, v);
       case MouldType.macaronMat:
         _macaron(canvas, r, v);
+      case MouldType.pastryTray:
+        _pastry(canvas, r, v);
+      case MouldType.shellMould:
+        _madeleine(canvas, r, v);
+      case MouldType.eclairTray:
+        _eclair(canvas, r, v);
+      case MouldType.piePan:
+        _pie(canvas, r, v);
+      case MouldType.mooncakeMould:
+        _mooncake(canvas, r, v);
+      case MouldType.logPan:
+        _log(canvas, r, v);
     }
     if (v.batterFill > 0) _toppings(canvas, _codeTop(r, v.mould), v.toppings);
     canvas.restore();
@@ -181,7 +201,76 @@ abstract final class CakeArt {
       halfWidth: 0.323,
       bottom: 0.303,
     ),
+    // GĐ8: ảnh đế theo món (`baked/<recipeId>`, một chiếc). Khuôn có một món → số đo ảnh của món đó (pastryTray:
+    // croissant; pain au chocolat khác khung, xem [_recipeFits]).
+    MouldType.pastryTray: _BakedFit(
+      body: Rect.fromLTRB(13, 103, 499, 408),
+      top: Rect.fromLTRB(70, 125, 455, 295),
+      halfWidth: 0.443,
+      bottom: 0.228,
+    ),
+    MouldType.shellMould: _BakedFit(
+      body: Rect.fromLTRB(13, 75, 499, 437),
+      top: Rect.fromLTRB(90, 95, 485, 360),
+      halfWidth: 0.363,
+      bottom: 0.263,
+    ),
+    MouldType.eclairTray: _BakedFit(
+      body: Rect.fromLTRB(13, 71, 499, 441),
+      top: Rect.fromLTRB(60, 95, 470, 330),
+      halfWidth: 0.413,
+      bottom: 0.183,
+    ),
+    MouldType.piePan: _BakedFit(
+      body: Rect.fromLTRB(13, 75, 499, 437),
+      top: Rect.fromLTRB(42, 100, 472, 332),
+      halfWidth: 0.443,
+      bottom: 0.283,
+    ),
+    MouldType.mooncakeMould: _BakedFit(
+      body: Rect.fromLTRB(13, 32, 499, 480),
+      top: Rect.fromLTRB(40, 45, 486, 285),
+      halfWidth: 0.333,
+      bottom: 0.323,
+    ),
+    // Khúc cuộn nằm chéo: mặt bánh = thân khúc (bên phải mặt cắt).
+    MouldType.logPan: _BakedFit(
+      body: Rect.fromLTRB(13, 77, 499, 435),
+      top: Rect.fromLTRB(150, 90, 490, 300),
+      halfWidth: 0.433,
+      bottom: 0.243,
+    ),
   };
+
+  /// Ảnh đế riêng của món khác khung với ảnh mặc định của khuôn: tart trái cây (ảnh khuôn `tartShell` là tart
+  /// trứng), pain au chocolat (khung khác croissant). Cùng đáy với khuôn → bánh ngồi y như cũ; nửa bề rộng = hình code.
+  static const _recipeFits = <RecipeId, _BakedFit>{
+    RecipeId.fruitTart: _BakedFit(
+      body: Rect.fromLTRB(13, 75, 499, 437),
+      top: Rect.fromLTRB(48, 108, 466, 322),
+      halfWidth: 0.443,
+      bottom: 0.393,
+    ),
+    RecipeId.painAuChocolat: _BakedFit(
+      body: Rect.fromLTRB(13, 89, 499, 423),
+      top: Rect.fromLTRB(70, 105, 460, 320),
+      halfWidth: 0.379, // hình code gối bánh hẹp hơn croissant
+      bottom: 0.228,
+    ),
+  };
+
+  /// Số đo của ảnh đế sẽ vẽ cho món [recipe] khuôn [mould]: ảnh riêng của món (nếu có số đo riêng và ảnh chưa xác
+  /// định là thiếu — khớp `ArtSprites.baked`), không thì của khuôn.
+  static _BakedFit _fitOf(MouldType mould, RecipeId? recipe) =>
+      (recipe != null && !ArtSprites.isMissing(ArtGroup.baked, recipe.name) ? _recipeFits[recipe] : null) ?? _fits[mould]!;
+
+  /// Khoá hình học lớp kem: món có số đo riêng → món, còn lại → khuôn.
+  static Object _fitKey(MouldType mould, RecipeId? recipe) =>
+      identical(_fitOf(mould, recipe), _fits[mould]) ? mould : recipe!;
+
+  /// Đáy thân bánh (điểm thấp nhất) theo khuôn, ×cạnh khung vuông tính từ tâm — trùng hình code và ảnh đế nướng
+  /// (game dùng để đặt bánh "ngồi" lên mặt đỡ). Ảnh riêng của món giữ cùng đáy với khuôn.
+  static double bottomFactor(MouldType mould, {RecipeId? recipe}) => _fitOf(mould, recipe).bottom;
 
   /// Viền một chiếc macaron trên ảnh khay (px ảnh).
   static final Path _macaronClip = Path()
@@ -254,7 +343,7 @@ abstract final class CakeArt {
     final tinted = v.mould == MouldType.macaronMat && v.frosting != null;
     final frost = tinted ? v.frosting!.index + 1 : 0;
     final cov = tinted ? (v.frostCoverage.clamp(0.0, 1.0) * 10).round() : 0;
-    final key = ((v.batter.index * 41 + level) * 8 + frost) * 11 + cov;
+    final key = ((v.batter.index * 41 + level) * (FrostingId.values.length + 1) + frost) * 11 + cov;
     return _imagePaints[key] ??= () {
       final m = bakeMatrix(v.batter, level / 20);
       if (tinted) {
@@ -277,7 +366,7 @@ abstract final class CakeArt {
 
   /// Vẽ trong hệ toạ độ px ảnh: mọi Path (viền kem, khung macaron) dựng một lần theo khuôn, không theo cỡ khung.
   static void _paintArt(Canvas canvas, Rect r, CakeVisual v, Image image) {
-    final fit = _fits[v.mould]!;
+    final fit = _fitOf(v.mould, v.recipe);
     final k = fit.scale(r.width);
     final o = fit.origin(r);
     canvas.save();
@@ -297,10 +386,59 @@ abstract final class CakeArt {
       // Viền nâu ấm che mép giấy khay sau khi cắt.
       canvas.drawPath(_macaronClip, _strokeC(const Color(0xB38A5A40), 1.2));
     } else if (v.frosting != null) {
-      _paintFrosting(canvas, v, fit);
+      if (_isGlaze(v)) {
+        _paintGlaze(canvas, v, fit, image);
+      } else {
+        _paintFrosting(canvas, v, fit);
+      }
     }
     _toppings(canvas, fit.top, v.toppings);
     canvas.restore();
+  }
+
+  // ------------------------------------------------------------------ Lớp quét bóng (GĐ8)
+
+  /// Lớp phủ dạng quét/nhân (GĐ8): bơ trứng, nhân táo, nhân sen; custard trên éclair (nhân). Lớp kem đặc sẽ che mất
+  /// thớ bánh (croissant, madeleine, lưới pie, hoa văn bánh Trung thu) nên vẽ bằng cách nhuộm màu lên chính ảnh + vệt
+  /// bóng, đậm dần theo độ phủ. Kem khác (ganache, kem tươi…) vẽ lớp kem màu nước như món cũ.
+  static const _glazeFrostings = {FrostingId.butterGlaze, FrostingId.appleFilling, FrostingId.lotusPaste};
+
+  static bool _isGlaze(CakeVisual v) =>
+      _glazeFrostings.contains(v.frosting) || (v.frosting == FrostingId.custard && v.mould == MouldType.eclairTray);
+
+  /// Paint lớp nhuộm theo (kem, độ phủ lượng tử [_coverStep]) — dựng một lần, không tạo mỗi khung.
+  static final Map<int, Paint> _glazePaints = {};
+
+  /// Lớp nhuộm: ảnh đế → một màu kem phẳng, alpha = alpha ảnh × độ đậm (chỉ phủ đúng thân bánh). Vẽ đè lên ảnh đế đã
+  /// lọc độ chín nên giữ màu sống / cháy (không vẽ lại ảnh gốc).
+  static Paint _glazePaint(FrostingId frosting, int step) => _glazePaints[frosting.index * 21 + step] ??= () {
+        final c = ItemArt.frostingColor(frosting);
+        final a = 0.12 + 0.3 * step / 20;
+        return Paint()
+          ..filterQuality = FilterQuality.medium
+          ..isAntiAlias = true
+          ..colorFilter = ColorFilter.matrix([
+            0, 0, 0, 0, c.r * 255, //
+            0, 0, 0, 0, c.g * 255,
+            0, 0, 0, 0, c.b * 255,
+            0, 0, 0, a, 0,
+          ]);
+      }();
+
+  static void _paintGlaze(Canvas canvas, CakeVisual v, _BakedFit fit, Image image) {
+    final step = _coverStep(v.frostCoverage);
+    if (step == 0) return;
+    final cover = step / 20;
+    canvas.drawImageRect(image, fit.src, fit.src, _glazePaint(v.frosting!, step));
+    // Vệt bóng trên mặt bánh.
+    final t = fit.top;
+    final c = t.center;
+    final shine = Color.fromRGBO(255, 255, 255, 0.6 * cover);
+    for (final (dx, dy, w) in const [(-0.2, -0.18, 0.3), (0.12, -0.02, 0.2), (-0.04, 0.2, 0.16)]) {
+      final o = Offset(c.dx + dx * t.width, c.dy + dy * t.height);
+      canvas.drawArc(Rect.fromCenter(center: o, width: t.width * w, height: t.height * w * 0.7), math.pi * 1.1, math.pi * 0.35, false,
+          _strokeC(shine, t.height * 0.03));
+    }
   }
 
   // ------------------------------------------------------------------ Kem kiểu màu nước vẽ tay
@@ -310,7 +448,7 @@ abstract final class CakeArt {
   static final _frostArts = SLLru<Object, _FrostArt>(64);
 
   /// Hình học lớp kem (viền run tay, vệt loang, vệt sáng, mảng hở theo độ phủ) theo khuôn, dựng một lần.
-  static final Map<MouldType, _FrostGeom> _frostGeoms = {};
+  static final Map<Object, _FrostGeom> _frostGeoms = {};
 
   /// Độ phủ lượng tử hoá (bước 0.05).
   static int _coverStep(double cover) => (cover.clamp(0.0, 1.0) * 20).round();
@@ -333,9 +471,9 @@ abstract final class CakeArt {
   /// vd. gọi khi vào trạm phủ kem với `bakedCake.copyWith(frosting: order.frosting)`. Không vẽ gì; macaron/không
   /// kem thì bỏ qua.
   static void warmFrosting(CakeVisual v) {
-    if (v.frosting == null || v.mould == MouldType.macaronMat) return;
+    if (v.frosting == null || v.mould == MouldType.macaronMat || _isGlaze(v)) return;
     final recorder = PictureRecorder();
-    _paintFrosting(Canvas(recorder), v, _fits[v.mould]!);
+    _paintFrosting(Canvas(recorder), v, _fitOf(v.mould, v.recipe));
     recorder.endRecording().dispose();
   }
 
@@ -343,13 +481,18 @@ abstract final class CakeArt {
     final frosting = v.frosting!;
     final step = _coverStep(v.frostCoverage);
     final burn = _burnStep(v.baked);
-    final spots = v.mould == MouldType.tartShell && frosting == FrostingId.custard && v.baked >= 0.8;
-    final art = _frostArts.obtain((v.mould, frosting, step, burn, spots), () {
-      final geom = _frostGeoms[v.mould] ??= _FrostGeom.build(v.mould, fit.top);
+    final spots = _custardSpots(v);
+    final key = _fitKey(v.mould, v.recipe);
+    final art = _frostArts.obtain((key, frosting, step, burn, spots), () {
+      final geom = _frostGeoms[key] ??= _FrostGeom.build(v.mould, fit.top);
       return _FrostArt(_recordFrosting(geom, _FrostColors(frosting, burn), step, spots));
     });
     canvas.drawPicture(art.picture);
   }
+
+  /// Đốm cháy cạnh của tart trứng (custard nướng cùng vỏ). Tart trái cây cùng khuôn + kem nhưng kem không nướng.
+  static bool _custardSpots(CakeVisual v) =>
+      v.mould == MouldType.tartShell && v.frosting == FrostingId.custard && v.baked >= 0.8 && v.recipe != RecipeId.fruitTart;
 
   /// Ghi lớp kem: từng mảng tô màu nước (sáng trên → đậm dần ở mép, vệt loang) + nét mực run tay; phủ chưa kín
   /// thì lớp kem mỏng hơn và hở vài mảng lộ mặt bánh (mép mảng hở đọng màu như vệt màu nước).
@@ -453,6 +596,12 @@ abstract final class CakeArt {
         Rect.fromCenter(center: c.translate(0, -s * 0.12), width: s * 0.8, height: s * 0.3),
       MouldType.tallPan => Rect.fromCenter(center: c.translate(0, -s * 0.26), width: s * 0.56, height: s * 0.2),
       MouldType.macaronMat => Rect.fromCenter(center: c.translate(0, -s * 0.12), width: s * 0.6, height: s * 0.22),
+      MouldType.pastryTray => Rect.fromCenter(center: c, width: s * 0.56, height: s * 0.16),
+      MouldType.shellMould => Rect.fromCenter(center: c, width: s * 0.5, height: s * 0.2),
+      MouldType.eclairTray => Rect.fromCenter(center: c.translate(0, s * 0.03), width: s * 0.66, height: s * 0.12),
+      MouldType.piePan => Rect.fromCenter(center: c.translate(0, -s * 0.02), width: s * 0.62, height: s * 0.24),
+      MouldType.mooncakeMould => Rect.fromCenter(center: c.translate(0, -s * 0.04), width: s * 0.5, height: s * 0.22),
+      MouldType.logPan => Rect.fromCenter(center: c.translate(s * 0.03, 0), width: s * 0.6, height: s * 0.2),
     };
   }
 
@@ -547,7 +696,7 @@ abstract final class CakeArt {
         : Color.lerp(crust, _outline, 0.25)!;
     canvas.drawOval(inner, _fill(fillingColor));
     canvas.drawOval(inner, _stroke(Color.lerp(crust, _outline, 0.5)!, line));
-    if (hasFilling && v.frosting == FrostingId.custard && v.baked >= 0.8) {
+    if (hasFilling && _custardSpots(v)) {
       // Đốm cháy cạnh đặc trưng của tart trứng.
       for (final o in const [Offset(-0.15, -0.02), Offset(0.12, 0.03), Offset(0.02, -0.05)]) {
         canvas.drawOval(Rect.fromCenter(center: inner.center + o * s, width: s * 0.08, height: s * 0.04), _fill(const Color(0x669A5A1E)));
@@ -686,6 +835,285 @@ abstract final class CakeArt {
     canvas.drawOval(top, _fill(shell));
     canvas.drawOval(top, _stroke(_outline, line));
     canvas.drawOval(Rect.fromCenter(center: top.center.translate(-s * 0.1, -s * 0.05), width: s * 0.16, height: s * 0.06), _fill(const Color(0x66FFFFFF)));
+  }
+
+  // ------------------------------------------------------------------ Hình code GĐ8 (dự phòng tới khi có ảnh)
+
+  /// Bột đang đổ / nở ([fill] < 1): co dọc từ đáy [bottomY] như ảnh (xem `_paintArt`). Gọi giữa save/restore.
+  static void _rise(Canvas canvas, double bottomY, double fill) {
+    if (fill >= 1) return;
+    canvas.translate(0, bottomY);
+    canvas.scale(1, 0.6 + 0.4 * fill.clamp(0.0, 1.0));
+    canvas.translate(0, -bottomY);
+  }
+
+  /// Lớp phủ mỏng trên vỏ bánh [body] (khung [b]): quét bơ trứng → bóng vàng + vệt sáng; kem/nhân khác → rưới
+  /// zíc-zắc theo màu kem.
+  static void _glaze(Canvas canvas, Path body, Rect b, CakeVisual v, double line) {
+    if (v.frosting == null) return;
+    final color = _frost(v);
+    canvas.save();
+    canvas.clipPath(body);
+    if (v.frosting == FrostingId.butterGlaze) {
+      canvas.drawPath(body, _fill(color.withValues(alpha: color.a * 0.45)));
+      canvas.drawOval(
+        Rect.fromCenter(center: b.center.translate(-b.width * 0.12, -b.height * 0.22), width: b.width * 0.36, height: b.height * 0.14),
+        _fill(const Color(0x88FFFFFF)),
+      );
+    } else {
+      const n = 7;
+      final zig = Path()..moveTo(b.left, b.top + b.height * 0.3);
+      for (var i = 1; i <= n; i++) {
+        zig.lineTo(b.left + b.width * i / n, b.top + b.height * (i.isOdd ? 0.55 : 0.3));
+      }
+      canvas.drawPath(zig, _stroke(color, line * 1.6));
+    }
+    canvas.restore();
+  }
+
+  /// Khay bánh cán bơ: croissant (5 múi xếp lưỡi liềm) hoặc pain au chocolat (gối chữ nhật lộ hai đầu sô-cô-la).
+  static void _pastry(Canvas canvas, Rect r, CakeVisual v) {
+    if (v.batterFill <= 0) {
+      ItemArt.paintMould(canvas, r, v.mould);
+      return;
+    }
+    final s = r.width;
+    final c = r.center;
+    final line = s * 0.025;
+    final crumb = ItemArt.bakedColor(v.batter, v.baked);
+    final fold = Color.lerp(crumb, _outline, 0.35)!;
+    canvas.save();
+    _rise(canvas, c.dy + s * 0.215, v.batterFill);
+    if (v.recipe == RecipeId.painAuChocolat) {
+      final body = RRect.fromRectAndRadius(Rect.fromCenter(center: c.translate(0, s * 0.075), width: s * 0.62, height: s * 0.28), Radius.circular(s * 0.1));
+      for (final dir in const [-1.0, 1.0]) {
+        final bar = RRect.fromRectAndRadius(Rect.fromCenter(center: c.translate(dir * s * 0.31, s * 0.06), width: s * 0.12, height: s * 0.07), Radius.circular(s * 0.02));
+        canvas.drawRRect(bar, _fill(const Color(0xFF4A2A1E)));
+        canvas.drawRRect(bar, _stroke(_outline, line * 0.7));
+      }
+      canvas.drawRRect(body, _fill(crumb));
+      canvas.drawRRect(body, _stroke(_outline, line));
+      // Nếp gấp bột trên mặt.
+      for (final k in const [-0.12, 0.08]) {
+        canvas.drawLine(Offset(c.dx + (k - 0.03) * s, body.top + s * 0.05), Offset(c.dx + (k + 0.03) * s, body.bottom - s * 0.05), _stroke(fold, line * 0.8));
+      }
+      _glaze(canvas, Path()..addRRect(body), body.outerRect, v, line);
+    } else {
+      // Múi hai đầu vẽ trước, múi giữa (to nhất) vẽ sau cùng.
+      const segs = [(-0.34, 0.15, 0.18, 0.13), (0.34, 0.15, 0.18, 0.13), (-0.2, 0.08, 0.26, 0.22), (0.2, 0.08, 0.26, 0.22), (0.0, 0.04, 0.34, 0.3)];
+      final body = Path();
+      for (final (dx, dy, w, h) in segs) {
+        final o = Rect.fromCenter(center: c.translate(dx * s, dy * s), width: w * s, height: h * s);
+        body.addOval(o);
+        canvas.drawOval(o, _fill(crumb));
+        canvas.drawOval(o, _stroke(_outline, line));
+        canvas.drawArc(o.deflate(o.shortestSide * 0.18), math.pi * 0.15, math.pi * 0.7, false, _stroke(fold, line * 0.7));
+      }
+      _glaze(canvas, body, body.getBounds(), v, line);
+    }
+    canvas.restore();
+  }
+
+  /// Madeleine: vỏ sò gân toả từ chân bánh.
+  static void _madeleine(Canvas canvas, Rect r, CakeVisual v) {
+    if (v.batterFill <= 0) {
+      ItemArt.paintMould(canvas, r, v.mould);
+      return;
+    }
+    final s = r.width;
+    final c = r.center;
+    final line = s * 0.025;
+    final crumb = ItemArt.bakedColor(v.batter, v.baked);
+    final shell = Rect.fromCenter(center: c.translate(0, s * 0.02), width: s * 0.7, height: s * 0.4);
+    final hinge = Offset(c.dx, shell.bottom + s * 0.02);
+    final body = Path.combine(
+      PathOperation.union,
+      Path()..addOval(shell),
+      Path()..addRRect(RRect.fromRectAndRadius(Rect.fromCenter(center: hinge.translate(0, -s * 0.03), width: s * 0.16, height: s * 0.08), Radius.circular(s * 0.04))),
+    );
+    canvas.save();
+    _rise(canvas, hinge.dy + s * 0.01, v.batterFill);
+    canvas.drawPath(body, _fill(crumb));
+    canvas.save();
+    canvas.clipPath(body);
+    final ridge = Color.lerp(crumb, _outline, 0.3)!;
+    for (var k = 1; k < 8; k++) {
+      final a = math.pi + math.pi * k / 8;
+      canvas.drawLine(hinge, Offset(shell.center.dx + math.cos(a) * shell.width * 0.6, shell.center.dy + math.sin(a) * shell.height * 0.6), _stroke(ridge, line * 0.8));
+    }
+    canvas.restore();
+    canvas.drawPath(body, _stroke(_outline, line));
+    _glaze(canvas, body, shell, v, line);
+    canvas.restore();
+  }
+
+  /// Éclair: thanh choux thuôn dài, vết nứt vỏ; kem phủ thành dải trên mặt.
+  static void _eclair(Canvas canvas, Rect r, CakeVisual v) {
+    if (v.batterFill <= 0) {
+      ItemArt.paintMould(canvas, r, v.mould);
+      return;
+    }
+    final s = r.width;
+    final c = r.center;
+    final line = s * 0.025;
+    final crumb = ItemArt.bakedColor(v.batter, v.baked);
+    final body = RRect.fromRectAndRadius(Rect.fromCenter(center: c.translate(0, s * 0.06), width: s * 0.8, height: s * 0.22), Radius.circular(s * 0.11));
+    canvas.save();
+    _rise(canvas, body.bottom, v.batterFill);
+    canvas.drawRRect(body, _fill(crumb));
+    canvas.drawRRect(body, _stroke(_outline, line));
+    final crack = Color.lerp(crumb, _outline, 0.35)!;
+    for (final k in const [-0.22, 0.02, 0.24]) {
+      final p = Offset(c.dx + k * s, body.bottom - s * 0.05);
+      canvas.drawLine(p, p.translate(s * 0.06, -s * 0.02), _stroke(crack, line * 0.7));
+    }
+    if (v.frosting != null) {
+      final band = RRect.fromRectAndRadius(Rect.fromCenter(center: c.translate(0, s * 0.02), width: s * 0.72, height: s * 0.1), Radius.circular(s * 0.05));
+      canvas.drawRRect(band, _fill(_frost(v)));
+      canvas.drawRRect(band, _stroke(Color.lerp(ItemArt.frostingColor(v.frosting!), _outline, 0.4)!, line * 0.8));
+      canvas.drawLine(Offset(band.left + s * 0.1, band.top + s * 0.025), Offset(band.left + s * 0.26, band.top + s * 0.025), _stroke(const Color(0x77FFFFFF), line * 0.8));
+    }
+    canvas.restore();
+  }
+
+  /// Pie trong đĩa gốm: vỏ viền gợn; có nhân thì nhân lộ qua lưới vỏ đan chéo.
+  static void _pie(Canvas canvas, Rect r, CakeVisual v) {
+    if (v.batterFill <= 0) {
+      ItemArt.paintMould(canvas, r, v.mould);
+      return;
+    }
+    final s = r.width;
+    final c = r.center;
+    final line = s * 0.025;
+    final rim = Rect.fromCenter(center: c.translate(0, -s * 0.02), width: s * 0.86, height: s * 0.36);
+    final base = Rect.fromCenter(center: c.translate(0, s * 0.16), width: s * 0.66, height: s * 0.22);
+    final side = Path()
+      ..moveTo(rim.left, rim.center.dy)
+      ..lineTo(base.left, base.center.dy)
+      ..arcTo(base, math.pi, -math.pi, false)
+      ..lineTo(rim.right, rim.center.dy)
+      ..close();
+    canvas.save();
+    _rise(canvas, base.bottom, v.batterFill);
+    canvas.drawPath(side, _fill(Color.lerp(AppColors.mint, _outline, 0.12)!));
+    canvas.drawPath(side, _stroke(_outline, line));
+    final crust = ItemArt.bakedColor(v.batter, v.baked);
+    canvas.drawOval(rim, _fill(crust));
+    for (var i = 0; i < 18; i++) {
+      final a = math.pi * 2 * i / 18;
+      final p = Offset(rim.center.dx + math.cos(a) * rim.width * 0.46, rim.center.dy + math.sin(a) * rim.height * 0.44);
+      canvas.drawCircle(p, s * 0.03, _fill(Color.lerp(crust, const Color(0xFFFFFFFF), 0.15)!));
+      canvas.drawCircle(p, s * 0.03, _stroke(Color.lerp(crust, _outline, 0.4)!, line * 0.4));
+    }
+    canvas.drawOval(rim, _stroke(_outline, line));
+    final inner = rim.deflate(s * 0.07);
+    if (v.frosting != null) {
+      canvas.drawOval(inner, _fill(_frost(v)));
+      canvas.save();
+      canvas.clipPath(Path()..addOval(inner));
+      for (var i = -3; i <= 3; i++) {
+        for (final dir in const [-1.0, 1.0]) {
+          final x = inner.center.dx + i * s * 0.11;
+          final from = Offset(x - dir * s * 0.2, inner.top);
+          final to = Offset(x + dir * s * 0.2, inner.bottom);
+          canvas.drawLine(from, to, _stroke(Color.lerp(crust, _outline, 0.3)!, s * 0.05));
+          canvas.drawLine(from, to, _stroke(crust, s * 0.036));
+        }
+      }
+      canvas.restore();
+    } else {
+      canvas.drawOval(inner, _fill(Color.lerp(crust, _outline, 0.2)!));
+    }
+    canvas.drawOval(inner, _stroke(Color.lerp(crust, _outline, 0.5)!, line * 0.8));
+    canvas.restore();
+  }
+
+  /// Bánh Trung thu: khối tròn dẹt, mặt in hoa văn khuôn; có nhân thì nhân sen lộ ở ô giữa, mặt quét bóng.
+  static void _mooncake(Canvas canvas, Rect r, CakeVisual v) {
+    if (v.batterFill <= 0) {
+      ItemArt.paintMould(canvas, r, v.mould);
+      return;
+    }
+    final s = r.width;
+    final c = r.center;
+    final line = s * 0.025;
+    final crumb = ItemArt.bakedColor(v.batter, v.baked);
+    final top = Rect.fromCenter(center: c.translate(0, -s * 0.04), width: s * 0.64, height: s * 0.3);
+    final height = s * 0.2;
+    canvas.save();
+    _rise(canvas, top.center.dy + top.height / 2 + height, v.batterFill);
+    _cylinder(canvas, top, height, Color.lerp(crumb, _outline, 0.15)!, crumb, line);
+    final emboss = Color.lerp(crumb, _outline, 0.35)!;
+    // Viền gợn ép khuôn.
+    for (var i = 0; i < 16; i++) {
+      final a = math.pi * 2 * i / 16;
+      final p = Offset(top.center.dx + math.cos(a) * top.width * 0.4, top.center.dy + math.sin(a) * top.height * 0.38);
+      canvas.drawCircle(p, s * 0.025, _stroke(emboss, line * 0.5));
+    }
+    final medallion = Rect.fromCenter(center: top.center, width: top.width * 0.46, height: top.height * 0.46);
+    if (v.frosting != null) canvas.drawOval(medallion, _fill(_frost(v)));
+    for (var i = 0; i < 4; i++) {
+      final a = math.pi / 2 * i;
+      final petal = Rect.fromCenter(
+        center: medallion.center + Offset(math.cos(a) * medallion.width * 0.22, math.sin(a) * medallion.height * 0.22),
+        width: medallion.width * 0.4,
+        height: medallion.height * 0.4,
+      );
+      canvas.drawOval(petal, _stroke(emboss, line * 0.6));
+    }
+    canvas.drawOval(medallion, _stroke(emboss, line * 0.7));
+    if (v.frosting != null) {
+      canvas.drawOval(Rect.fromCenter(center: top.center.translate(-top.width * 0.2, -top.height * 0.22), width: top.width * 0.26, height: top.height * 0.16),
+          _fill(const Color(0x66FFFFFF)));
+    }
+    canvas.restore();
+  }
+
+  /// Bûche de Noël: khúc cây nằm ngang, đầu trái lộ vòng cuộn; phủ ganache thì có vân vỏ cây.
+  static void _log(Canvas canvas, Rect r, CakeVisual v) {
+    if (v.batterFill <= 0) {
+      ItemArt.paintMould(canvas, r, v.mould);
+      return;
+    }
+    final s = r.width;
+    final c = r.center;
+    final line = s * 0.025;
+    final crumb = ItemArt.bakedColor(v.batter, v.baked);
+    final frosted = v.frosting != null;
+    final cover = frosted ? _frost(v) : crumb;
+    final body = RRect.fromRectAndCorners(
+      Rect.fromLTRB(c.dx - s * 0.33, c.dy - s * 0.11, c.dx + s * 0.4, c.dy + s * 0.23),
+      topRight: Radius.circular(s * 0.12),
+      bottomRight: Radius.circular(s * 0.12),
+    );
+    canvas.save();
+    _rise(canvas, body.bottom, v.batterFill);
+    canvas.drawRRect(body, _fill(cover));
+    canvas.drawRRect(body, _stroke(_outline, line));
+    if (frosted) {
+      final bark = Color.lerp(ItemArt.frostingColor(v.frosting!), _outline, 0.45)!;
+      for (final (y, x0, x1) in const [(-0.05, -0.24, 0.12), (0.03, -0.1, 0.32), (0.11, -0.26, 0.2), (0.18, -0.04, 0.3)]) {
+        final p = Path()
+          ..moveTo(c.dx + x0 * s, c.dy + y * s)
+          ..quadraticBezierTo(c.dx + (x0 + x1) / 2 * s, c.dy + (y - 0.025) * s, c.dx + x1 * s, c.dy + y * s);
+        canvas.drawPath(p, _stroke(bark, line * 0.8));
+      }
+      final knot = Rect.fromCenter(center: c.translate(s * 0.2, -s * 0.02), width: s * 0.08, height: s * 0.05);
+      canvas.drawOval(knot, _stroke(bark, line * 0.7));
+    }
+    // Mặt cắt đầu khúc cây: vòng cuộn kem trên nền bánh xốp.
+    final end = Rect.fromCenter(center: Offset(c.dx - s * 0.33, c.dy + s * 0.06), width: s * 0.18, height: s * 0.34);
+    canvas.drawOval(end, _fill(Color.lerp(crumb, const Color(0xFFFFFFFF), 0.08)!));
+    if (frosted) canvas.drawOval(end.deflate(line * 0.5), _stroke(cover, line * 1.4));
+    final spiral = Path()..moveTo(end.center.dx, end.center.dy);
+    for (var i = 1; i <= 36; i++) {
+      final a = i * math.pi / 6;
+      final k = i / 36 * 0.42;
+      spiral.lineTo(end.center.dx + math.cos(a) * end.width * k, end.center.dy + math.sin(a) * end.height * k);
+    }
+    canvas.drawPath(spiral, _stroke(AppColors.cream, line * 0.9));
+    canvas.drawOval(end, _stroke(_outline, line));
+    canvas.restore();
   }
 
   /// Vị trí cố định (hệ toạ độ chuẩn hoá trong elip mặt bánh) cho topping thứ i.
@@ -1101,6 +1529,64 @@ class _FrostGeom {
       case MouldType.macaronMat:
         // Macaron: nhân = nhuộm màu ảnh (xem CakeArt._imagePaint).
         return _FrostGeom(const [], const [], const [], t, const []);
+      case MouldType.pastryTray:
+      case MouldType.shellMould:
+        // Quét bơ trứng / rưới mỏng trên mặt bánh cán bơ, madeleine.
+        return _FrostGeom(
+          [
+            layer(_drip(_scaled(t, 0.94), const [], sag: 2, wobble: 0.02, waves: 7), 0, shine: arc(_scaled(t, 0.66), math.pi * 1.1, math.pi * 0.3)),
+          ],
+          const [],
+          const [],
+          t,
+          holes,
+        );
+      case MouldType.eclairTray:
+        // Dải kem dọc thân éclair, vài giọt chảy nhỏ.
+        return _FrostGeom(
+          [
+            layer(_drip(_scaled(t, 1.0), _drips(4, 12, 7, 0.06), sag: 3, wobble: 0.015, waves: 9), 0,
+                shine: arc(_scaled(t, 0.7), math.pi * 1.1, math.pi * 0.26)),
+          ],
+          const [],
+          const [],
+          t,
+          holes,
+        );
+      case MouldType.piePan:
+      case MouldType.mooncakeMould:
+        // Nhân phủ lòng vỏ (pie) / ô giữa mặt bánh (Trung thu).
+        final k = mould == MouldType.piePan ? 0.98 : 0.6;
+        return _FrostGeom(
+          [
+            layer(_drip(_scaled(t, k), const [], sag: 0, wobble: 0.012, waves: 9), 0, shine: arc(_scaled(t, k * 0.7), math.pi * 1.1, math.pi * 0.28)),
+          ],
+          const [],
+          const [],
+          t,
+          holes,
+        );
+      case MouldType.logPan:
+        // Bûche: ganache phủ kín thân, chảy nhiều nhất; vân vỏ cây là nét gợi khối.
+        return _FrostGeom(
+          [
+            layer(
+              _drip(_scaled(t, 1.04), _drips(6, 30, 16, 0.07), sag: 8, wobble: 0.012, waves: 13),
+              0,
+              shine: arc(_scaled(t, 0.62), math.pi * 1.12, math.pi * 0.26),
+              details: [
+                for (final (y, x0, x1) in const [(-0.2, -0.36, 0.1), (0.05, -0.12, 0.36), (0.28, -0.3, 0.2)])
+                  Path()
+                    ..moveTo(c.dx + x0 * t.width, c.dy + y * t.height)
+                    ..quadraticBezierTo(c.dx + (x0 + x1) / 2 * t.width, c.dy + (y - 0.12) * t.height, c.dx + x1 * t.width, c.dy + y * t.height),
+              ],
+            ),
+          ],
+          const [],
+          const [],
+          t,
+          holes,
+        );
     }
   }
 

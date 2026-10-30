@@ -73,9 +73,7 @@ class _DecorScreenState extends State<DecorScreen> {
       case PurchaseResult.notEnoughGems:
         services.audio.fail();
         showToast(context, l.commonNotEnoughGems, success: false);
-      case PurchaseResult.locked:
-      case PurchaseResult.maxed:
-      case PurchaseResult.alreadyOwned:
+      case _:
         break;
     }
     _selectItem(item.id);
@@ -315,7 +313,8 @@ class _DecorRow extends StatelessWidget {
     final id = item?.id;
     final owned = id == null || state.ownedDecor.contains(id);
     final equipped = state.equippedDecor[slot] == id;
-    final locked = !owned && state.level < item!.unlockLevel;
+    // V2 GĐ3: `unlockLevel` = phải qua màn đó (không còn "cấp tiệm").
+    final locked = !owned && state.highestCompletedLevel < item!.unlockLevel;
 
     final Widget action;
     if (equipped) {
@@ -323,7 +322,7 @@ class _DecorRow extends StatelessWidget {
     } else if (owned) {
       action = _button(l.decorEquip, 'decor_chair', SLColors.mint, onEquip);
     } else if (locked) {
-      action = _button(l.commonUnlockAtLevel(item!.unlockLevel), 'lock', SLColors.butter, null);
+      action = _button(l.mapUnlockAfterLevel(item!.unlockLevel), 'lock', SLColors.butter, null);
     } else {
       action = _button(l.commonBuy, 'basket', SLColors.butter, onBuy);
     }

@@ -2,7 +2,7 @@
 
 Chạy: python tool/marketing/make_story.py [vi] [en]
 Cần imageio-ffmpeg; nếu thiếu: python -m pip install --target tool/marketing/.pylib imageio-ffmpeg
-Cảnh 4 dùng clips/story4_mai_baking_veo.mp4 nếu có (giây bắt đầu: biến môi trường BAKE_START, mặc định 1.0),
+Cảnh 4 dùng clips/story4_mai_baking_veo.mp4 nếu có (giây bắt đầu: biến môi trường BAKE_START, mặc định 4.0),
 không có thì dùng tạm clip cupcake.
 """
 import math
@@ -46,10 +46,40 @@ LINES = {
 SEG = [("clip", "shot2_mai_veo.mp4", 0.4, 0.0, 3.5),
        ("clip", "shot2_mai_veo.mp4", 4.6, 3.5, 6.5),
        ("clip", "story3_hoa_page_veo.mp4", 2.0, 6.5, 9.5),
-       ("clip", "story4_mai_baking_veo.mp4", float(os.environ.get("BAKE_START", "1.0")), 9.5, 12.5)
+       ("clip", "story4_mai_baking_veo.mp4", float(os.environ.get("BAKE_START", "4.0")), 9.5, 12.5)
        if os.path.exists(os.path.join(CLIPS, "story4_mai_baking_veo.mp4"))
        else ("clip", "shot1_cupcake_veo.mp4", 0.3, 9.5, 12.5),
-       ("clip", "story5_mai_evening_veo.mp4", 5.0, 12.5, 15.0)]
+       ("clip", "story5_mai_evening_veo.mp4", float(os.environ.get("EVE_START", "3.6")), 12.5, 15.0)]
+
+# Bản Seedance (mặc định khi đủ clip clips/story_s1_sd.mp4 … s5): cùng nét vẽ với phần mở đầu "về quê".
+# Đặt VEO=1 để dùng lại các clip Veo ở trên.
+SD = [("story_s1_sd.mp4", 1.5), ("story_s2_sd.mp4", 2.0), ("story_s3_sd.mp4", 1.5), ("story_s4_sd.mp4", 2.0),
+      ("story_s5_sd.mp4", 0.2)]
+if os.environ.get("VEO") != "1" and all(os.path.exists(os.path.join(CLIPS, f)) for f, _ in SD):
+    SEG = [("clip", f, s0, a, b) for (f, s0), (_, _, _, a, b) in zip(SD, SEG)]
+
+# Bản dài (STORY=25): thêm phần mở đầu "về quê" — văn phòng Hà Nội, xe khách, gác mái nhà bà.
+# Mỗi cảnh dùng clip clips/story_nX.mp4 nếu đã có, chưa có thì dùng ảnh frames/story_nX_*.png chuyển động máy quay.
+LONG = os.environ.get("STORY") == "25"
+INTRO = [("n1", "story_n1_office.png", 3.5), ("n2", "story_n2_bus.png", 3.0), ("n3", "story_n3_attic.png", 3.5)]
+OFF = sum(d for *_, d in INTRO) if LONG else 0.0
+if LONG:
+    LINES["vi"] = ["Ở Hà Nội,\nngày nào cũng là deadline.",
+                   "Một ngày, mình xin nghỉ…\nvà về quê.",
+                   "Dọn gác mái nhà bà,\nmình tìm thấy…",
+                   "…cuốn sổ công thức\nbà viết tay."] + LINES["vi"][1:]
+    LINES["en"] = ["In Hanoi,\nevery day was a deadline.",
+                   "One day, I took a break…\nand went home.",
+                   "Clearing Grandma's attic,\nI found…",
+                   "…her handwritten\nrecipe book."] + LINES["en"][1:]
+    intro, t = [], 0.0
+    for key, img, d in INTRO:
+        clip = f"story_{key}.mp4"
+        intro.append(("clip", clip, float(os.environ.get(f"{key.upper()}_START", "0.5")), t, t + d)
+                     if os.path.exists(os.path.join(CLIPS, clip)) else ("image", img, 0, t, t + d))
+        t += d
+    SEG = intro + [(k, s, s0, a + OFF, b + OFF) for k, s, s0, a, b in SEG]
+    TOTAL += OFF
 
 
 def font(name, size):
@@ -185,6 +215,9 @@ def render_video(lang, out_path):
             m = next(g)
             clips[src] = ([Image.frombytes("RGB", m["size"], f) for f in g], m["fps"])
     stills = {"story3": build_story3(), "story5": build_story5()} if any(s[0] == "still" for s in SEG) else {}
+    for kind, src, *_ in SEG:
+        if kind == "image":
+            stills[src] = crop916(Image.open(os.path.join(FRAMES, src)))
 
     def seg_frame(i, t):
         kind, src, s0, s, e = SEG[i]
@@ -219,8 +252,10 @@ def render_video(lang, out_path):
 # ---------- âm thanh ----------
 def read_audio(name, start, dur):
     tmp = os.path.join(HERE, "_a.wav")
-    subprocess.run([FF, "-y", "-loglevel", "error", "-ss", str(start), "-t", str(dur), "-i",
-                    os.path.join(CLIPS, name), "-vn", "-ac", "2", "-ar", str(SR), "-f", "wav", tmp], check=True)
+    r = subprocess.run([FF, "-y", "-loglevel", "error", "-ss", str(start), "-t", str(dur), "-i",
+                        os.path.join(CLIPS, name), "-vn", "-ac", "2", "-ar", str(SR), "-f", "wav", tmp])
+    if r.returncode != 0:  # clip không có tiếng (vd. Seedance 1.0 Fast)
+        return np.zeros((int(dur * SR), 2), np.float32)
     with wave.open(tmp) as f:
         a = np.frombuffer(f.readframes(f.getnframes()), dtype=np.int16).astype(np.float32) / 32768
     os.remove(tmp)
@@ -263,12 +298,21 @@ def render_audio(path):
             a = read_audio(src, s0, e - s)
             fade = np.minimum(1, np.minimum(np.arange(len(a)), np.arange(len(a))[::-1]) / (0.3 * SR))
             add(buf, a * fade[:, None] * 0.45, s)
-    add(buf, tone(1567.98, 1.4, 0.07, 3), 6.6)  # chuông cửa khi ông Hòa ghé
-    add(buf, tone(2093.0, 1.2, 0.035, 3.5), 6.68)
+    add(buf, tone(1567.98, 1.4, 0.07, 3), OFF + 6.6)  # chuông cửa khi ông Hòa ghé
+    add(buf, tone(2093.0, 1.2, 0.035, 3.5), OFF + 6.68)
     for i in range(5):  # lấp lánh nhẹ khi hiện tên tiệm
-        add(buf, tone(1318.5 * (1.12 ** i), 1.0, 0.03, 4), 13.7 + i * 0.09)
-    env = np.interp(np.arange(len(buf)) / SR, [0, 0.8, 13.8, 15], [0, 1, 1, 0])
-    buf *= env[:, None]
+        add(buf, tone(1318.5 * (1.12 ** i), 1.0, 0.03, 4), OFF + 13.7 + i * 0.09)
+    if LONG:  # đoạn Hà Nội: nhạc gần như im, chỉ có tiếng mưa; nhạc lên dần khi Mai về quê
+        n1 = INTRO[0][2]
+        env = np.interp(np.arange(len(buf)) / SR, [0, n1 - 0.3, n1 + 1.2, TOTAL - 1.2, TOTAL], [0.12, 0.12, 1, 1, 0])
+        rng = np.random.default_rng(7)
+        rain = np.convolve(rng.standard_normal(int((n1 + 0.6) * SR)), np.ones(12) / 12, "same").astype(np.float32)
+        rain *= np.interp(np.arange(len(rain)) / SR, [0, 0.6, n1 - 0.3, n1 + 0.6], [0, 1, 1, 0]).astype(np.float32)
+        buf *= env[:, None]
+        add(buf, rain * 0.05, 0)
+    else:
+        env = np.interp(np.arange(len(buf)) / SR, [0, 0.8, TOTAL - 1.2, TOTAL], [0, 1, 1, 0])
+        buf *= env[:, None]
     buf = buf / max(1e-6, np.abs(buf).max()) * 0.8
     with wave.open(path, "wb") as f:
         f.setnchannels(2)
@@ -283,12 +327,14 @@ def main():
     for lang in sys.argv[1:] or ["vi", "en"]:
         vid = os.path.join(HERE, f"_story_{lang}.mp4")
         render_video(lang, vid)
-        out = os.path.join(MK, f"sugarleaf_story_15s_{lang}.mp4")
+        out = os.path.join(MK, f"sugarleaf_story_{round(TOTAL)}s_{lang}.mp4")
         subprocess.run([FF, "-y", "-loglevel", "error", "-i", vid, "-i", wav, "-c:v", "copy",
                         "-af", "loudnorm=I=-16:TP=-1.5:LRA=11", "-ar", str(SR), "-c:a", "aac", "-b:a", "192k",
                         "-shortest", "-movflags", "+faststart", out], check=True)
         os.remove(vid)
         print(out)
+    os.remove(wav)
 
 
-main()
+if __name__ == "__main__":
+    main()

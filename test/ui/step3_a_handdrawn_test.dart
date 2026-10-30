@@ -7,7 +7,7 @@ import 'package:sugarleaf_bakery/core/catalog.dart';
 import 'package:sugarleaf_bakery/core/game_state.dart';
 import 'package:sugarleaf_bakery/core/models/ids.dart';
 import 'package:sugarleaf_bakery/ui/day/story_overlay.dart';
-import 'package:sugarleaf_bakery/ui/menu/main_menu_screen.dart';
+import 'package:sugarleaf_bakery/ui/map/level_map_screen.dart';
 import 'package:sugarleaf_bakery/ui/sugarleaf/sugarleaf.dart';
 import 'package:sugarleaf_bakery/ui/ui_routes.dart';
 
@@ -15,7 +15,9 @@ import 'ui_test_helpers.dart';
 
 /// Các màn đã vẽ lại hoàn toàn bằng SL* (Bước 3, đợt 2 — nhóm A).
 const _files = [
-  'lib/ui/menu/main_menu_screen.dart',
+  'lib/ui/map/level_map_screen.dart',
+  'lib/ui/map/map_node.dart',
+  'lib/ui/map/map_art.dart',
   'lib/ui/menu/login_gift_dialog.dart',
   'lib/ui/menu/quests_dialog.dart',
   'lib/ui/settings/settings_screen.dart',
@@ -37,19 +39,29 @@ void main() {
     }
   });
 
-  testWidgets('menu: không Scaffold, nút nhãn dán nhiệm vụ/quà chạm ≥ 48 và bấm được', (tester) async {
+  testWidgets('bản đồ: không Scaffold, nút thanh trên (nhiệm vụ/quà…) chạm ≥ 48, có nhãn, bấm được', (tester) async {
     final state = GameState.newGame()
       ..setLanguage(LanguagePref.en)
       ..claimLogin();
     await pumpSugarApp(tester, state);
 
     expect(find.byType(Scaffold), findsNothing);
-    expect(find.byType(SLTopBar), findsOneWidget);
-    for (final label in ['Daily quests', 'Daily gift']) {
-      final button = find.ancestor(of: find.text(label), matching: find.byType(SLPressable));
-      expect(tester.getSize(button).height, greaterThanOrEqualTo(48), reason: label);
+    for (final (tooltip, label) in [
+      ('Daily quests', 'Quests'),
+      ('Daily gift', 'Gift'),
+      ('Recipe book', 'Recipe book'),
+      ('Upgrades', 'Upgrades'),
+      ('Decor', 'Decor'),
+      ('Store', 'Store'),
+      ('Settings', 'Settings'),
+    ]) {
+      final button = find.byWidgetPredicate((w) => w is SLButton && w.tooltip == tooltip);
+      expect(button, findsOneWidget, reason: tooltip);
+      expect(tester.getSize(button).height, greaterThanOrEqualTo(48), reason: tooltip);
+      expect(find.text(label), findsOneWidget, reason: label);
     }
-    await tester.tap(find.text('Daily gift'));
+    // Chạm vào nhãn dưới nút cũng mở.
+    await tester.tap(find.text('Gift'));
     await tester.pumpAndSettle();
     expect(find.text('Come back tomorrow for more!'), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -61,7 +73,7 @@ void main() {
     addTearDown(tester.view.reset);
     tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
     addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
-    MainMenuScreen.giftShownThisSession = true;
+    LevelMapScreen.giftShownThisSession = true;
     var finished = 0;
     final state = GameState.newGame()
       ..setLanguage(LanguagePref.en)

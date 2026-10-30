@@ -3,16 +3,26 @@ import 'package:flutter/material.dart';
 
 import '../core/art/art_sprites.dart';
 import '../core/routes.dart';
-import 'day/day_screen.dart';
 import 'decor/decor_screen.dart';
-import 'menu/main_menu_screen.dart';
+import 'intro/intro_screen.dart';
+import 'intro/short_intro_screen.dart';
+import 'level/level_common.dart';
+import 'level/level_result_screen.dart';
+import 'level/level_screen.dart';
+import 'map/level_map_screen.dart';
 import 'recipes/recipe_book_screen.dart';
+import 'season/season_pass_screen.dart';
 import 'settings/settings_screen.dart';
 import 'store/store_screen.dart';
 import 'sugarleaf/gallery/ui_gallery_screen.dart';
 import 'sugarleaf/sugarleaf.dart';
-import 'summary/day_summary_screen.dart';
 import 'upgrades/upgrades_screen.dart';
+
+/// Route riêng của tầng giao diện (không cần ở `AppRoutes` của core).
+abstract final class UiRoutes {
+  /// Màn Thẻ mùa (`SeasonPassScreen`), mở từ nút trên thanh bản đồ.
+  static const season = '/season';
+}
 
 /// Route chỉ có trong bản debug.
 abstract final class UiDebugRoutes {
@@ -31,19 +41,34 @@ Route<dynamic>? onGenerateUiRoute(RouteSettings settings) {
     ArtSprites.preloadIcons();
   }
   final Widget page = switch (settings.name) {
-    AppRoutes.day => const DayScreen(),
-    AppRoutes.summary => switch (settings.arguments) {
-      DaySummaryArgs(:final summary) => DaySummaryScreen(summary: summary),
-      // Thiếu tổng kết (vd. mở thẳng đường dẫn trên web) → về menu.
-      _ => const MainMenuScreen(),
+    AppRoutes.menu => const LevelMapScreen(),
+    // Cảnh mở đầu: route đầu tiên khi chưa xem (xong → L1) hoặc mở lại từ Cài đặt (xong → quay về).
+    AppRoutes.intro => const IntroScreen(),
+    // Intro ngắn: route đầu tiên các lần mở sau (xong → bản đồ).
+    AppRoutes.shortIntro => const ShortIntroScreen(),
+    // Danh sách level tạm của GĐ1 (đã bỏ): đường dẫn cũ chuyển về bản đồ.
+    AppRoutes.levels => const LevelRedirect(),
+    AppRoutes.level => switch (settings.arguments) {
+      LevelArgs(:final levelId) => LevelScreen(levelId: levelId),
+      _ => const LevelRedirect(),
     },
-    AppRoutes.upgrades => const UpgradesScreen(),
+    AppRoutes.levelResult => switch (settings.arguments) {
+      LevelResultArgs(:final result, :final progress) => LevelResultScreen(result: result, progress: progress),
+      // Thiếu kết quả (vd. mở thẳng đường dẫn trên web) → bản đồ.
+      _ => const LevelRedirect(),
+    },
+    AppRoutes.upgrades => switch (settings.arguments) {
+      UpgradesArgs(:final tab, :final focus) => UpgradesScreen(initialTab: tab, focus: focus),
+      _ => const UpgradesScreen(),
+    },
     AppRoutes.decor => const DecorScreen(),
     AppRoutes.recipes => const RecipeBookScreen(),
     AppRoutes.store => const StoreScreen(),
     AppRoutes.settings => const SettingsScreen(),
+    UiRoutes.season => const SeasonPassScreen(),
     UiDebugRoutes.gallery when kDebugMode => const UiGalleryScreen(),
-    _ => const MainMenuScreen(),
+    // Tuyến lạ (vd. `/day` của V1, đường dẫn gõ tay trên web) → về bản đồ có sẵn, không dựng thêm bản đồ chồng lên.
+    _ => const LevelRedirect(),
   };
   return fadeRoute(settings, page);
 }

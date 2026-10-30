@@ -389,3 +389,32 @@ class SpeakerImage extends StatelessWidget {
     );
   }
 }
+
+/// Ảnh vẽ tay đóng gói theo đường dẫn ([asset], vd. `assets/art/level/booster_oven.webp`) trong ô [width]×[height]
+/// (giữ tỉ lệ), giải mã nhỏ theo cỡ hiện (ResizeImage, không chặn luồng UI). Thiếu file / chưa vẽ → [fallback].
+/// Dùng cho ảnh không thuộc danh mục `ArtSprites.ids` (vật phẩm hỗ trợ, gói cửa hàng V2…).
+class AssetArt extends StatelessWidget {
+  const AssetArt(this.asset, {super.key, required this.width, double? height, required this.fallback})
+      : height = height ?? width;
+
+  final String asset;
+  final double width;
+  final double height;
+  final Widget fallback;
+
+  @override
+  Widget build(BuildContext context) {
+    final px = (width * MediaQuery.devicePixelRatioOf(context)).round().clamp(1, 1024);
+    return SizedBox(
+      width: width,
+      height: height,
+      child: Image(
+        image: ResizeImage(AssetImage(asset), width: px, policy: ResizeImagePolicy.fit),
+        fit: BoxFit.contain,
+        gaplessPlayback: true,
+        excludeFromSemantics: true,
+        errorBuilder: (context, error, stack) => Center(child: fallback),
+      ),
+    );
+  }
+}

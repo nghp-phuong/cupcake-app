@@ -1,57 +1,70 @@
 import '../game_state.dart';
 import '../models/ids.dart';
 
-class IapProduct {
-  const IapProduct(this.id, this.displayPrice, {required this.consumable});
-
-  final IapProductId id;
-
-  /// Chuỗi cố định, không dịch.
-  final String displayPrice;
-  final bool consumable;
-}
+export '../monetization/monetization_config.dart' show IapCatalog, IapKind, IapProduct;
 
 abstract class IapService {
+  /// Gói hiện ở cửa hàng V2 (thứ tự hiển thị; không gồm gói V1 ẩn `pantryS/M/L`, `decorSetSeaside`).
   List<IapProduct> get products;
 
-  /// Non-consumable đã mua.
+  /// Gói [id] (kể cả gói V1 ẩn).
+  IapProduct product(IapProductId id);
+
+  /// Gói một lần đã mua; thẻ mùa: đã mua cao cấp của mùa hiện tại.
   bool isOwned(IapProductId id);
 
-  /// fake: chờ 600ms rồi trao qua `GameState.grantIap`, trả true.
+  /// Mua được lúc này (`GameState.canBuyIap`: thẻ mùa cần mùa đang diễn ra; gói một lần chưa sở hữu).
+  bool canBuy(IapProductId id);
+
+  /// fake: chờ [FakeIapService.delay] rồi trao qua `GameState.grantIap` (đúng một lần với gói một lần / thẻ mùa), trả
+  /// true. Không mua được → false, không trao.
   Future<bool> buy(IapProductId id);
+
+  /// Khôi phục giao dịch (nút trong Cài đặt): áp lại quyền của gói một lần đã mua. Trả số gói một lần đang sở hữu
+  /// (0 = không có gì để khôi phục).
+  Future<int> restore();
 }
 
-/// Cửa hàng giả lập: không SDK, không trừ tiền thật.
+/// Cửa hàng giả lập: không SDK, không trừ tiền thật. Danh mục theo `monetization.json` (`GameState.monetizationConfig`;
+/// không nạp được → [IapCatalog.v2]).
 class FakeIapService implements IapService {
   FakeIapService(this.state, {this.delay = const Duration(milliseconds: 600)});
 
   final GameState state;
   final Duration delay;
 
-  static const List<IapProduct> catalog = [
-    IapProduct(IapProductId.starterPack, r'$1.99', consumable: false),
-    IapProduct(IapProductId.pantryS, r'$0.99', consumable: true),
-    IapProduct(IapProductId.pantryM, r'$2.99', consumable: true),
-    IapProduct(IapProductId.pantryL, r'$6.99', consumable: true),
-    IapProduct(IapProductId.decorSetSeaside, r'$2.99', consumable: false),
-    IapProduct(IapProductId.removeAds, r'$3.99', consumable: false),
-  ];
+  /// Danh mục trong code: gói V2 rồi gói V1 ẩn.
+  static final List<IapProduct> catalog = [...IapCatalog.v2, ...IapCatalog.legacy];
 
   @override
-  List<IapProduct> get products => catalog;
-
-  IapProduct product(IapProductId id) => catalog.firstWhere((p) => p.id == id);
+  List<IapProduct> get products {
+    final fromConfig = state.monetizationConfig.products;
+    return fromConfig.isNotEmpty ? fromConfig : IapCatalog.v2;
+  }
 
   @override
-  bool isOwned(IapProductId id) => !product(id).consumable && state.ownedIap.contains(id);
+  IapProduct product(IapProductId id) => state.monetizationConfig.product(id);
 
-  /// Gói 1 lần đã sở hữu → trả false, không trao lại.
+  @override
+  bool isOwned(IapProductId id) => switch (product(id).kind) {
+        IapKind.consumable => false,
+        IapKind.oneTime => state.ownedIap.contains(id),
+        IapKind.season => state.seasonPremium,
+      };
+
+  @override
+  bool canBuy(IapProductId id) => state.canBuyIap(id);
+
   @override
   Future<bool> buy(IapProductId id) async {
-    if (isOwned(id)) return false;
+    if (!canBuy(id)) return false;
     await Future<void>.delayed(delay);
-    if (isOwned(id)) return false;
-    state.grantIap(id);
-    return true;
+    return state.grantIap(id);
+  }
+
+  @override
+  Future<int> restore() async {
+    await Future<void>.delayed(delay);
+    return state.restoreIap();
   }
 }

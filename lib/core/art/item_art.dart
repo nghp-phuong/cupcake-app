@@ -36,6 +36,9 @@ abstract final class ItemArt {
         FrostingId.matchaCream => const Color(0xFFBFE0A4),
         FrostingId.creamCheese => const Color(0xFFFFFDF5),
         FrostingId.custard => const Color(0xFFFFD966),
+        FrostingId.butterGlaze => const Color(0xFFF2B54A),
+        FrostingId.appleFilling => const Color(0xFFD9963F),
+        FrostingId.lotusPaste => const Color(0xFFC48A5C),
       };
 
   /// Màu bột sống.
@@ -47,6 +50,9 @@ abstract final class ItemArt {
         BatterType.butter => const Color(0xFFF1D08E),
         BatterType.almond => const Color(0xFFF6DCC6),
         BatterType.cheese => const Color(0xFFFCEFC4),
+        BatterType.laminated => const Color(0xFFF7E4B8),
+        BatterType.choux => const Color(0xFFF6DDA2),
+        BatterType.mooncake => const Color(0xFFEBC27E),
       };
 
   /// Màu bột theo độ nướng: 0 sống, 1 vàng đẹp, 2 cháy.
@@ -70,6 +76,11 @@ abstract final class ItemArt {
         ToppingId.mintLeaf => const Color(0xFF5DB37E),
         ToppingId.sugarPearl => const Color(0xFFFFF0F4),
         ToppingId.candle => const Color(0xFF8FC6E8),
+        ToppingId.almondFlakes => const Color(0xFFF3DDB8),
+        ToppingId.powderedSugar => const Color(0xFFFFFFFF),
+        ToppingId.kiwi => const Color(0xFF8CC63F),
+        ToppingId.sesame => const Color(0xFFF5ECD6),
+        ToppingId.meringueMushroom => AppColors.cream,
       };
 
   static Color boxColor(BoxType b) => switch (b) {
@@ -190,6 +201,79 @@ abstract final class ItemArt {
           ..close();
         canvas.drawPath(flame, fill(const Color(0xFFFFB443)));
         canvas.drawCircle(Offset(c.dx, r.top + s * 0.19), s * 0.035, fill(AppColors.butter));
+      case ToppingId.almondFlakes:
+        // Ba lát hạnh nhân mỏng, mép nâu nướng.
+        for (final (o, a) in const [(Offset(-0.14, 0.08), -0.5), (Offset(0.14, 0.1), 0.6), (Offset(0, -0.12), 0.1)]) {
+          canvas.save();
+          canvas.translate(c.dx + o.dx * s, c.dy + o.dy * s);
+          canvas.rotate(a);
+          final flake = Rect.fromCenter(center: Offset.zero, width: s * 0.42, height: s * 0.22);
+          canvas.drawOval(flake, fill(toppingColor(topping)));
+          canvas.drawOval(flake, stroke(AppColors.caramel, line * 0.7));
+          canvas.drawLine(Offset(-s * 0.1, 0), Offset(s * 0.1, 0), stroke(const Color(0x66B9805A), line * 0.5));
+          canvas.restore();
+        }
+      case ToppingId.powderedSugar:
+        // Đám đường bột: mây trắng mờ + hạt li ti, viền nâu nhạt để nổi trên nền sáng.
+        final cloud = Rect.fromCircle(center: c, radius: s * 0.36);
+        canvas.drawOval(cloud, fill(const Color(0xCCFFFFFF)));
+        canvas.drawOval(cloud, stroke(const Color(0x66C9A27E), line * 0.5));
+        for (var i = 0; i < 12; i++) {
+          final a = i * 2.4;
+          final d = math.min(s * 0.06 + s * 0.022 * i, s * 0.3);
+          canvas.drawCircle(c + Offset(math.cos(a), math.sin(a)) * d, s * 0.03, fill(const Color(0xFFFFFFFF)));
+        }
+      case ToppingId.kiwi:
+        // Lát kiwi: vỏ nâu, thịt xanh, lõi sáng, vòng hạt đen.
+        final slice = Rect.fromCircle(center: c, radius: s * 0.36);
+        canvas.drawOval(slice, fill(const Color(0xFF8A6A3E)));
+        canvas.drawOval(slice.deflate(s * 0.04), fill(toppingColor(topping)));
+        canvas.drawOval(Rect.fromCircle(center: c, radius: s * 0.1), fill(const Color(0xFFF1F5D0)));
+        for (var i = 0; i < 10; i++) {
+          final a = i * math.pi / 5;
+          canvas.drawOval(
+            Rect.fromCenter(center: c + Offset(math.cos(a), math.sin(a)) * (s * 0.16), width: s * 0.04, height: s * 0.06),
+            fill(const Color(0xFF2E2A22)),
+          );
+        }
+        canvas.drawOval(slice, stroke(outline, line));
+      case ToppingId.sesame:
+        // Vài hạt mè hình giọt nước.
+        for (final (o, a) in const [
+          (Offset(-0.18, -0.1), 0.4),
+          (Offset(0.16, -0.14), -0.6),
+          (Offset(0.02, 0.06), 1.2),
+          (Offset(-0.12, 0.2), -0.2),
+          (Offset(0.2, 0.16), 0.9),
+        ]) {
+          canvas.save();
+          canvas.translate(c.dx + o.dx * s, c.dy + o.dy * s);
+          canvas.rotate(a);
+          final seed = Path()
+            ..moveTo(0, -s * 0.1)
+            ..quadraticBezierTo(s * 0.07, 0, 0, s * 0.08)
+            ..quadraticBezierTo(-s * 0.07, 0, 0, -s * 0.1)
+            ..close();
+          canvas.drawPath(seed, fill(toppingColor(topping)));
+          canvas.drawPath(seed, stroke(AppColors.caramel, line * 0.5));
+          canvas.restore();
+        }
+      case ToppingId.meringueMushroom:
+        // Nấm meringue: chân trắng, mũ trắng rắc cacao.
+        final stem = RRect.fromRectAndRadius(
+            Rect.fromCenter(center: c.translate(0, s * 0.16), width: s * 0.22, height: s * 0.36), Radius.circular(s * 0.08));
+        canvas.drawRRect(stem, fill(toppingColor(topping)));
+        canvas.drawRRect(stem, stroke(outline, line * 0.8));
+        final cap = Path()
+          ..moveTo(r.left + s * 0.12, c.dy + s * 0.02)
+          ..cubicTo(r.left + s * 0.12, r.top + s * 0.08, r.right - s * 0.12, r.top + s * 0.08, r.right - s * 0.12, c.dy + s * 0.02)
+          ..quadraticBezierTo(c.dx, c.dy + s * 0.1, r.left + s * 0.12, c.dy + s * 0.02)
+          ..close();
+        canvas.drawPath(cap, fill(const Color(0xFFFFFBF3)));
+        canvas.drawPath(cap, stroke(outline, line));
+        for (final o in const [Offset(-0.14, -0.1), Offset(0.06, -0.18), Offset(0.18, -0.06), Offset(-0.02, -0.04)]) {
+          canvas.drawCircle(c + o * s, s * 0.025, fill(const Color(0x998A5A42)));
+        }
     }
   }
 
@@ -286,6 +370,100 @@ abstract final class ItemArt {
             canvas.drawCircle(p, s * 0.1, stroke(const Color(0xFFD98FA4), line * 0.7));
           }
         }
+      case MouldType.pastryTray:
+      case MouldType.logPan:
+        // Khay phẳng lót giấy nến (bánh cán bơ); khuôn cuộn (bûche): thành cao hơn.
+        final log = mould == MouldType.logPan;
+        final topY = c.dy - s * (log ? 0.12 : 0.14);
+        final bottomY = c.dy + s * (log ? 0.14 : 0.18);
+        final rim = Rect.fromLTRB(c.dx - s * 0.44, bottomY, c.dx + s * 0.44, bottomY + s * (log ? 0.08 : 0.04));
+        Path tray(double inset) => Path()
+          ..moveTo(c.dx - s * (log ? 0.38 : 0.33) + inset, topY + inset)
+          ..lineTo(c.dx + s * (log ? 0.38 : 0.33) - inset, topY + inset)
+          ..lineTo(c.dx + s * 0.44 - inset, bottomY - inset)
+          ..lineTo(c.dx - s * 0.44 + inset, bottomY - inset)
+          ..close();
+        canvas.drawRect(rim, fill(metalDark));
+        canvas.drawRect(rim, stroke(outline, line));
+        canvas.drawPath(tray(0), fill(metal));
+        canvas.drawPath(tray(0), stroke(outline, line));
+        canvas.drawPath(tray(s * 0.05), fill(AppColors.cream));
+        canvas.drawPath(tray(s * 0.05), stroke(metalDark, line * 0.6));
+      case MouldType.shellMould:
+        // Khay 3 hốc vỏ sò (madeleine).
+        final tray = RRect.fromRectAndRadius(Rect.fromCenter(center: c, width: s * 0.9, height: s * 0.5), Radius.circular(s * 0.06));
+        canvas.drawRRect(tray, fill(metal));
+        canvas.drawRRect(tray, stroke(outline, line));
+        for (var i = -1; i <= 1; i++) {
+          final cell = Rect.fromCenter(center: c.translate(i * s * 0.29, 0), width: s * 0.24, height: s * 0.3);
+          canvas.drawOval(cell, fill(metalDark));
+          final hinge = Offset(cell.center.dx, cell.bottom - s * 0.02);
+          for (var k = 1; k < 6; k++) {
+            final a = math.pi + math.pi * k / 6;
+            final edge = Offset(cell.center.dx + math.cos(a) * cell.width * 0.46, cell.center.dy + math.sin(a) * cell.height * 0.46);
+            canvas.drawLine(hinge, edge, stroke(const Color(0xFF8E949C), line * 0.5));
+          }
+          canvas.drawOval(cell, stroke(outline, line * 0.8));
+        }
+      case MouldType.eclairTray:
+        // Khay nướng có 3 rãnh dài (bắt bột choux thành thanh).
+        final tray = RRect.fromRectAndRadius(Rect.fromCenter(center: c, width: s * 0.9, height: s * 0.52), Radius.circular(s * 0.05));
+        canvas.drawRRect(tray, fill(metal));
+        canvas.drawRRect(tray, stroke(outline, line));
+        for (var i = -1; i <= 1; i++) {
+          final groove = RRect.fromRectAndRadius(
+              Rect.fromCenter(center: c.translate(0, i * s * 0.14), width: s * 0.7, height: s * 0.09), Radius.circular(s * 0.045));
+          canvas.drawRRect(groove, fill(metalDark));
+          canvas.drawRRect(groove, stroke(outline, line * 0.7));
+        }
+      case MouldType.piePan:
+        // Đĩa pie gốm bạc hà, mép gợn sóng.
+        final top = Rect.fromCenter(center: c.translate(0, -s * 0.02), width: s * 0.86, height: s * 0.36);
+        final bottom = Rect.fromCenter(center: c.translate(0, s * 0.16), width: s * 0.66, height: s * 0.22);
+        final side = Path()
+          ..moveTo(top.left, top.center.dy)
+          ..lineTo(bottom.left, bottom.center.dy)
+          ..arcTo(bottom, math.pi, -math.pi, false)
+          ..lineTo(top.right, top.center.dy)
+          ..close();
+        final dish = Color.lerp(AppColors.mint, outline, 0.12)!;
+        final light = Color.lerp(AppColors.mint, const Color(0xFFFFFFFF), 0.35)!;
+        canvas.drawPath(side, fill(dish));
+        canvas.drawPath(side, stroke(outline, line));
+        canvas.drawOval(top, fill(AppColors.mint));
+        for (var i = 0; i < 18; i++) {
+          final a = math.pi * 2 * i / 18;
+          canvas.drawCircle(
+              Offset(top.center.dx + math.cos(a) * top.width * 0.47, top.center.dy + math.sin(a) * top.height * 0.45), s * 0.028, fill(light));
+        }
+        canvas.drawOval(top, stroke(outline, line));
+        canvas.drawOval(top.deflate(s * 0.07), fill(Color.lerp(AppColors.mint, const Color(0xFFFFFFFF), 0.5)!));
+        canvas.drawOval(top.deflate(s * 0.07), stroke(dish, line * 0.6));
+      case MouldType.mooncakeMould:
+        // Khuôn gỗ ép bánh Trung thu: cán + đầu khuôn khắc hoa.
+        const wood = AppColors.caramel;
+        final woodDark = Color.lerp(wood, outline, 0.3)!;
+        final handle = RRect.fromRectAndRadius(
+            Rect.fromCenter(center: c.translate(0, -s * 0.24), width: s * 0.14, height: s * 0.32), Radius.circular(s * 0.05));
+        canvas.drawRRect(handle, fill(wood));
+        canvas.drawRRect(handle, stroke(outline, line));
+        final head = RRect.fromRectAndRadius(
+            Rect.fromCenter(center: c.translate(0, s * 0.1), width: s * 0.66, height: s * 0.4), Radius.circular(s * 0.08));
+        canvas.drawRRect(head, fill(woodDark));
+        canvas.drawRRect(head, stroke(outline, line));
+        final face = Rect.fromCenter(center: head.center, width: s * 0.44, height: s * 0.28);
+        canvas.drawOval(face, fill(const Color(0xFF8A5A3E)));
+        canvas.drawOval(face, stroke(outline, line * 0.7));
+        for (var i = 0; i < 4; i++) {
+          final a = math.pi / 2 * i + math.pi / 4;
+          final petal = Rect.fromCenter(
+            center: face.center + Offset(math.cos(a) * face.width * 0.16, math.sin(a) * face.height * 0.16),
+            width: face.width * 0.26,
+            height: face.height * 0.3,
+          );
+          canvas.drawOval(petal, stroke(wood, line * 0.6));
+        }
+        canvas.drawCircle(face.center, s * 0.03, fill(wood));
     }
   }
 

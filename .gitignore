@@ -49,3 +49,6 @@ app.*.map.json
 /docs/marketing/**/*.mp4
 /tool/marketing/.pylib/
 /tool/screens/fonts/
+
+# Video Kling (giữ ở máy, không đưa vào git)
+docs/design/kling/video/

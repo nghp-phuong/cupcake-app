@@ -81,9 +81,13 @@ flutter:
     - assets/art/scenes/
     - assets/art/shop/
     - assets/art/kitchen/
+    - assets/art/level/
+    - assets/art/map/
     # Font OFL đóng gói sẵn (không tải lúc chạy). Tên file theo quy ước của google_fonts (<Family>-<Weight>.ttf)
     # để GoogleFonts.* (nếu có ai gọi) cũng tìm thấy trong AssetManifest; giấy phép: assets/fonts/OFL.txt.
     - assets/fonts/
+    # Dữ liệu level (LevelConfigLoader): levels.json.
+    - assets/config/
 
   # Họ font dùng trực tiếp qua TextStyle.fontFamily (AppTheme.titleFontFamily / bodyFontFamily): Flutter tự chọn
   # file theo fontWeight. Fredoka không có dấu tiếng Việt → tiêu đề vi dùng Baloo 2.

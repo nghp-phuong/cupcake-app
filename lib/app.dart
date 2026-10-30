@@ -14,10 +14,21 @@ import 'ui/sugarleaf/sugarleaf.dart';
 /// Gốc app: AppScope ở trên MaterialApp; locale theo `state.language` (system → theo máy, fallback en);
 /// mọi màn/dialog nằm trong `RefFrame` 1280×720, dưới `SLScope` (chữ mặc định: mực nâu + font nội dung).
 class SugarleafApp extends StatelessWidget {
-  const SugarleafApp({super.key, required this.services, required this.onGenerateRoute, this.useGoogleFonts = true});
+  const SugarleafApp({
+    super.key,
+    required this.services,
+    required this.onGenerateRoute,
+    this.useGoogleFonts = true,
+    this.initialRoute = AppRoutes.menu,
+  });
 
   final AppServices services;
   final RouteFactory onGenerateRoute;
+
+  /// Route đầu tiên (main.dart: `AppRoutes.initialFor(introSeen: …)`). Cảnh mở đầu / intro ngắn là route DUY NHẤT trong
+  /// ngăn xếp (bản đồ không dựng sẵn bên dưới — hộp lời chào / vắng nhà chỉ chạy khi vào bản đồ); liên kết sâu trên web
+  /// (tên khác) → bản đồ + route đó. [initialRoute] khác intro: cách dựng mặc định của Navigator.
+  final String initialRoute;
 
   /// true: font đóng gói (Fredoka/Baloo 2/Nunito, xem AppTheme); test truyền false → font mặc định.
   final bool useGoogleFonts;
@@ -61,8 +72,9 @@ class SugarleafApp extends StatelessWidget {
             ],
             localeResolutionCallback: (device, supported) => resolveLocale(device, supported),
             theme: AppTheme.build(locale: locale ?? const Locale('en'), useGoogleFonts: useGoogleFonts),
-            initialRoute: AppRoutes.menu,
+            initialRoute: initialRoute,
             onGenerateRoute: onGenerateRoute,
+            onGenerateInitialRoutes: AppRoutes.isIntro(initialRoute) ? _singleInitialRoute : null,
             // Theme theo locale thật đã phân giải (kể cả "theo máy") — builder nằm dưới Localizations.
             // SLScope dưới Theme để chữ không có Material phía trên (lời nhắc xoay máy, route trần) vẫn đúng kiểu.
             builder: (ctx, child) => Theme(
@@ -73,6 +85,18 @@ class SugarleafApp extends StatelessWidget {
         },
       ),
     );
+  }
+}
+
+extension on SugarleafApp {
+  /// Ngăn xếp khởi đầu khi app mở bằng cảnh mở đầu / intro ngắn. `/`, [AppRoutes.intro], [AppRoutes.shortIntro]: một
+  /// route duy nhất (không chồng bản đồ bên dưới). Tên khác (liên kết sâu trên web, vd. `/settings` — trình duyệt thắng
+  /// [initialRoute]): `[bản đồ, route đó]` để Back có chỗ về.
+  List<Route<dynamic>> _singleInitialRoute(String name) {
+    final route = onGenerateRoute(RouteSettings(name: name));
+    if (name == AppRoutes.menu || AppRoutes.isIntro(name)) return [if (route != null) route];
+    final menu = onGenerateRoute(const RouteSettings(name: AppRoutes.menu));
+    return [if (menu != null) menu, if (route != null) route];
   }
 }
 

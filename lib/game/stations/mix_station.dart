@@ -462,6 +462,9 @@ class MixStation extends Station {
         BatterType.chocolate => const Color(0xFF6E4330),
         BatterType.matcha => const Color(0xFF7FAE5A),
         BatterType.redVelvet => const Color(0xFFB8303F),
+        BatterType.laminated => const Color(0xFFF3D98E), // vàng bơ nhạt (bột ngàn lớp)
+        BatterType.choux => const Color(0xFFF1DDA6), // vàng kem (bột su)
+        BatterType.mooncake => const Color(0xFFB98A4E), // nâu vàng (vỏ bánh Trung thu)
         _ => null,
       };
 

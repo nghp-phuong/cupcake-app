@@ -147,7 +147,7 @@ void main() {
       expect(r.isPerfectBake, isTrue);
     });
 
-    test('trần % tip decor = 30', () {
+    test('trần tổng % tip cộng thêm (trang trí + mở rộng) = 40', () {
       final o = _order(RecipeId.cheesecake, box: BoxType.gift, toppings: const [ToppingRequest(ToppingId.blueberry, 3)]);
       BakeResult eval(int pct) => Scoring.evaluate(
             order: o,
@@ -156,7 +156,8 @@ void main() {
             modifiers: BakeModifiers.base,
             decorTipBonusPct: pct,
           );
-      expect(eval(80).tip, eval(30).tip);
+      expect(eval(80).tip, eval(40).tip);
+      expect(eval(40).tip, (80 * 0.35 * 2 * 1.4).round());
       expect(eval(30).tip, (80 * 0.35 * 2 * 1.3).round());
     });
 

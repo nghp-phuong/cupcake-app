@@ -1,6 +1,5 @@
 import '../l10n/gen/app_localizations.dart';
 import 'models/customer.dart';
-import 'models/day_summary.dart';
 import 'models/ids.dart';
 
 /// Tra chuỗi giao diện theo enum.
@@ -16,6 +15,14 @@ extension AppL10nLookup on AppLocalizations {
         RecipeId.matchaCake => recipeMatchaCake,
         RecipeId.cheesecake => recipeCheesecake,
         RecipeId.birthdayCake => recipeBirthdayCake,
+        RecipeId.croissant => recipeCroissant,
+        RecipeId.painAuChocolat => recipePainAuChocolat,
+        RecipeId.madeleine => recipeMadeleine,
+        RecipeId.eclair => recipeEclair,
+        RecipeId.fruitTart => recipeFruitTart,
+        RecipeId.applePie => recipeApplePie,
+        RecipeId.mooncake => recipeMooncake,
+        RecipeId.bucheDeNoel => recipeBucheDeNoel,
       };
 
   String recipeDesc(RecipeId id) => switch (id) {
@@ -29,6 +36,14 @@ extension AppL10nLookup on AppLocalizations {
         RecipeId.matchaCake => recipeMatchaCakeDesc,
         RecipeId.cheesecake => recipeCheesecakeDesc,
         RecipeId.birthdayCake => recipeBirthdayCakeDesc,
+        RecipeId.croissant => recipeCroissantDesc,
+        RecipeId.painAuChocolat => recipePainAuChocolatDesc,
+        RecipeId.madeleine => recipeMadeleineDesc,
+        RecipeId.eclair => recipeEclairDesc,
+        RecipeId.fruitTart => recipeFruitTartDesc,
+        RecipeId.applePie => recipeApplePieDesc,
+        RecipeId.mooncake => recipeMooncakeDesc,
+        RecipeId.bucheDeNoel => recipeBucheDeNoelDesc,
       };
 
   String mouldName(MouldType m) => switch (m) {
@@ -39,6 +54,12 @@ extension AppL10nLookup on AppLocalizations {
         MouldType.macaronMat => mouldMacaronMat,
         MouldType.springformPan => mouldSpringformPan,
         MouldType.tallPan => mouldTallPan,
+        MouldType.pastryTray => mouldPastryTray,
+        MouldType.shellMould => mouldShellMould,
+        MouldType.eclairTray => mouldEclairTray,
+        MouldType.piePan => mouldPiePan,
+        MouldType.mooncakeMould => mouldMooncakeMould,
+        MouldType.logPan => mouldLogPan,
       };
 
   String batterName(BatterType b) => switch (b) {
@@ -49,6 +70,9 @@ extension AppL10nLookup on AppLocalizations {
         BatterType.butter => batterButter,
         BatterType.almond => batterAlmond,
         BatterType.cheese => batterCheese,
+        BatterType.laminated => batterLaminated,
+        BatterType.choux => batterChoux,
+        BatterType.mooncake => batterMooncake,
       };
 
   String frostingName(FrostingId f) => switch (f) {
@@ -58,6 +82,9 @@ extension AppL10nLookup on AppLocalizations {
         FrostingId.matchaCream => frostingMatchaCream,
         FrostingId.creamCheese => frostingCreamCheese,
         FrostingId.custard => frostingCustard,
+        FrostingId.butterGlaze => frostingButterGlaze,
+        FrostingId.appleFilling => frostingAppleFilling,
+        FrostingId.lotusPaste => frostingLotusPaste,
       };
 
   String toppingName(ToppingId t) => switch (t) {
@@ -69,6 +96,11 @@ extension AppL10nLookup on AppLocalizations {
         ToppingId.mintLeaf => toppingMintLeaf,
         ToppingId.sugarPearl => toppingSugarPearl,
         ToppingId.candle => toppingCandle,
+        ToppingId.almondFlakes => toppingAlmondFlakes,
+        ToppingId.powderedSugar => toppingPowderedSugar,
+        ToppingId.kiwi => toppingKiwi,
+        ToppingId.sesame => toppingSesame,
+        ToppingId.meringueMushroom => toppingMeringueMushroom,
       };
 
   String boxName(BoxType b) => switch (b) {
@@ -147,6 +179,7 @@ extension AppL10nLookup on AppLocalizations {
         Speaker.hoa => charHoa,
         Speaker.linh => charLinh,
         Speaker.kenji => charKenji,
+        Speaker.rosa => charRosa,
       };
 
   String questText(QuestType t, int count) => switch (t) {
@@ -193,22 +226,20 @@ extension AppL10nLookup on AppLocalizations {
         DecorSlot.plant => decorSlotPlant,
       };
 
-  String unlockText(Unlock u) => switch (u.kind) {
-        UnlockKind.recipe => unlockRecipe(u.recipe == null ? '' : recipeName(u.recipe!)),
-        UnlockKind.topping => unlockTopping(u.topping == null ? '' : toppingName(u.topping!)),
-        UnlockKind.vipGuests => unlockVipGuests,
-        UnlockKind.upgrade => unlockUpgrades,
-        UnlockKind.decor => unlockDecor,
-        UnlockKind.moreCustomers => unlockMoreCustomers,
-      };
-
-  /// Tên gói IAP (giả lập).
-  String iapName(IapProductId id) => switch (id) {
+  /// Tên gói IAP V1 (giả lập). Gói GĐ6 (`gemsS/M/L`, `staffOutfits`, `seasonPass`) lấy tên từ `monetization.json`
+  /// (`IapProduct.name(lang)`) → [fallback] (mặc định rỗng).
+  String iapName(IapProductId id, {String fallback = ''}) => switch (id) {
         IapProductId.starterPack => storeStarterPack,
         IapProductId.pantryS => storePantryS,
         IapProductId.pantryM => storePantryM,
         IapProductId.pantryL => storePantryL,
         IapProductId.decorSetSeaside => storeDecorSet,
         IapProductId.removeAds => storeRemoveAds,
+        IapProductId.gemsS ||
+        IapProductId.gemsM ||
+        IapProductId.gemsL ||
+        IapProductId.staffOutfits ||
+        IapProductId.seasonPass =>
+          fallback,
       };
 }

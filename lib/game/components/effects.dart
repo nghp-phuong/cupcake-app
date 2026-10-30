@@ -140,6 +140,14 @@ class EffectsLayer extends Component {
     ..strokeJoin = StrokeJoin.round
     ..isAntiAlias = true;
 
+  /// Vẽ ngay một sao lấp lánh 4 cánh (cùng dáng hạt `sparkle`) tâm [at], bán kính [size] px, màu [color] + viền mực
+  /// nhạt — cho hiệu ứng kéo dài do nơi gọi tự định nhịp (vd. vật phẩm hỗ trợ), không tạo hạt.
+  void twinkleAt(Canvas canvas, Offset at, double size, Color color, {int variant = 0, double angle = 0}) {
+    if (color.a <= 0) return;
+    final ink = Color.lerp(color, _umber, 0.55)!.withValues(alpha: 0.7 * color.a);
+    _draw(canvas, _FxShapes.twinkles[variant % _FxShapes.twinkles.length], at, size, color, edge: ink, angle: angle);
+  }
+
   /// Vẽ hình [shape] (dựng sẵn ở cỡ tham chiếu [_FxShapes.unit]) tâm [at], cỡ [size] px, xoay [angle]: lớp màu nước
   /// [color] + nét mép [edge] dày [edgeWidth] px (null = không viền).
   void _draw(Canvas canvas, Path shape, Offset at, double size, Color color, {Color? edge, double edgeWidth = 1.2, double angle = 0}) {

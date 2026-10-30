@@ -8,19 +8,26 @@ import '../economy.dart';
 import '../game_state.dart';
 import '../models/ids.dart';
 
-/// Quảng cáo. Rewarded chỉ khi người chơi bấm (tối đa 8/ngày lịch); interstitial chỉ ở tổng kết ngày,
-/// không bao giờ giữa lúc làm bánh. Việc trao thưởng do bên gọi làm.
+/// Quảng cáo. Rewarded chỉ khi người chơi bấm (tối đa [Economy.maxRewardedPerDay]/ngày lịch, chung mọi chỗ);
+/// interstitial chỉ khi rời màn kết quả (GĐ6 §3), không bao giờ trong lúc chơi / thẻ Sẵn sàng / hướng dẫn / cảnh mở
+/// đầu. Việc trao thưởng do bên gọi làm.
 abstract class AdService {
-  /// rewardedToday < 8.
+  /// rewardedToday < [Economy.maxRewardedPerDay].
   bool canShowRewarded();
 
   /// true = xem xong; TỰ ghi đếm vào GameState.
   Future<bool> showRewarded(BuildContext context, AdPlacement placement);
 
-  bool shouldShowInterstitial(int completedDay);
+  /// Theo `GameState.shouldShowInterstitialAfterResult`.
+  bool shouldShowInterstitial({required bool watchedRewardedHere, required bool unlockedChapter});
 
-  /// Tự ghi lastInterstitialDay.
-  Future<void> showInterstitial(BuildContext context, int completedDay);
+  /// Gọi khi rời màn kết quả (về bản đồ / màn tiếp / chơi lại), SAU `GameState.registerLevelPlayEnded`. Hiện nếu
+  /// [shouldShowInterstitial]; TỰ ghi `GameState.registerInterstitialShown`. Trả true nếu đã hiện.
+  Future<bool> showInterstitial(
+    BuildContext context, {
+    required bool watchedRewardedHere,
+    required bool unlockedChapter,
+  });
 }
 
 /// Cách mở hộp thoại quảng cáo giả lập (không đóng được, tự đóng sau [duration]). Core chỉ có bản mặc định
@@ -56,18 +63,21 @@ class FakeAdService implements AdService {
   }
 
   @override
-  bool shouldShowInterstitial(int completedDay) {
-    if (state.removeAds) return false;
-    if (completedDay < Economy.interstitialMinDay) return false;
-    final last = state.lastInterstitialDay;
-    return last == null || completedDay - last >= Economy.interstitialGapDays;
-  }
+  bool shouldShowInterstitial({required bool watchedRewardedHere, required bool unlockedChapter}) =>
+      state.shouldShowInterstitialAfterResult(watchedRewardedHere: watchedRewardedHere, unlockedChapter: unlockedChapter);
 
   @override
-  Future<void> showInterstitial(BuildContext context, int completedDay) async {
-    if (!shouldShowInterstitial(completedDay)) return;
+  Future<bool> showInterstitial(
+    BuildContext context, {
+    required bool watchedRewardedHere,
+    required bool unlockedChapter,
+  }) async {
+    if (!shouldShowInterstitial(watchedRewardedHere: watchedRewardedHere, unlockedChapter: unlockedChapter)) {
+      return false;
+    }
     await _showSimulated(context);
-    state.registerInterstitialShown(completedDay);
+    state.registerInterstitialShown();
+    return true;
   }
 
   Future<void> _showSimulated(BuildContext context) => presenter(context, duration);

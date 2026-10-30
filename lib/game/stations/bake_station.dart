@@ -227,13 +227,13 @@ class BakeStation extends Station {
     final baked = bakedVisual(meter.released ? meter.release! : meter.value, target);
     final rise = math.min(1.0, baked);
     // Đáy thân bánh (ảnh hoặc hình code) ngồi trên giá, bất kể khuôn.
-    final cakeRect = seatedCakeRect(game.recipe.mould, bottom.dx, bottom.dy, size, seat: 0.5);
+    final cakeRect = seatedCakeRect(game.recipe.mould, bottom.dx, bottom.dy, size, seat: 0.5, recipe: game.recipe.id);
     canvas.save();
     final pop = _doneT > 0 && _doneT < 0.4 ? 1 + 0.06 * math.sin(_doneT / 0.4 * math.pi) : 1.0;
     canvas.translate(bottom.dx, bottom.dy);
     canvas.scale(pop, (0.8 + 0.2 * rise) * pop);
     canvas.translate(-bottom.dx, -bottom.dy);
-    CakeArt.paint(canvas, cakeRect, CakeVisual(mould: game.recipe.mould, batter: game.recipe.batter, baked: baked));
+    CakeArt.paint(canvas, cakeRect, CakeVisual(mould: game.recipe.mould, batter: game.recipe.batter, baked: baked, recipe: game.recipe.id));
     canvas.restore();
   }
 
@@ -344,14 +344,14 @@ class BakeStation extends Station {
     // Bánh: nở dần theo độ chín.
     final baked = bakedVisual(meter.released ? meter.release! : meter.value, target);
     final rise = math.min(1.0, baked);
-    final cakeRect = seatedCakeRect(game.recipe.mould, windowRect.center.dx, rackY, 190, seat: 0.5);
+    final cakeRect = seatedCakeRect(game.recipe.mould, windowRect.center.dx, rackY, 190, seat: 0.5, recipe: game.recipe.id);
     canvas.save();
     final bottom = Offset(cakeRect.center.dx, rackY);
     final pop = _doneT > 0 && _doneT < 0.4 ? 1 + 0.06 * math.sin(_doneT / 0.4 * math.pi) : 1.0;
     canvas.translate(bottom.dx, bottom.dy);
     canvas.scale(pop, (0.8 + 0.2 * rise) * pop);
     canvas.translate(-bottom.dx, -bottom.dy);
-    CakeArt.paint(canvas, cakeRect, CakeVisual(mould: game.recipe.mould, batter: game.recipe.batter, baked: baked));
+    CakeArt.paint(canvas, cakeRect, CakeVisual(mould: game.recipe.mould, batter: game.recipe.batter, baked: baked, recipe: game.recipe.id));
     canvas.restore();
     // Bóng khung đổ vào mép trên kính + phản chiếu kính chéo.
     canvas.drawRect(Rect.fromLTWH(windowRect.left, windowRect.top, windowRect.width, 26), _shaderPaint..shader = _frameShadeShader);

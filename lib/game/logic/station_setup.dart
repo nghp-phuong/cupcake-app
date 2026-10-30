@@ -9,8 +9,11 @@ math.Random seededRandom(Order order, [int salt = 0]) =>
     math.Random(order.id * 7919 + order.recipe.index * 131 + order.frosting.index * 17 + salt);
 
 /// 4 khuôn: khuôn đúng + 3 khuôn khác ngẫu nhiên, trộn thứ tự.
-List<MouldType> mouldChoices(MouldType correct, math.Random random, {int count = 4}) {
-  final others = MouldType.values.where((m) => m != correct).toList()..shuffle(random);
+///
+/// Mồi chỉ lấy khuôn người chơi đã gặp khi làm món mở ở màn [unlockLevel] (`Catalog.isDecoyMould`): món chương 1–2
+/// có đúng bộ mồi và chuỗi ngẫu nhiên như trước GĐ8 (khuôn mới nằm cuối enum nên bị lọc mà không đổi thứ tự).
+List<MouldType> mouldChoices(MouldType correct, math.Random random, {int count = 4, int unlockLevel = 1}) {
+  final others = MouldType.values.where((m) => m != correct && Catalog.isDecoyMould(m, unlockLevel)).toList()..shuffle(random);
   final out = [correct, ...others.take(count - 1)]..shuffle(random);
   return out;
 }
@@ -31,7 +34,8 @@ List<ToppingId> toppingTrays(Order order, math.Random random, {int count = 4}) {
   final pools = [
     recipe.toppings.where((t) => unlocked(t)).toList()..shuffle(random),
     ToppingId.values.where((t) => unlocked(t)).toList()..shuffle(random),
-    ToppingId.values.toList()..shuffle(random),
+    // Dự phòng cuối: mọi topping người chơi có thể đã gặp (không lộ topping chương sau).
+    ToppingId.values.where((t) => Catalog.isDecoyTopping(t, recipe.unlockLevel)).toList()..shuffle(random),
   ];
   for (final pool in pools) {
     for (final t in pool) {

@@ -125,11 +125,13 @@ class OrderGenerator {
     required int level,
     required List<ToppingId> unlockedToppings,
     List<ToppingRequest>? forcedToppings,
+    BoxType? box,
   }) {
     final data = Catalog.recipe(recipe);
     final frosting = data.frostings[random.nextInt(data.frostings.length)];
     final toppings = forcedToppings ?? _pickToppings(data, level, unlockedToppings);
-    final box = customer.kind == CustomerKind.vip ? BoxType.gift : data.box;
+    // [box] (đơn đặc biệt ghi rõ hộp) > VIP luôn đòi hộp quà > hộp chuẩn của món.
+    box ??= customer.kind == CustomerKind.vip ? BoxType.gift : data.box;
     final line = switch (customer.kind) {
       CustomerKind.vip => OrderLineKind.vip,
       CustomerKind.friend => switch (customer.friend) {

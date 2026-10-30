@@ -8,7 +8,7 @@ import 'package:sugarleaf_bakery/ui/sugarleaf/sugarleaf.dart';
 import 'ui_test_helpers.dart';
 
 void main() {
-  testWidgets('menu dựng được (en), tự mở quà đăng nhập, nhận quà cộng xu', (tester) async {
+  testWidgets('bản đồ dựng được (en), tự mở quà đăng nhập, nhận quà cộng xu', (tester) async {
     final state = GameState.newGame()..setLanguage(LanguagePref.en);
     await pumpSugarApp(tester, state);
 
@@ -23,33 +23,35 @@ void main() {
     await tester.tap(find.byTooltip('Close'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Sugarleaf Bakery'), findsOneWidget);
-    expect(find.text('A cozy little bakery by the sea'), findsOneWidget);
-    expect(find.text('Open the bakery'), findsOneWidget);
-    expect(find.text('Bakery level 1'), findsOneWidget);
-    expect(find.text('0/80 XP'), findsOneWidget);
+    // Thanh trên: tên chương đang xem, nút có nhãn; không còn cấp tiệm / XP.
+    expect(find.text("Chapter 1 · Grandma's Kitchen"), findsOneWidget);
+    expect(find.text('Bakery level 1'), findsNothing);
+    expect(find.text('0/80 XP'), findsNothing);
     expect(find.text('Recipe book'), findsOneWidget);
     expect(find.text('Upgrades'), findsOneWidget);
     expect(find.text('Decor'), findsOneWidget);
     expect(find.text('Store'), findsOneWidget);
-    expect(find.text('Daily quests'), findsOneWidget);
+    expect(find.text('Quests'), findsOneWidget);
+    expect(find.text('Gift'), findsOneWidget);
+    expect(find.byTooltip('Daily quests'), findsOneWidget);
+    expect(find.byTooltip('Daily gift'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('menu dựng được (vi), quà đã nhận thì không tự mở', (tester) async {
+  testWidgets('bản đồ dựng được (vi), quà đã nhận thì không tự mở', (tester) async {
     final state = GameState.newGame()
       ..setLanguage(LanguagePref.vi)
       ..claimLogin();
     await pumpSugarApp(tester, state);
 
-    expect(find.text('Mở cửa tiệm'), findsOneWidget);
-    expect(find.text('Ngày 1'), findsOneWidget);
-    expect(find.text('Tiệm cấp 1'), findsOneWidget);
+    expect(find.text('Chương 1 · Căn bếp của bà'), findsOneWidget);
+    expect(find.text('Tiệm cấp 1'), findsNothing);
     expect(find.text('Sổ công thức'), findsOneWidget);
     expect(find.text('Nhận'), findsNothing);
 
     // Mở nhiệm vụ ngày.
-    await tester.tap(find.text('Nhiệm vụ ngày').first);
+    await tester.tap(find.byTooltip('Nhiệm vụ ngày'));
     await tester.pumpAndSettle();
     expect(find.text('Mỗi ngày có nhiệm vụ mới'), findsOneWidget);
     expect(find.text('Nhận'), findsNWidgets(3)); // 3 nhiệm vụ, nút chưa bấm được
@@ -90,10 +92,10 @@ void main() {
     expect(state.language, LanguagePref.en);
     expect(find.text('Settings'), findsOneWidget);
 
-    // Quay lại menu: menu cũng đã theo ngôn ngữ mới.
+    // Quay lại bản đồ: bản đồ cũng đã theo ngôn ngữ mới.
     await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
-    expect(find.text('Open the bakery'), findsOneWidget);
+    expect(find.text("Chapter 1 · Grandma's Kitchen"), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -114,7 +116,7 @@ void main() {
 
     expect(state.coins, Economy.startCoins);
     expect(state.language, LanguagePref.system);
-    // Ván mới → về menu, quà đăng nhập tự mở lại.
+    // Ván mới → về bản đồ, quà đăng nhập tự mở lại.
     expect(find.byTooltip('Settings'), findsOneWidget);
     expect(find.text('Claim'), findsOneWidget);
     await settleToasts(tester);

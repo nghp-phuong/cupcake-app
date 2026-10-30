@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sugarleaf_bakery/core/economy.dart';
 import 'package:sugarleaf_bakery/core/game_state.dart';
 import 'package:sugarleaf_bakery/core/models/ids.dart';
 import 'package:sugarleaf_bakery/core/routes.dart';
@@ -7,9 +8,14 @@ import 'package:sugarleaf_bakery/ui/sugarleaf/sugarleaf.dart';
 
 import 'ui_test_helpers.dart';
 
-GameState _state(Map<String, dynamic> json, {LanguagePref lang = LanguagePref.en}) => GameState.fromJson(json)
-  ..setLanguage(lang)
-  ..claimLogin();
+/// Ván từ JSON + đã qua L1..L[cleared] (không thêm xu) — mở khoá / thiết bị / trang trí khoá theo màn đã qua.
+GameState _state(Map<String, dynamic> json, {LanguagePref lang = LanguagePref.en, int cleared = 0}) {
+  final state = GameState.fromJson(json)
+    ..setLanguage(lang)
+    ..claimLogin();
+  winLevels(state, [for (var id = 1; id <= cleared; id++) id], coins: 0);
+  return state;
+}
 
 /// Màn nâng cấp / trang trí / sổ công thức vẽ tay (Bước 3, đợt 2): không còn ripple Material, trạng thái vẫn phân
 /// biệt được, vùng chạm ≥ 48.
@@ -17,27 +23,28 @@ void main() {
   testWidgets('nâng cấp: mục tối đa thành huy hiệu (không phải nút), mục thiếu xu vẫn bấm được', (tester) async {
     final state = _state({
       'coins': 0,
-      'xp': 1400,
       'oven': 5,
       'tools': {'whisk': 2, 'pipingBag': 1, 'tongs': 3},
-    });
+    }, cleared: 13); // qua L13: mọi cấp kế của 5 thiết bị còn lại đã tới mốc
     await pumpSugarApp(tester, state);
     navigator(tester).pushNamed(AppRoutes.upgrades);
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Equipment'));
+    await tester.pumpAndSettle();
 
     expect(find.byType(InkWell), findsNothing);
-    expect(find.text('Fully upgraded'), findsNWidgets(2)); // lò + kẹp
+    expect(find.text('Fully upgraded'), findsNWidgets(2)); // lò vùng vàng + kẹp (cấp cũ trong bản lưu V1)
     expect(find.widgetWithText(SLButton, 'Fully upgraded'), findsNothing);
     expect(find.byWidgetPredicate((w) => w is SLIcon && w.id == 'medal_max'), findsWidgets);
-    expect(find.widgetWithText(SLButton, 'Upgrade'), findsNWidgets(2));
+    expect(find.widgetWithText(SLButton, 'Upgrade'), findsNWidgets(5)); // lò nhanh, khay, tủ, phới, túi kem
     for (final e in find.widgetWithText(SLButton, 'Upgrade').evaluate()) {
       expect(tester.getSize(find.byWidget(e.widget)).height, greaterThanOrEqualTo(48));
     }
 
-    await tester.tap(find.text('Upgrade').first);
+    await tester.tap(find.byKey(const ValueKey('upg-buy-whisk')));
     await tester.pumpAndSettle();
     expect(find.text('Not enough coins'), findsOneWidget);
-    expect(state.toolLevel(ToolId.whisk), 2);
+    expect(state.equipmentTier(ToolId.whisk.name), 2);
     await settleToasts(tester);
     expect(tester.takeException(), isNull);
   });
@@ -47,10 +54,9 @@ void main() {
   ) async {
     final state = _state({
       'coins': 600,
-      'xp': 300,
       'decorOwned': ['wallpaperStripes', 'counterFlowers'],
       'decorEquipped': {'wallpaper': 'wallpaperStripes', 'counter': 'counterFlowers'},
-    });
+    }, cleared: 3);
     await pumpSugarApp(tester, state);
     navigator(tester).pushNamed(AppRoutes.decor);
     await tester.pumpAndSettle();
@@ -86,25 +92,27 @@ void main() {
   testWidgets('sổ công thức: ô món chọn được (không ripple), món khoá có ổ khoá vẽ tay, 3★ có nhãn thưởng', (
     tester,
   ) async {
-    await pumpSugarApp(tester, _state({'xp': 1400, 'mastery': {'cupcakeVanilla': 3}}));
+    // Qua L1–8 → mở tới L9: còn khoá bánh phô mai (L10) và bánh sinh nhật (L12).
+    await pumpSugarApp(tester, _state({'mastery': {'cupcakeVanilla': 3}}, cleared: 8));
     navigator(tester).pushNamed(AppRoutes.recipes);
     await tester.pumpAndSettle();
 
     expect(find.byType(InkWell), findsNothing);
-    expect(find.text('Mastered! +5 gems'), findsOneWidget);
-    expect(find.byWidgetPredicate((w) => w is SLIcon && w.id == 'lock'), findsNWidgets(2)); // cấp 10, 12
+    expect(find.text('Mastered! +${Economy.masteryGemReward} gems'), findsOneWidget);
+    expect(find.byWidgetPredicate((w) => w is SLIcon && w.id == 'lock'), findsNWidgets(11)); // L10, L12 + 8 món GĐ8A (chương 3–5) + khoá Bí quyết của bà (GĐ8B) trên trang chi tiết
 
-    final tile = find.ancestor(of: find.text('Missing page. Unlocks at level 12'), matching: find.byType(SLPressable));
+    // Ô món khoá ghi ngắn "Level 12"; trang chi tiết ghi câu đầy đủ.
+    final tile = find.ancestor(of: find.text('Level 12'), matching: find.byType(SLPressable));
     expect(tester.widget<SLPressable>(tile).selected, isFalse);
-    await tester.tap(find.text('Missing page. Unlocks at level 12'));
+    await tester.tap(find.text('Level 12'));
     await tester.pumpAndSettle();
     expect(tester.widget<SLPressable>(tile.first).selected, isTrue);
-    expect(find.text('Missing page. Unlocks at level 12'), findsNWidgets(2));
+    expect(find.text('Missing page. Reach level 12 to find it'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
   testWidgets('ba màn dựng được ở tiếng Việt, mọi tab trang trí không tràn', (tester) async {
-    final state = _state({'xp': 1400, 'coins': 50}, lang: LanguagePref.vi);
+    final state = _state({'coins': 50}, lang: LanguagePref.vi, cleared: 13);
     await pumpSugarApp(tester, state);
     for (final route in [AppRoutes.upgrades, AppRoutes.recipes, AppRoutes.decor]) {
       navigator(tester).pushNamed(route);

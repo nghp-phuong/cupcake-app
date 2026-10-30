@@ -28,9 +28,9 @@ class _Falling {
 class ToppingStation extends Station {
   ToppingStation(BakeryGame game)
       : trays = toppingTrays(game.order, seededRandom(game.order, 2)),
-        cakeBox = cakeRectFor(game.recipe.mould),
+        cakeBox = cakeRectFor(game.recipe.mould, recipe: game.recipe.id),
         super(game, StationId.topping) {
-    top = CakeArt.topSurface(cakeBox, game.recipe.mould);
+    top = CakeArt.topSurface(cakeBox, game.recipe.mould, recipe: game.recipe.id);
   }
 
   /// Khung bánh chuẩn (cạnh 460, đúng với cupcake). Khung thật của bánh đang làm là [cakeBox] / [cakeRectFor].
@@ -40,7 +40,8 @@ class ToppingStation extends Station {
   static const Rect plateRect = Rect.fromLTWH(220, 580, 400, 80);
 
   /// Khung bánh theo khuôn: đáy thân bánh ngồi trên đĩa.
-  static Rect cakeRectFor(MouldType mould) => seatedCakeRect(mould, plateRect.center.dx, plateRect.center.dy, cakeRect.width);
+  static Rect cakeRectFor(MouldType mould, {RecipeId? recipe}) =>
+      seatedCakeRect(mould, plateRect.center.dx, plateRect.center.dy, cakeRect.width, recipe: recipe);
 
   /// Khung bánh đang làm (theo khuôn).
   final Rect cakeBox;

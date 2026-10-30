@@ -24,7 +24,7 @@ class _Mould {
 /// Trạm 1 — chọn khuôn: kéo đúng khuôn từ cột phải lên khay nướng. Thả sai: lắc + nhắc, khuôn về chỗ.
 class MouldStation extends Station {
   MouldStation(BakeryGame game) : super(game, StationId.mould) {
-    final choices = mouldChoices(game.recipe.mould, seededRandom(game.order, 1));
+    final choices = mouldChoices(game.recipe.mould, seededRandom(game.order, 1), unlockLevel: game.recipe.unlockLevel);
     for (var i = 0; i < choices.length; i++) {
       _moulds.add(_Mould(choices[i], slotCenter(i)));
     }

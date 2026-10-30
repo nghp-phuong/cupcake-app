@@ -72,15 +72,19 @@ abstract final class CustomerArt {
         _ => 'regular_${_two(c.appearanceSeed.abs() % regularSprites)}',
       };
 
-  /// id ảnh nhân vật (`CharacterSprites`) của người nói; người kể (cuốn sổ) không có ảnh nhân vật — vẽ bằng ảnh đồ
-  /// vật ([narratorBook] / `ArtSprites.book`).
+  /// id ảnh nhân vật (`CharacterSprites`) của người nói (bà Rosa: [rosaSpriteId]); người kể (cuốn sổ) không có ảnh
+  /// nhân vật — vẽ bằng ảnh đồ vật ([narratorBook] / `ArtSprites.book`).
   static String? speakerSpriteId(Speaker s) => switch (s) {
         Speaker.narrator => null,
         Speaker.mai => 'mai',
         Speaker.hoa => 'hoa',
         Speaker.linh => 'linh',
         Speaker.kenji => 'kenji',
+        Speaker.rosa => rosaSpriteId,
       };
+
+  /// Bà Rosa (khách VIP quen, GĐ8) = ảnh VIP `vip_00` — màn chỉ ra ảnh này khi level ghi rõ `"look": "vip_00"`.
+  static const rosaSpriteId = 'vip_00';
 
   /// Tên nét mặt trong tên file ảnh (`neutral`/`smile`/`joy`/`sad`).
   static String spriteExpr(Expression e) => switch (e) {
@@ -129,6 +133,33 @@ abstract final class CustomerArt {
   /// Mèo Mochi ngồi, toàn thân trong khung 3:4 giữa [rect] (như [paint]). Ảnh chưa nạp → không vẽ gì.
   static void paintMochi(Canvas canvas, Rect rect, {CustomerMood mood = CustomerMood.neutral}) =>
       _draw(canvas, rect, mochiSpriteId, expressionFor(mood), bust: false);
+
+  // ------------------------------------------------------------------ Nhân viên (GĐ4)
+
+  /// id ảnh của 5 nhân viên (`StaffData.character` trong unlocks.json): `assets/characters/<id>_<neutral|smile>.webp`.
+  static const staffSpriteIds = ['staff_nora', 'staff_bao', 'staff_theo', 'staff_ami', 'staff_hanh'];
+
+  /// Nét mặt có ảnh của nhân viên (chưa có `joy`/`sad`).
+  static const staffExpressions = [Expression.neutral, Expression.smile];
+
+  /// Nạp sẵn (không chặn) `neutral` + `smile` của các nhân viên [characters] (id ảnh, vd. `StaffMember.character`).
+  /// Gọi trước khi vào màn (nhân viên đã thuê) / mở tab Nhân viên.
+  static Future<void> preloadStaff(Iterable<String> characters) {
+    final ids = characters.toSet();
+    return CharacterSprites.preload([
+      for (final e in staffExpressions)
+        for (final id in ids) (id, spriteExpr(e)),
+    ]);
+  }
+
+  /// Nhân viên [character] toàn thân trong khung 3:4 giữa [rect] (như [paint]); [smile] → nét mặt `smile` (vừa làm
+  /// xong), không thì `neutral`. Ảnh chưa nạp / thiếu → không vẽ gì (như khách).
+  static void paintStaff(Canvas canvas, Rect rect, String character, {bool smile = false}) =>
+      _draw(canvas, rect, character, smile ? Expression.smile : Expression.neutral, bust: false);
+
+  /// Chân dung nửa người (đầu + vai, như [paintSpeaker]) của nhân viên — thẻ tab Nhân viên, hộp "Khi bạn vắng nhà".
+  static void paintStaffBust(Canvas canvas, Rect rect, String character, {bool smile = true}) =>
+      _draw(canvas, rect, character, smile ? Expression.smile : Expression.neutral, bust: true);
 
   // ------------------------------------------------------------------ Ảnh
 

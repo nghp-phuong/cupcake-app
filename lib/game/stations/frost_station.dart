@@ -19,9 +19,9 @@ import 'station.dart';
 /// `frostBrushRadius`. Xong khi bấm nút (đã có nét) hoặc tự dừng khi phủ ≥ 98%.
 class FrostStation extends Station {
   FrostStation(BakeryGame game)
-      : cakeBox = cakeRectFor(game.recipe.mould),
+      : cakeBox = cakeRectFor(game.recipe.mould, recipe: game.recipe.id),
         super(game, StationId.frost) {
-    top = CakeArt.topSurface(cakeBox, game.recipe.mould);
+    top = CakeArt.topSurface(cakeBox, game.recipe.mould, recipe: game.recipe.id);
     tracker = FrostTracker(guide: spiralGuide(top), radius: game.modifiers.frostBrushRadius);
   }
 
@@ -30,8 +30,8 @@ class FrostStation extends Station {
   static const Rect cakeRect = Rect.fromLTWH(220, 190, 460, 460);
 
   /// Khung bánh theo khuôn: đáy thân bánh ngồi trên mặt bàn xoay (tâm `KitchenBackdrop.frostTurntable`).
-  static Rect cakeRectFor(MouldType mould) =>
-      seatedCakeRect(mould, cakeRect.center.dx, KitchenBackdrop.frostTurntable.dy, cakeRect.width);
+  static Rect cakeRectFor(MouldType mould, {RecipeId? recipe}) =>
+      seatedCakeRect(mould, cakeRect.center.dx, KitchenBackdrop.frostTurntable.dy, cakeRect.width, recipe: recipe);
 
   /// Khung bánh đang làm (theo khuôn).
   final Rect cakeBox;
@@ -127,7 +127,7 @@ class FrostStation extends Station {
     if (settleT > 0) {
       final wob = _settle < 0.6 ? 1 + 0.035 * math.sin(_settle * 18) * (1 - _settle / 0.6) : 1.0;
       canvas.save();
-      final pivot = Offset(cakeBox.center.dx, cakeBox.center.dy + cakeBottomFactor(game.recipe.mould) * cakeBox.height);
+      final pivot = Offset(cakeBox.center.dx, cakeBox.center.dy + cakeBottomFactor(game.recipe.mould, recipe: game.recipe.id) * cakeBox.height);
       canvas.translate(pivot.dx, pivot.dy);
       canvas.scale(1 / wob, wob);
       canvas.translate(-pivot.dx, -pivot.dy);

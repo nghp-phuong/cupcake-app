@@ -1,4 +1,5 @@
 import '../../l10n/gen/app_localizations.dart';
+import '../art/art_sprites.dart' show ArtScene;
 import 'ids.dart';
 import 'order.dart';
 
@@ -17,6 +18,7 @@ class StoryScene {
     this.featuredFriend,
     this.featuredRecipe,
     this.forcedToppings,
+    this.backdrop = ArtScene.storyGrandmaKitchen,
     required this.lines,
   });
 
@@ -28,5 +30,8 @@ class StoryScene {
   final FriendId? featuredFriend;
   final RecipeId? featuredRecipe;
   final List<ToppingRequest>? forcedToppings;
+
+  /// Nền cảnh (ảnh thiếu → `backdrop.fallback`).
+  final ArtScene backdrop;
   final List<StoryLine> lines;
 }

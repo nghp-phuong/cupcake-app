@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sugarleaf_bakery/core/economy.dart';
 import 'package:sugarleaf_bakery/core/game_state.dart';
+import 'package:sugarleaf_bakery/core/level/level_result.dart';
 import 'package:sugarleaf_bakery/core/models/ids.dart';
 import 'package:sugarleaf_bakery/core/services/ad_service.dart';
 
@@ -21,11 +22,30 @@ void main() {
     expect(await ads.showRewarded(context, AdPlacement.freeGem), isFalse); // hết lượt: không mở hộp thoại
     expect(calls, List.filled(Economy.maxRewardedPerDay, duration));
 
-    await ads.showInterstitial(context, 3); // chưa tới ngày 4: không hiện
+    // Chưa qua L5: không hiện, không mở hộp thoại.
+    expect(await ads.showInterstitial(context, watchedRewardedHere: false, unlockedChapter: false), isFalse);
     expect(calls.length, Economy.maxRewardedPerDay);
-    await ads.showInterstitial(context, 4);
+    for (var id = 1; id <= 5; id++) {
+      s.applyLevelResult(LevelResult(
+        levelId: id,
+        won: true,
+        stars: 1,
+        coins: 0,
+        served: 0,
+        lost: 0,
+        specialsDone: 0,
+        bestCombo: 0,
+        perfectBakes: 0,
+        recipeStars: const {},
+      ));
+    }
+    for (var i = 0; i < Economy.interstitialEveryPlays; i++) {
+      s.registerLevelPlayEnded();
+    }
+    expect(await ads.showInterstitial(context, watchedRewardedHere: true, unlockedChapter: false), isFalse);
+    expect(await ads.showInterstitial(context, watchedRewardedHere: false, unlockedChapter: false), isTrue);
     expect(calls.length, Economy.maxRewardedPerDay + 1);
-    expect(s.lastInterstitialDay, 4);
+    expect(s.playsSinceInterstitial, 0);
   });
 
   test('mặc định là hộp thoại của core', () {

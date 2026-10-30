@@ -65,3 +65,19 @@ khối STYLE (`Natural proportions about 6.5 heads tall, standing and facing…`
 Phần mô tả nhân vật thêm "tall" và giày:
 - **vip_01** — `A distinguished tall gentleman in his 50s, dark hair slicked back with grey at the temples, thin gold-rimmed glasses, a deep emerald velvet blazer, white shirt, a gold lapel pin, a gold watch, a neat mustache, dark trousers, polished brown shoes.`
 - **regular_12** — `A tidy tall man in his early 50s with neatly side-parted dark hair touched with grey, square glasses, a navy blazer over a white shirt with a burgundy tie, grey trousers, a metal watch, a neat mustache, brown leather shoes.`
+
+### Nhân viên (V2 · GĐ4) — `staff_<id>_<neutral|smile>`
+STYLE với câu tỉ lệ 7.5 đầu (mục "Làm lại vì đầu to"). Cả 5 người tạo trong **một** cuộc trò chuyện để đồng bộ: người
+đầu dùng STYLE đầy đủ; người sau mở đầu bằng `Create a new image of a completely different character, in exactly the same
+art style, proportions (about 7.5 heads tall, small head, never chibi), framing, size, lighting and plain pure white
+background as the first image.` Nét `smile`: `Same character as the previous image (the <vai trò>), keep the outfit, hair,
+<đồ cầm>, pose, framing, size and white background exactly identical. Change only the face to a delighted warm smile: eyes
+gently curved, small open smiling mouth, slightly rosy cheeks.`
+- **staff_nora** (thu ngân) — `A friendly young woman around 22 who works as the cashier of a small seaside bakery. Short wavy auburn bob with a mint-green hair clip, light freckles. Cream-and-pink striped shirt with rolled sleeves under a mint-green apron with a small blank name badge (no letters), light beige trousers, brown loafers, a thin silver bracelet. She holds a small paper pastry bag with both hands at waist height.`
+- **staff_bao** (thợ bánh) — `A gentle tall young man around 27 who is the baker of a small seaside bakery. Short neat dark brown hair under a small white baker's cap, kind eyes, clean-shaven. White baker's jacket with sleeves rolled to the elbows, a caramel-brown apron with a little flour dusted on it, dark grey trousers, brown work shoes, a small towel tucked in the apron string. He holds a wooden rolling pin in both hands at waist height.`
+- **staff_theo** (phục vụ) — `A cheerful slim young man around 20 who works as the waiter of a small seaside bakery café. Short curly light-brown hair, a few freckles. White shirt with a small strawberry-pink bow tie under a butter-yellow waistcoat, a short cream waist apron, dark beige trousers, brown sneakers. He carries a round wooden serving tray with one cup of tea on his right hand at shoulder height, left hand relaxed.`
+- **staff_ami** (thợ bánh 2) — `A focused, kind young woman around 25 who is the second baker of a small seaside bakery. Black hair in a neat high bun held with a wooden pencil, short side bangs. Cream short-sleeved blouse under a strawberry-pink apron, a pair of quilted mint oven mitts hanging from the apron pocket, navy trousers rolled at the ankle, white clogs. She holds a small wooden tray with three round fresh buns in both hands at waist height.`
+- **staff_hanh** (quản lý) — `A warm, capable Vietnamese woman in her mid-40s who is the manager of a small seaside bakery. Dark hair with a few silver strands in a neat low bun, thin round tortoiseshell glasses, small pearl earrings. A sage-green knitted cardigan over a cream blouse, a long caramel-brown pleated skirt, comfortable brown low-heeled shoes, a slim gold watch. She holds a wooden clipboard against her chest with one arm and a pencil in the other hand.`
+
+Tách nền: vùng trắng từ mép + vùng trắng tinh khép kín lớn (> 900 px, ngưỡng 244) để bỏ khe tay; đặt vào khung 768×1024
+rồi thu về 480×640 như các nhân vật khác.

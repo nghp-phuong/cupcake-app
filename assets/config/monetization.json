@@ -1,0 +1,382 @@
+{
+  "version": 1,
+  "_note": "GĐ6 (docs/v2/phase6-spec.md). Vật phẩm: hiệu ứng cố định trong code (BoosterEffects), ở đây chỉ giá kim cương / ảnh / tên. Gói IAP: giá, loại, nội dung phải khớp IapCatalog.v2 trong lib/core/monetization/monetization_config.dart (test kiểm). Mùa: start ≤ giờ máy < end; points = điểm cộng dồn để đạt bậc; mỗi sao mới của một level = pointsPerNewStar, mỗi lượt thắng = pointsPerWin. Đổi mùa: chuyển mùa cũ sang previousSeasons (để người chơi mở app muộn vẫn được tự nhận thưởng còn chờ). Cân bằng kim cương / vật phẩm: test/core/booster_balance_test.dart.",
+  "boosters": [
+    {
+      "id": "fullCase",
+      "art": "level/booster_fullcase",
+      "gemPrice": 8,
+      "name": {
+        "en": "Full case",
+        "vi": "Tủ đầy bánh"
+      },
+      "desc": {
+        "en": "Start with every display slot full of 4-star treats from the menu.",
+        "vi": "Bắt đầu với tủ kính đầy ắp: mỗi ô một món trong menu, toàn bánh 4 sao."
+      }
+    },
+    {
+      "id": "patience",
+      "art": "level/booster_patience",
+      "gemPrice": 6,
+      "name": {
+        "en": "Patient customers",
+        "vi": "Khách kiên nhẫn"
+      },
+      "desc": {
+        "en": "Every walk-in customer waits 30% longer for the whole level.",
+        "vi": "Mọi khách vãng lai chờ lâu hơn 30% suốt cả màn."
+      }
+    },
+    {
+      "id": "ovenBoost",
+      "art": "level/booster_oven",
+      "gemPrice": 8,
+      "name": {
+        "en": "Oven ×2",
+        "vi": "Lò ×2"
+      },
+      "desc": {
+        "en": "The oven needle races to the golden zone for the whole level, then slows down so you can take the batch out on time. Special orders are not affected.",
+        "vi": "Suốt cả màn, kim lò chạy nhanh tới vùng vàng rồi chậm lại để bạn kịp lấy mẻ bánh ra đúng lúc. Đơn đặc biệt không đổi."
+      }
+    }
+  ],
+  "season": {
+    "id": "s1_seaside_autumn",
+    "name": {
+      "en": "Seaside Autumn",
+      "vi": "Mùa thu bên biển"
+    },
+    "start": "2026-10-15T00:00:00",
+    "end": "2026-12-15T00:00:00",
+    "pointsPerNewStar": 10,
+    "pointsPerWin": 5,
+    "tiers": [
+      {
+        "points": 30,
+        "free": {
+          "coins": 300
+        },
+        "premium": {
+          "gems": 10
+        }
+      },
+      {
+        "points": 60,
+        "free": {
+          "coins": 350
+        },
+        "premium": {
+          "boosters": {
+            "fullCase": 1
+          }
+        }
+      },
+      {
+        "points": 95,
+        "free": {
+          "coins": 400
+        },
+        "premium": {
+          "coins": 1000
+        }
+      },
+      {
+        "points": 130,
+        "free": {
+          "coins": 450
+        },
+        "premium": {
+          "boosters": {
+            "patience": 2
+          }
+        }
+      },
+      {
+        "points": 170,
+        "free": {
+          "gems": 2
+        },
+        "premium": {
+          "gems": 10
+        }
+      },
+      {
+        "points": 210,
+        "free": {
+          "coins": 550
+        },
+        "premium": {
+          "boosters": {
+            "ovenBoost": 2
+          }
+        }
+      },
+      {
+        "points": 255,
+        "free": {
+          "coins": 600
+        },
+        "premium": {
+          "coins": 1500
+        }
+      },
+      {
+        "points": 300,
+        "free": {
+          "coins": 650
+        },
+        "premium": {
+          "gems": 10
+        }
+      },
+      {
+        "points": 350,
+        "free": {
+          "coins": 700
+        },
+        "premium": {
+          "boosters": {
+            "fullCase": 2
+          }
+        }
+      },
+      {
+        "points": 400,
+        "free": {
+          "gems": 3
+        },
+        "premium": {
+          "gems": 10,
+          "frame": "frame_autumn_leaves"
+        }
+      },
+      {
+        "points": 455,
+        "free": {
+          "coins": 800
+        },
+        "premium": {
+          "coins": 2000
+        }
+      },
+      {
+        "points": 510,
+        "free": {
+          "coins": 850
+        },
+        "premium": {
+          "boosters": {
+            "patience": 2
+          }
+        }
+      },
+      {
+        "points": 570,
+        "free": {
+          "coins": 900
+        },
+        "premium": {
+          "gems": 15
+        }
+      },
+      {
+        "points": 630,
+        "free": {
+          "coins": 950
+        },
+        "premium": {
+          "boosters": {
+            "ovenBoost": 2
+          }
+        }
+      },
+      {
+        "points": 695,
+        "free": {
+          "gems": 3
+        },
+        "premium": {
+          "coins": 2500
+        }
+      },
+      {
+        "points": 760,
+        "free": {
+          "boosters": {
+            "ovenBoost": 1
+          }
+        },
+        "premium": {
+          "boosters": {
+            "fullCase": 2
+          }
+        }
+      },
+      {
+        "points": 830,
+        "free": {
+          "coins": 1200
+        },
+        "premium": {
+          "gems": 15
+        }
+      },
+      {
+        "points": 900,
+        "free": {
+          "coins": 1300
+        },
+        "premium": {
+          "boosters": {
+            "fullCase": 1,
+            "patience": 1,
+            "ovenBoost": 1
+          }
+        }
+      },
+      {
+        "points": 975,
+        "free": {
+          "coins": 1400
+        },
+        "premium": {
+          "coins": 3000
+        }
+      },
+      {
+        "points": 1050,
+        "free": {
+          "gems": 5,
+          "boosters": {
+            "fullCase": 1
+          }
+        },
+        "premium": {
+          "gems": 25,
+          "frame": "frame_golden_whisk"
+        }
+      }
+    ]
+  },
+  "previousSeasons": [],
+  "products": [
+    {
+      "id": "gemsS",
+      "price": "$0.99",
+      "kind": "consumable",
+      "art": "items/gem_pouch",
+      "reward": {
+        "gems": 80
+      },
+      "name": {
+        "en": "Pouch of gems",
+        "vi": "Túi kim cương nhỏ"
+      },
+      "desc": {
+        "en": "80 gems.",
+        "vi": "80 kim cương."
+      }
+    },
+    {
+      "id": "gemsM",
+      "price": "$4.99",
+      "kind": "consumable",
+      "art": "items/gem_box",
+      "reward": {
+        "gems": 450
+      },
+      "name": {
+        "en": "Box of gems",
+        "vi": "Hộp kim cương"
+      },
+      "desc": {
+        "en": "450 gems.",
+        "vi": "450 kim cương."
+      }
+    },
+    {
+      "id": "gemsL",
+      "price": "$9.99",
+      "kind": "consumable",
+      "art": "items/gem_chest",
+      "reward": {
+        "gems": 1000
+      },
+      "name": {
+        "en": "Chest of gems",
+        "vi": "Rương kim cương"
+      },
+      "desc": {
+        "en": "1000 gems.",
+        "vi": "1000 kim cương."
+      }
+    },
+    {
+      "id": "starterPack",
+      "price": "$1.99",
+      "kind": "oneTime",
+      "art": "",
+      "reward": {
+        "coins": 8000,
+        "gems": 120,
+        "boosters": {
+          "fullCase": 3,
+          "patience": 3,
+          "ovenBoost": 3
+        }
+      },
+      "name": {
+        "en": "Starter pack",
+        "vi": "Gói khởi đầu"
+      },
+      "desc": {
+        "en": "8000 coins, 120 gems and 3 of each booster. One time only.",
+        "vi": "8000 xu, 120 kim cương và mỗi vật phẩm hỗ trợ 3 cái. Chỉ mua một lần."
+      }
+    },
+    {
+      "id": "removeAds",
+      "price": "$3.99",
+      "kind": "oneTime",
+      "art": "items/no_ads_badge",
+      "name": {
+        "en": "Remove ads",
+        "vi": "Bỏ quảng cáo"
+      },
+      "desc": {
+        "en": "No more ads between levels. You can still watch ads for rewards when you want.",
+        "vi": "Không còn quảng cáo giữa các màn. Bạn vẫn có thể xem quảng cáo để nhận thưởng khi muốn."
+      }
+    },
+    {
+      "id": "staffOutfits",
+      "price": "$2.99",
+      "kind": "oneTime",
+      "art": "",
+      "name": {
+        "en": "Festive outfits",
+        "vi": "Trang phục lễ hội"
+      },
+      "desc": {
+        "en": "Festive outfits for Nora and Bao. Looks only, no stat changes. Turn them on or off in the Staff tab.",
+        "vi": "Trang phục lễ hội cho Nora và Bảo. Chỉ đổi hình, không tăng chỉ số. Bật hoặc tắt ở tab Nhân viên."
+      }
+    },
+    {
+      "id": "seasonPass",
+      "price": "$4.99",
+      "kind": "season",
+      "art": "items/season_ticket",
+      "name": {
+        "en": "Season pass",
+        "vi": "Thẻ mùa cao cấp"
+      },
+      "desc": {
+        "en": "Unlock the premium reward track of the current season.",
+        "vi": "Mở hàng thưởng cao cấp của thẻ mùa hiện tại."
+      }
+    }
+  ]
+}

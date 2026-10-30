@@ -1,14 +1,15 @@
-// Toàn bộ enum dùng chung. Tên chốt — dùng `.name` làm khoá lưu, KHÔNG đổi tên.
+// Toàn bộ enum dùng chung. Tên chốt — dùng `.name` làm khoá lưu, KHÔNG đổi tên. Thêm giá trị mới ở CUỐI (GĐ8: 8 món
+// croissant…bucheDeNoel cùng khuôn/bột/kem/topping của chúng).
 
-enum RecipeId { cupcakeVanilla, cupcakeChocolate, muffinBlueberry, eggTart, strawberryCake, macaron, redVelvetCupcake, matchaCake, cheesecake, birthdayCake }
+enum RecipeId { cupcakeVanilla, cupcakeChocolate, muffinBlueberry, eggTart, strawberryCake, macaron, redVelvetCupcake, matchaCake, cheesecake, birthdayCake, croissant, painAuChocolat, madeleine, eclair, fruitTart, applePie, mooncake, bucheDeNoel }
 
-enum MouldType { cupcakeLiner, muffinCup, tartShell, roundPan, macaronMat, springformPan, tallPan }
+enum MouldType { cupcakeLiner, muffinCup, tartShell, roundPan, macaronMat, springformPan, tallPan, pastryTray, shellMould, eclairTray, piePan, mooncakeMould, logPan }
 
-enum BatterType { vanilla, chocolate, redVelvet, matcha, butter, almond, cheese }
+enum BatterType { vanilla, chocolate, redVelvet, matcha, butter, almond, cheese, laminated, choux, mooncake }
 
-enum FrostingId { vanillaCream, chocolateGanache, strawberryCream, matchaCream, creamCheese, custard }
+enum FrostingId { vanillaCream, chocolateGanache, strawberryCream, matchaCream, creamCheese, custard, butterGlaze, appleFilling, lotusPaste }
 
-enum ToppingId { sprinkles, strawberry, cherry, chocolateChips, blueberry, mintLeaf, sugarPearl, candle }
+enum ToppingId { sprinkles, strawberry, cherry, chocolateChips, blueberry, mintLeaf, sugarPearl, candle, almondFlakes, powderedSugar, kiwi, sesame, meringueMushroom }
 
 enum BoxType { small, cake, gift }
 
@@ -42,7 +43,8 @@ enum FriendId { hoa, linh, kenji }
 
 enum CustomerMood { neutral, happy, sad }
 
-enum Speaker { narrator, mai, hoa, linh, kenji }
+/// `rosa` (GĐ8): bà Rosa, khách VIP quen (ảnh `vip_00`).
+enum Speaker { narrator, mai, hoa, linh, kenji, rosa }
 
 enum OrderLineKind { generic1, generic2, generic3, generic4, generic5, generic6, vip, hoa, linh, kenji }
 
@@ -54,15 +56,55 @@ enum DecorId { wallpaperStripes, wallpaperFloral, floorCheckered, floorHerringbo
 
 enum QuestType { serveCustomers, earnStars, perfectBakes, fiveStarTreats, earnCoins, earnTips }
 
-enum StorySceneId { prologue, hoa1, linh1, hoa2, kenji1, linh2, kenji2, hoa3, linh3, kenji3, finale }
+/// Thêm giá trị mới ở CUỐI. GĐ8: `ch2End` (sau L20, lời kết chương cũ), cảnh chương 3–5, `ch1End` (sau L10); `finale`
+/// chuyển về sau L50.
+enum StorySceneId {
+  prologue,
+  hoa1,
+  linh1,
+  hoa2,
+  kenji1,
+  linh2,
+  kenji2,
+  hoa3,
+  linh3,
+  kenji3,
+  finale,
+  ch2End,
+  ch3Open,
+  mochi1,
+  kenji4,
+  ch4Open,
+  rosa1,
+  linh4,
+  ch5Open,
+  hoa4,
+  rosa2,
+  ch1End,
+}
 
-enum AdPlacement { doubleCoins, remake, freeGem }
+/// Thêm giá trị mới ở CUỐI (không đổi tên giá trị cũ). `offlineDouble`: x2 thu nhập khi vắng nhà (GĐ4). `booster`: một
+/// vật phẩm hỗ trợ miễn phí ở thẻ Sẵn sàng, một lần mỗi lượt (GĐ6).
+enum AdPlacement { doubleCoins, remake, freeGem, extraTime, offlineDouble, booster }
 
-enum IapProductId { starterPack, pantryS, pantryM, pantryL, decorSetSeaside, removeAds }
+/// Thêm giá trị mới ở CUỐI. `pantryS/M/L`, `decorSetSeaside`: gói V1, ẩn khỏi cửa hàng V2 (giữ quyền sở hữu cũ).
+/// GĐ6: `gemsS/M/L` (kim cương, tiêu hao), `staffOutfits` (một lần), `seasonPass` (theo mùa).
+enum IapProductId {
+  starterPack,
+  pantryS,
+  pantryM,
+  pantryL,
+  decorSetSeaside,
+  removeAds,
+  gemsS,
+  gemsM,
+  gemsL,
+  staffOutfits,
+  seasonPass,
+}
 
-enum PurchaseResult { ok, notEnoughCoins, notEnoughGems, locked, maxed, alreadyOwned }
-
-enum UnlockKind { recipe, topping, vipGuests, upgrade, decor, moreCustomers }
+/// Thêm giá trị mới ở CUỐI. `comingSoon`: mục mở khoá chưa mua được ở bản này (nhân viên GĐ4…).
+enum PurchaseResult { ok, notEnoughCoins, notEnoughGems, locked, maxed, alreadyOwned, comingSoon }
 
 enum LanguagePref { system, en, vi }
 

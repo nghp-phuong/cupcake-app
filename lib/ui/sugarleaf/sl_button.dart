@@ -35,6 +35,7 @@ class SLButton extends StatelessWidget {
     this.variant = SLButtonVariant.primary,
     this.icon,
     this.leading,
+    this.trailing,
     this.subtitle,
     this.color,
     this.width,
@@ -65,6 +66,7 @@ class SLButton extends StatelessWidget {
        semanticLabel = tooltip,
        variant = SLButtonVariant.secondary,
        leading = null,
+       trailing = null,
        subtitle = null,
        width = null,
        height = 56,
@@ -81,6 +83,9 @@ class SLButton extends StatelessWidget {
 
   /// Hình tuỳ ý đặt trước chữ (ưu tiên hơn [icon]).
   final Widget? leading;
+
+  /// Hình tuỳ ý đặt sau chữ (vd. giá xu trong nút mua).
+  final Widget? trailing;
   final String? subtitle;
 
   /// Màu nền thay cho màu của [variant] (vd. `SLColors.mint`, `SLColors.dangerSoft`).
@@ -184,6 +189,7 @@ class SLButton extends StatelessWidget {
                     children: [
                       if (lead != null) ...[lead, const SizedBox(width: 10)],
                       text,
+                      if (trailing != null) ...[const SizedBox(width: 10), trailing!],
                     ],
                   ),
                 ),

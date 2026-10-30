@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -11,8 +12,10 @@ import 'package:sugarleaf_bakery/core/art/shop_art.dart';
 import 'package:sugarleaf_bakery/core/constants.dart';
 import 'package:sugarleaf_bakery/core/game_state.dart';
 import 'package:sugarleaf_bakery/core/l10n_lookup.dart';
+import 'package:sugarleaf_bakery/core/level/level_config_loader.dart';
 import 'package:sugarleaf_bakery/core/models/customer.dart';
 import 'package:sugarleaf_bakery/core/models/ids.dart';
+import 'package:sugarleaf_bakery/core/routes.dart';
 import 'package:sugarleaf_bakery/core/save_repository.dart';
 import 'package:sugarleaf_bakery/core/services/ad_service.dart';
 import 'package:sugarleaf_bakery/core/services/audio_service.dart';
@@ -27,6 +30,7 @@ AppServices _services(GameState state) {
     ads: FakeAdService(state, duration: const Duration(milliseconds: 1200)),
     iap: FakeIapService(state, delay: Duration.zero),
     audio: FakeAudioService(state),
+    levels: LevelConfigLoader.parse(File(LevelConfigLoader.assetPath).readAsStringSync()),
   );
 }
 
@@ -79,7 +83,7 @@ void main() {
     await tester.pumpAndSettle();
     final before = tester.widget<MaterialApp>(find.byType(MaterialApp));
     state.addCoins(10);
-    state.addXp(5);
+    state.addGems(1);
     await tester.pump();
     expect(identical(tester.widget<MaterialApp>(find.byType(MaterialApp)), before), isTrue);
     state.setLanguage(LanguagePref.vi);
@@ -100,6 +104,49 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Ad (simulated)'), findsNothing);
     expect(state.rewardedToday, 1);
+  });
+
+  testWidgets('ngăn xếp khởi đầu: intro / intro ngắn / `/` một route; liên kết sâu web → bản đồ + route đó', (tester) async {
+    Route<dynamic>? named(RouteSettings settings) => MaterialPageRoute<void>(
+          settings: settings,
+          builder: (_) => Scaffold(body: Text('route ${settings.name}')),
+        );
+    addTearDown(tester.binding.platformDispatcher.clearDefaultRouteNameTestValue);
+
+    Future<NavigatorState> open(String browser, String initial) async {
+      tester.binding.platformDispatcher.defaultRouteNameTestValue = browser;
+      // Key mới mỗi lần → MaterialApp dựng lại từ đầu (ngăn xếp khởi đầu chỉ tính một lần).
+      await tester.pumpWidget(SugarleafApp(
+        key: UniqueKey(),
+        services: _services(GameState.newGame()),
+        onGenerateRoute: named,
+        useGoogleFonts: false,
+        initialRoute: initial,
+      ));
+      await tester.pumpAndSettle();
+      return tester.state<NavigatorState>(find.byType(Navigator).first);
+    }
+
+    for (final (browser, initial, shown) in [
+      ('/', AppRoutes.intro, AppRoutes.intro),
+      ('/', AppRoutes.shortIntro, AppRoutes.shortIntro),
+      (AppRoutes.intro, AppRoutes.shortIntro, AppRoutes.intro),
+      (AppRoutes.shortIntro, AppRoutes.intro, AppRoutes.shortIntro),
+      (AppRoutes.menu, AppRoutes.shortIntro, AppRoutes.shortIntro),
+    ]) {
+      final nav = await open(browser, initial);
+      expect(find.text('route $shown'), findsOneWidget, reason: '$browser / $initial');
+      expect(nav.canPop(), isFalse, reason: '$browser / $initial: một route duy nhất');
+    }
+
+    // Trình duyệt mở thẳng `/settings`: bản đồ bên dưới, Back về bản đồ.
+    final nav = await open(AppRoutes.settings, AppRoutes.shortIntro);
+    expect(find.text('route ${AppRoutes.settings}'), findsOneWidget);
+    expect(nav.canPop(), isTrue);
+    nav.pop();
+    await tester.pumpAndSettle();
+    expect(find.text('route ${AppRoutes.menu}'), findsOneWidget);
+    expect(nav.canPop(), isFalse);
   });
 
   testWidgets('màn dọc hiện lời nhắc xoay máy', (tester) async {

@@ -3,16 +3,18 @@ import 'package:flutter/widgets.dart';
 
 import '../../core/app_scope.dart';
 import '../../core/models/ids.dart';
+import '../../core/routes.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../common/dialogs.dart';
 import '../common/format.dart';
 import '../common/navigation.dart';
 import '../common/sugar_screen.dart';
-import '../menu/main_menu_screen.dart';
+import '../map/level_map_screen.dart';
 import '../sugarleaf/sugarleaf.dart';
 import '../ui_routes.dart';
 
-/// Cài đặt: ngôn ngữ (theo máy / English / Tiếng Việt), âm thanh, xoá dữ liệu; chân trang phiên bản.
+/// Cài đặt: ngôn ngữ (theo máy / English / Tiếng Việt), âm thanh, làm quen (xem lại cảnh mở đầu, hướng dẫn lại
+/// L1–L3), giao dịch (khôi phục gói một lần — giả lập), xoá dữ liệu; chân trang phiên bản.
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -22,6 +24,31 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _resetting = false;
+  bool _restoring = false;
+
+  /// Khôi phục giao dịch (gói một lần đã mua): giả lập đọc lại `ownedIap`; báo số gói khôi phục được.
+  Future<void> _restore() async {
+    if (_restoring) return;
+    final services = AppScope.read(context);
+    services.audio.tap();
+    setState(() => _restoring = true);
+    int? restored;
+    try {
+      restored = await services.iap.restore();
+    } catch (e) {
+      debugPrint('SettingsScreen: khôi phục giao dịch lỗi ($e)');
+    }
+    if (!mounted) return;
+    setState(() => _restoring = false);
+    final l = AppLocalizations.of(context);
+    if (restored == null) {
+      showToast(context, l.settingsRestoreFailed, success: false);
+    } else if (restored <= 0) {
+      showToast(context, l.settingsRestoreNone, success: false);
+    } else {
+      showToast(context, l.settingsRestoreDone(restored));
+    }
+  }
 
   Future<void> _reset() async {
     final l = AppLocalizations.of(context);
@@ -39,10 +66,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final state = AppScope.read(context).state;
     await state.resetAll();
     if (!mounted) return;
-    MainMenuScreen.giftShownThisSession = false;
+    LevelMapScreen.giftShownThisSession = false;
+    clearMapReveals(); // tiến trình cũ đã xoá: bỏ hoạt cảnh còn chờ
     // Sau khi xoá, ngôn ngữ về "theo máy" → lấy chuỗi theo locale mới ở khung hình kế.
     showToast(context, AppLocalizations.of(context).settingsResetDone);
     goToMenu(context);
+  }
+
+  /// Mở lại cảnh mở đầu; xong / bỏ qua thì cảnh tự quay về đây.
+  void _replayIntro() {
+    AppScope.read(context).audio.tap();
+    Navigator.of(context).pushNamed(AppRoutes.intro);
+  }
+
+  /// Bật lại hướng dẫn lần đầu của L1–L3 (lần chơi kế tiếp mỗi màn hiện lại).
+  void _replayTutorials() {
+    final services = AppScope.read(context);
+    services.audio.tap();
+    services.state.resetTutorials();
+    showToast(context, AppLocalizations.of(context).settingsTutorialsReset);
   }
 
   @override
@@ -64,7 +106,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               SLPanel(
                 radius: 26,
                 seed: 0x5E77,
-                padding: const EdgeInsets.fromLTRB(28, 20, 28, 20),
+                padding: const EdgeInsets.fromLTRB(28, 14, 28, 14),
                 child: Column(
                   children: [
                     _SettingRow(
@@ -114,6 +156,55 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const _Rule(seed: 2),
                     _SettingRow(
+                      icon: 'book',
+                      label: l.settingsGuide,
+                      seed: 4,
+                      child: Wrap(
+                        spacing: 12,
+                        runSpacing: 8,
+                        children: [
+                          SLButton(
+                            key: const ValueKey('settings-replay-intro'),
+                            label: l.settingsReplayIntro,
+                            icon: 'play_video',
+                            variant: SLButtonVariant.secondary,
+                            height: 52,
+                            fontSize: 18,
+                            onPressed: _replayIntro,
+                          ),
+                          SLButton(
+                            key: const ValueKey('settings-replay-tutorials'),
+                            label: l.settingsReplayTutorials,
+                            icon: 'reset',
+                            variant: SLButtonVariant.secondary,
+                            height: 52,
+                            fontSize: 18,
+                            onPressed: _replayTutorials,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const _Rule(seed: 5),
+                    _SettingRow(
+                      icon: 'shop_bag',
+                      label: l.settingsPurchases,
+                      seed: 5,
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: SLButton(
+                          key: const ValueKey('settings-restore'),
+                          label: l.settingsRestore,
+                          icon: 'reset',
+                          variant: SLButtonVariant.secondary,
+                          height: 52,
+                          fontSize: 18,
+                          loading: _restoring,
+                          onPressed: _restoring ? null : _restore,
+                        ),
+                      ),
+                    ),
+                    const _Rule(seed: 3),
+                    _SettingRow(
                       icon: 'trash',
                       label: l.settingsResetData,
                       seed: 3,
@@ -132,7 +223,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 14),
               Text(l.settingsVersion(kAppVersionLabel), style: footer),
               const SizedBox(height: 4),
               Row(
@@ -194,7 +285,7 @@ class _SettingRow extends StatelessWidget {
   }
 }
 
-/// Đường kẻ bút chì ngăn các dòng cài đặt: hai nét caramel nhạt chồng lệch (kẻ tay hai lần), cao 28.
+/// Đường kẻ bút chì ngăn các dòng cài đặt: hai nét caramel nhạt chồng lệch (kẻ tay hai lần), cao 20.
 class _Rule extends StatelessWidget {
   const _Rule({required this.seed});
 
@@ -202,7 +293,7 @@ class _Rule extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SLRule(
-        height: 28,
+        height: 20,
         color: SLColors.caramel.withValues(alpha: 0.55),
         echo: SLRuleEcho.full,
         echoColor: SLColors.caramel.withValues(alpha: 0.3),

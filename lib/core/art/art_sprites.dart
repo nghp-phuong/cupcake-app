@@ -52,11 +52,27 @@ enum ArtScene {
   kitchenOverview('kitchen_overview'),
   rainyDay('rainy_day'),
   storyGrandmaKitchen('story_grandma_kitchen'),
-  storyTown('story_town');
+  storyTown('story_town'),
+
+  /// Cảnh mở đầu (GĐ5): bếp buổi sáng, cửa kính tiệm nhìn từ trong.
+  introKitchen('intro_kitchen'),
+  introDoor('intro_door'),
+
+  /// Nền truyện chương 3–5 (GĐ8): vườn sau tiệm, tầng trên (gác), lễ hội ven biển ([fallback] khi thiếu ảnh).
+  storyGarden('story_garden'),
+  storyAttic('story_attic'),
+  storyFestival('story_festival');
 
   const ArtScene(this.id);
 
   final String id;
+
+  /// Cảnh có sẵn dùng thay khi ảnh của cảnh này thiếu (đang chờ vẽ); null = không có cảnh thay.
+  ArtScene? get fallback => switch (this) {
+        storyGarden || storyFestival => storyTown,
+        storyAttic => storyGrandmaKitchen,
+        _ => null,
+      };
 }
 
 /// Một ảnh vẽ tay: nhóm + id (tên file không đuôi).
@@ -106,26 +122,37 @@ abstract final class ArtSprites {
   static const Map<ArtGroup, List<String>> ids = {
     ArtGroup.cakes: [
       'birthdayCake', 'cheesecake', 'cupcakeChocolate', 'cupcakeVanilla', 'eggTart', //
-      'macaron', 'matchaCake', 'muffinBlueberry', 'redVelvetCupcake', 'strawberryCake',
+      'macaron', 'matchaCake', 'muffinBlueberry', 'redVelvetCupcake', 'strawberryCake', //
+      ..._gd8Recipes,
     ],
-    ArtGroup.moulds: ['cupcakeLiner', 'macaronMat', 'muffinCup', 'roundPan', 'springformPan', 'tallPan', 'tartShell'],
-    ArtGroup.batter: ['almond', 'butter', 'cheese', 'chocolate', 'matcha', 'redVelvet', 'vanilla'],
+    ArtGroup.moulds: ['cupcakeLiner', 'macaronMat', 'muffinCup', 'roundPan', 'springformPan', 'tallPan', 'tartShell', ..._gd8Moulds],
+    ArtGroup.batter: ['almond', 'butter', 'cheese', 'chocolate', 'matcha', 'redVelvet', 'vanilla', ..._gd8Batters],
     ArtGroup.baked: [
       'cupcakeLiner', 'cupcakeLiner_chocolate', 'cupcakeLiner_redVelvet', 'macaronMat', 'muffinCup', //
       'roundPan', 'roundPan_matcha', 'springformPan', 'tallPan', 'tartShell',
+      // GĐ8: đế nướng theo món (`baked/<recipeId>`), không có ảnh gốc theo khuôn mới.
+      ..._gd8Recipes,
     ],
-    ArtGroup.frosting: ['chocolateGanache', 'creamCheese', 'custard', 'matchaCream', 'strawberryCream', 'vanillaCream'],
-    ArtGroup.toppings: ['blueberry', 'candle', 'cherry', 'chocolateChips', 'mintLeaf', 'sprinkles', 'strawberry', 'sugarPearl'],
+    ArtGroup.frosting: ['chocolateGanache', 'creamCheese', 'custard', 'matchaCream', 'strawberryCream', 'vanillaCream', ..._gd8Frostings],
+    ArtGroup.toppings: [
+      'blueberry', 'candle', 'cherry', 'chocolateChips', 'mintLeaf', 'sprinkles', 'strawberry', 'sugarPearl', //
+      ..._gd8Toppings,
+    ],
     ArtGroup.boxes: ['small_closed', 'small_open', 'cake_closed', 'cake_open', 'gift_closed', 'gift_open'],
     ArtGroup.items: [
       'oven_1', 'oven_2', 'oven_3', 'oven_4', 'oven_5', 'tool_whisk', 'tool_pipingBag', 'tool_tongs', //
       'bowl', 'coin', 'gem', 'star_on', 'star_off', 'ticket', 'book', 'gift_daily', 'narrator_book', //
-      'baking_tray', 'plate_serving', 'pantry_sack', 'no_ads_badge',
+      'baking_tray', 'plate_serving', 'pantry_sack', 'no_ads_badge', //
+      // GĐ6: gói kim cương S/M/L, vé thẻ mùa.
+      'gem_pouch', 'gem_box', 'gem_chest', 'season_ticket',
     ],
     ArtGroup.decor: ['counterCakeStand', 'counterFlowers', 'plantFern', 'plantLemonTree', 'windowCurtains', 'windowSeaView'],
     ArtGroup.tiles: ['floorCheckered', 'floorHerringbone', 'wallpaperFloral', 'wallpaperStripes'],
-    ArtGroup.scenes: ['day_summary_bg', 'kitchen_overview', 'menu_bg', 'rainy_day', 'story_grandma_kitchen', 'story_town'],
-    ArtGroup.shop: ['shop_base'],
+    ArtGroup.scenes: [
+      'day_summary_bg', 'kitchen_overview', 'menu_bg', 'rainy_day', 'story_grandma_kitchen', 'story_town', //
+      'intro_kitchen', 'intro_door', ..._gd8Scenes,
+    ],
+    ArtGroup.shop: ['shop_base', 'shop_base_empty'],
     ArtGroup.kitchen: ['station_mould', 'station_mix', 'station_bake', 'station_frost', 'station_topping', 'station_box'],
     ArtGroup.icons: [
       'settings', 'close', 'back', 'forward', 'arrow_up', 'arrow_down', 'skip', 'exit', 'check', 'lock', //
@@ -141,6 +168,16 @@ abstract final class ArtSprites {
   /// người gọi dùng ảnh thay thế. Có file rồi thì bỏ khỏi đây.
   static const Map<ArtGroup, Set<String>> pendingIds = {};
 
+  // GĐ8 (8 món chương 3–5): ảnh OBJECT (docs/design/asset-prompts.md §11).
+  static const _gd8Recipes = ['croissant', 'painAuChocolat', 'madeleine', 'eclair', 'fruitTart', 'applePie', 'mooncake', 'bucheDeNoel'];
+  static const _gd8Moulds = ['pastryTray', 'shellMould', 'eclairTray', 'piePan', 'mooncakeMould', 'logPan'];
+  static const _gd8Batters = ['laminated', 'choux', 'mooncake'];
+  static const _gd8Frostings = ['butterGlaze', 'appleFilling', 'lotusPaste'];
+  static const _gd8Toppings = ['almondFlakes', 'powderedSugar', 'kiwi', 'sesame', 'meringueMushroom'];
+
+  // GĐ8 (truyện chương 3–5): ảnh SCENE (thiếu / đọc lỗi → `ArtScene.fallback`).
+  static const _gd8Scenes = ['story_garden', 'story_attic', 'story_festival'];
+
   static String assetPath(ArtGroup group, String id) => '${group.dir}$id.webp';
 
   /// Mọi ảnh của [group].
@@ -155,13 +192,19 @@ abstract final class ArtSprites {
   /// Bột trong tô.
   static ArtRef batter(BatterType batter) => ArtRef(ArtGroup.batter, batter.name);
 
-  /// Đế đã nướng theo khuôn: có biến thể theo bột (`<khuôn>_<bột>`) thì dùng, không thì ảnh gốc của khuôn.
-  static ArtRef baked(MouldType mould, BatterType batter) {
+  /// Đế đã nướng, tra theo thứ tự: ảnh riêng của món (`<recipeId>`, khi biết [recipe] — vd. croissant và pain au
+  /// chocolat cùng khuôn + bột nhưng khác hình) → biến thể theo bột (`<khuôn>_<bột>`) → ảnh gốc của khuôn.
+  /// Ảnh riêng của món đã xác định thiếu (đang chờ vẽ) thì rơi xuống bước sau (tart trái cây → `tartShell`).
+  /// Khuôn GĐ8 không có ảnh gốc: không có ảnh món thì trả id khuôn (thiếu ảnh → hình code dự phòng).
+  static ArtRef baked(MouldType mould, BatterType batter, {RecipeId? recipe}) {
+    if (recipe != null && _bakedIds.contains(recipe.name) && !isMissing(ArtGroup.baked, recipe.name)) {
+      return ArtRef(ArtGroup.baked, recipe.name);
+    }
     final variant = '${mould.name}_${batter.name}';
-    return ArtRef(ArtGroup.baked, _bakedVariants.contains(variant) ? variant : mould.name);
+    return ArtRef(ArtGroup.baked, _bakedIds.contains(variant) ? variant : mould.name);
   }
 
-  static const _bakedVariants = {'cupcakeLiner_chocolate', 'cupcakeLiner_redVelvet', 'roundPan_matcha'};
+  static final Set<String> _bakedIds = {...?ids[ArtGroup.baked]};
 
   /// Túi bắt kem (chén cho custard).
   static ArtRef frosting(FrostingId frosting) => ArtRef(ArtGroup.frosting, frosting.name);
@@ -209,6 +252,9 @@ abstract final class ArtSprites {
 
   /// Nội thất tiệm / quầy (1280×720).
   static const shopBase = ArtRef(ArtGroup.shop, 'shop_base');
+
+  /// Nền sân tiệm của màn level: như [shopBase] nhưng tủ kính trống (bánh vẽ theo tủ của màn chơi).
+  static const shopBaseEmpty = ArtRef(ArtGroup.shop, 'shop_base_empty');
 
   /// Nền trạm làm bánh (1280×720).
   static ArtRef station(StationId station) => ArtRef(ArtGroup.kitchen, 'station_${station.name}');
@@ -260,32 +306,16 @@ abstract final class ArtSprites {
     return Future.wait(waits);
   }
 
-  /// Nạp lúc khởi động (sau frame đầu): nền menu, nội thất tiệm (màn ngày/trang trí vẽ ngay bằng ảnh), icon/đồ
-  /// vật (gồm sổ công thức của người kể truyện), bánh.
+  /// Nạp lúc khởi động (sau frame đầu): nền menu, nền sân tiệm của màn level (tủ trống), icon/đồ vật (gồm sổ công
+  /// thức của người kể truyện), bánh.
   static Future<void> preloadStartup() =>
-      preload([scene(ArtScene.menu), shopBase, ...group(ArtGroup.items), ...group(ArtGroup.cakes)]);
+      preload([scene(ArtScene.menu), shopBaseEmpty, ...group(ArtGroup.items), ...group(ArtGroup.cakes)]);
 
   /// Nạp icon giao diện (gọi khi màn đầu tiên dùng icon đã dựng). Nhóm chưa có ảnh → xong ngay, không tra manifest.
   static Future<void> preloadIcons() => ArtGroup.icons.isPending ? Future.value() : preload(group(ArtGroup.icons));
 
-  /// Ảnh cần cho cảnh tiệm một ngày: nội thất tiệm + đĩa phục vụ (vé đơn ở quầy) + đồ trang trí đang đặt
-  /// ([equippedDecor], ô trống bỏ qua) + cảnh mưa nếu [rainy]. Nội thất tiệm đứng đầu (vẽ được ngay khi có,
-  /// trang trí phủ lên sau).
-  static List<ArtRef> dayRefs({Map<DecorSlot, DecorId?> equippedDecor = const {}, bool rainy = false}) => [
-        shopBase,
-        servingPlate,
-        for (final slot in DecorSlot.values)
-          if (equippedDecor[slot] case final id?) decor(id),
-        if (rainy) scene(ArtScene.rainyDay),
-      ];
-
-  /// Nạp trước một ngày kinh doanh (gọi trước khi mở màn ngày để cảnh tiệm không thoáng hình code): xem
-  /// [dayRefs]. Future xong khi mọi ảnh đã nạp hoặc được xác định là thiếu; không cần `await`.
-  static Future<void> preloadDay({Map<DecorSlot, DecorId?> equippedDecor = const {}, bool rainy = false}) =>
-      preload(dayRefs(equippedDecor: equippedDecor, rainy: rainy));
-
   /// Ảnh một trạm làm bánh cần để vẽ hoàn toàn bằng ảnh: nền trạm trước, rồi đồ vật của trạm. Có [mould] thì
-  /// gồm đế đã nướng của món (theo [batter]) cho trạm 3–6.
+  /// gồm đế đã nướng của món (theo [recipe] → [batter], xem [baked]) cho trạm 3–6.
   ///
   /// - mould: nền + mọi khuôn + khay nướng.
   /// - mix: nền + mọi bột + tô + phới.
@@ -293,8 +323,9 @@ abstract final class ArtSprites {
   /// - frost: nền + đế đã nướng + mọi túi kem + túi bắt kem.
   /// - topping: nền + đế đã nướng + mọi topping + kẹp + đĩa phục vụ.
   /// - box: nền + đế đã nướng + mọi hộp + đĩa phục vụ.
-  static List<ArtRef> stationRefs(StationId s, {int ovenLevel = 1, MouldType? mould, BatterType batter = BatterType.vanilla}) {
-    final cake = mould == null ? null : baked(mould, batter);
+  static List<ArtRef> stationRefs(StationId s,
+      {int ovenLevel = 1, MouldType? mould, BatterType batter = BatterType.vanilla, RecipeId? recipe}) {
+    final cake = mould == null ? null : baked(mould, batter, recipe: recipe);
     return [
       station(s),
       ...switch (s) {
@@ -310,15 +341,17 @@ abstract final class ArtSprites {
 
   /// Nạp ảnh của một trạm ([stationRefs]). Future xong khi đủ ảnh của trạm (đã nạp hoặc xác định thiếu) — game có
   /// thể chờ (kèm thời hạn) trước khi hiện trạm để không thoáng hình code. Không bao giờ báo lỗi.
-  static Future<void> preloadStation(StationId s, {int ovenLevel = 1, MouldType? mould, BatterType batter = BatterType.vanilla}) =>
-      preload(stationRefs(s, ovenLevel: ovenLevel, mould: mould, batter: batter));
+  static Future<void> preloadStation(StationId s,
+          {int ovenLevel = 1, MouldType? mould, BatterType batter = BatterType.vanilla, RecipeId? recipe}) =>
+      preload(stationRefs(s, ovenLevel: ovenLevel, mould: mould, batter: batter, recipe: recipe));
 
   /// Nạp trước cả phiên làm bánh: ảnh của 6 trạm theo thứ tự chơi (trạm 1 — nền + khuôn — đứng đầu hàng chờ),
-  /// lò cấp [ovenLevel]; có [mould] thì nạp cả đế đã nướng của món (theo [batter]) để bánh ở trạm 3–6 vẽ bằng ảnh
+  /// lò cấp [ovenLevel]; có [mould] thì nạp cả đế đã nướng của món (theo [recipe]/[batter]) để bánh ở trạm 3–6 vẽ bằng ảnh
   /// ngay. Future xong khi đủ ảnh của MỌI trạm; muốn chờ riêng trạm đầu thì gọi thêm
   /// `preloadStation(StationId.mould)` (hai lời gọi dùng chung một lần nạp, không nạp đôi).
-  static Future<void> preloadKitchen({int ovenLevel = 1, MouldType? mould, BatterType batter = BatterType.vanilla}) => preload({
-        for (final s in StationId.values) ...stationRefs(s, ovenLevel: ovenLevel, mould: mould, batter: batter),
+  static Future<void> preloadKitchen({int ovenLevel = 1, MouldType? mould, BatterType batter = BatterType.vanilla, RecipeId? recipe}) =>
+      preload({
+        for (final s in StationId.values) ...stationRefs(s, ovenLevel: ovenLevel, mould: mould, batter: batter, recipe: recipe),
       });
 
   static Future<void>? _request(ArtRef ref, {required bool urgent}) {

@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sugarleaf_bakery/core/catalog.dart';
 import 'package:sugarleaf_bakery/core/economy.dart';
 import 'package:sugarleaf_bakery/core/game_state.dart';
+import 'package:sugarleaf_bakery/core/level/level_result.dart';
 import 'package:sugarleaf_bakery/core/models/bake.dart';
 import 'package:sugarleaf_bakery/core/models/customer.dart';
 import 'package:sugarleaf_bakery/core/models/ids.dart';
@@ -129,7 +130,7 @@ void main() {
     });
   });
 
-  test('rewarded tối đa 8/ngày lịch', () {
+  test('rewarded tối đa 12/ngày lịch', () {
     final clock = _Clock();
     final s = GameState.newGame(clock: clock.call);
     final ads = FakeAdService(s);
@@ -142,23 +143,45 @@ void main() {
     expect(ads.canShowRewarded(), isTrue);
   });
 
-  test('luật interstitial', () {
+  test('luật interstitial (GĐ6: theo lượt chơi, chi tiết ở monetization_test)', () {
     final s = GameState.newGame(clock: _Clock().call);
     final ads = FakeAdService(s);
-    expect(ads.shouldShowInterstitial(1), isFalse);
-    expect(ads.shouldShowInterstitial(3), isFalse);
-    expect(ads.shouldShowInterstitial(4), isTrue);
-    s.registerInterstitialShown(4);
-    expect(ads.shouldShowInterstitial(5), isFalse);
-    expect(ads.shouldShowInterstitial(6), isTrue);
+    bool show() => ads.shouldShowInterstitial(watchedRewardedHere: false, unlockedChapter: false);
+    expect(show(), isFalse);
+    for (var id = 1; id <= 5; id++) {
+      s.applyLevelResult(LevelResult(
+        levelId: id,
+        won: true,
+        stars: 1,
+        coins: 0,
+        served: 0,
+        lost: 0,
+        specialsDone: 0,
+        bestCombo: 0,
+        perfectBakes: 0,
+        recipeStars: const {},
+      ));
+      s.registerLevelPlayEnded();
+    }
+    expect(s.playsSinceInterstitial, 1); // chỉ đếm từ lượt qua L5
+    s.registerLevelPlayEnded();
+    expect(show(), isFalse);
+    s.registerLevelPlayEnded();
+    expect(show(), isTrue);
+    s.registerInterstitialShown();
+    expect(show(), isFalse);
+    for (var i = 0; i < 3; i++) {
+      s.registerLevelPlayEnded();
+    }
+    expect(show(), isTrue);
     s.grantIap(IapProductId.removeAds);
-    expect(ads.shouldShowInterstitial(10), isFalse);
+    expect(show(), isFalse);
   });
 
   test('IAP giả lập trao đúng, gói 1 lần không mua lại', () async {
     final s = GameState.newGame(clock: _Clock().call);
     final iap = FakeIapService(s, delay: Duration.zero);
-    expect(iap.products.length, 6);
+    expect(iap.products.length, 7); // cửa hàng V2 (gói V1 ẩn nhưng vẫn mua/trao được)
     final coins = s.coins;
     expect(await iap.buy(IapProductId.pantryS), isTrue);
     expect(s.coins, coins + 500);

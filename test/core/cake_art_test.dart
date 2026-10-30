@@ -58,7 +58,19 @@ const _batters = {
   MouldType.macaronMat: BatterType.almond,
   MouldType.springformPan: BatterType.cheese,
   MouldType.tallPan: BatterType.vanilla,
+  MouldType.pastryTray: BatterType.laminated,
+  MouldType.shellMould: BatterType.butter,
+  MouldType.eclairTray: BatterType.choux,
+  MouldType.piePan: BatterType.butter,
+  MouldType.mooncakeMould: BatterType.mooncake,
+  MouldType.logPan: BatterType.chocolate,
 };
+
+/// Khuôn có ảnh đế gốc (`baked/<khuôn>`). Khuôn GĐ8 chỉ có ảnh theo món (xem recipes_gd8_test).
+final _artMoulds = [
+  for (final m in MouldType.values)
+    if (ArtSprites.ids[ArtGroup.baked]!.contains(m.name)) m,
+];
 
 void main() {
   tearDown(ArtSprites.debugReset);
@@ -121,13 +133,13 @@ void main() {
     final code = <MouldType, Rect>{};
     await tester.runAsync(() async {
       ArtSprites.debugReset(bundle: _EmptyBundle());
-      await ArtSprites.preload([for (final m in MouldType.values) ArtSprites.baked(m, _batters[m]!)]);
-      for (final m in MouldType.values) {
+      await ArtSprites.preload([for (final m in _artMoulds) ArtSprites.baked(m, _batters[m]!)]);
+      for (final m in _artMoulds) {
         code[m] = await _alphaBox((c) => CakeArt.paint(c, _rect, CakeVisual(mould: m, batter: _batters[m]!)));
       }
       ArtSprites.debugReset();
-      await ArtSprites.preload([for (final m in MouldType.values) ArtSprites.baked(m, _batters[m]!)]);
-      for (final m in MouldType.values) {
+      await ArtSprites.preload([for (final m in _artMoulds) ArtSprites.baked(m, _batters[m]!)]);
+      for (final m in _artMoulds) {
         expect(ArtSprites.baked(m, _batters[m]!).image, isNotNull, reason: '$m');
         final art = await _alphaBox((c) => CakeArt.paint(c, _rect, CakeVisual(mould: m, batter: _batters[m]!)));
         const tol = _n * 0.02;
@@ -182,9 +194,9 @@ void main() {
   testWidgets('lớp kem: ghi sẵn một lần (cache theo khuôn/kem/độ phủ lượng tử/mức cháy), vẽ lại không dựng lại', (tester) async {
     await tester.runAsync(() async {
       ArtSprites.debugReset();
-      await ArtSprites.preload([for (final m in MouldType.values) ArtSprites.baked(m, _batters[m]!)]);
+      await ArtSprites.preload([for (final m in _artMoulds) ArtSprites.baked(m, _batters[m]!)]);
       CakeArt.debugClearFrostCache();
-      for (final m in MouldType.values) {
+      for (final m in _artMoulds) {
         for (final f in const [FrostingId.vanillaCream, FrostingId.chocolateGanache]) {
           for (final cover in const [0.4, 1.0]) {
             for (final baked in const [1.0, 2.0]) {

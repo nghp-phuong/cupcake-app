@@ -7,18 +7,43 @@ import '../../core/art/art_sprites.dart';
 import '../../core/art/cake_art.dart';
 import '../../core/catalog.dart';
 import '../../core/economy.dart';
+import '../../core/game_state.dart';
 import '../../core/l10n_lookup.dart';
 import '../../core/models/ids.dart';
 import '../../core/models/recipe.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../common/art.dart';
+import '../common/currency_bar.dart';
+import '../common/dialogs.dart';
 import '../common/panel.dart';
 import '../common/star_row.dart';
 import '../common/sugar_screen.dart';
 import '../sugarleaf/sugarleaf.dart';
 
-/// Sổ công thức của bà: lưới 10 món (5×2) — mỗi món là ô giấy có ảnh bánh dán băng dính, món khoá là "trang còn
-/// thiếu"; bên phải trang sổ chi tiết (giấy kẻ bút chì, gáy lò xo).
+/// Sổ công thức của bà: lưới đủ mọi món trên một trang (18 món = 6×3, ≤ 10 món = 5×2; ô co theo khung, không cuộn) —
+/// mỗi món là ô giấy có ảnh bánh dán băng dính, món khoá là "trang còn thiếu"; bên phải trang sổ chi tiết (giấy kẻ
+/// bút chì, gáy lò xo).
+/// "Trang còn thiếu" của món chưa mở (V2): món mở khi level đầu tiên có món trong thực đơn được mở → "Có ở màn N";
+/// chưa level nào có món (chương sau) → "Sẽ có ở chương sau".
+String missingPageText(BuildContext context, RecipeId id) {
+  final l = AppLocalizations.of(context);
+  final config = AppScope.read(context).levels;
+  for (final level in config.levels) {
+    if (level.menu.contains(id)) return l.mapRecipeFromLevel(level.id);
+  }
+  return l.mapRecipeLater;
+}
+
+/// Nhãn ngắn trên ô món khoá trong lưới: "Màn N" (level đầu tiên có món); chưa level nào có món → câu dài
+/// [missingPageText]. Trang chi tiết vẫn ghi câu đầy đủ.
+String missingTileText(BuildContext context, RecipeId id) {
+  final config = AppScope.read(context).levels;
+  for (final level in config.levels) {
+    if (level.menu.contains(id)) return AppLocalizations.of(context).levelNumber(level.id);
+  }
+  return missingPageText(context, id);
+}
+
 class RecipeBookScreen extends StatefulWidget {
   const RecipeBookScreen({super.key});
 
@@ -48,13 +73,7 @@ class _RecipeBookScreenState extends State<RecipeBookScreen> {
               color: const Color(0xFFF7E3CC),
               radius: 26,
               padding: const EdgeInsets.fromLTRB(14, 18, 14, 14),
-              child: GridView.count(
-                crossAxisCount: 5,
-                mainAxisSpacing: 14,
-                crossAxisSpacing: 12,
-                childAspectRatio: 0.53,
-                clipBehavior: Clip.none,
-                physics: const NeverScrollableScrollPhysics(),
+              child: RecipeGrid(
                 children: [
                   for (final r in Catalog.recipes)
                     _RecipeTile(
@@ -77,10 +96,49 @@ class _RecipeBookScreenState extends State<RecipeBookScreen> {
               recipe: Catalog.recipe(_selected),
               unlocked: state.isRecipeUnlocked(_selected),
               mastery: state.recipeMastery(_selected),
+              state: state,
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Lưới ô món lấp đầy khung được cấp, không cuộn: ≤ 10 món → 5 cột, nhiều hơn → 6 cột; số hàng theo số món (hàng
+/// cuối thiếu thì để trống bên phải). Ô co giãn theo khung (18 món trong khung 1280×720: ô ~115×180).
+class RecipeGrid extends StatelessWidget {
+  const RecipeGrid({super.key, required this.children, this.columnSpacing = 10, this.rowSpacing = 14});
+
+  final List<Widget> children;
+  final double columnSpacing;
+  final double rowSpacing;
+
+  static int columnsFor(int count) => count <= 10 ? 5 : 6;
+
+  @override
+  Widget build(BuildContext context) {
+    final cols = columnsFor(children.length);
+    final rows = (children.length / cols).ceil();
+    return Column(
+      children: [
+        for (var row = 0; row < rows; row++) ...[
+          if (row > 0) SizedBox(height: rowSpacing),
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var col = 0; col < cols; col++) ...[
+                  if (col > 0) SizedBox(width: columnSpacing),
+                  Expanded(
+                    child: row * cols + col < children.length ? children[row * cols + col] : const SizedBox.shrink(),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
@@ -103,12 +161,17 @@ class _RecipeTile extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => LayoutBuilder(builder: (context, box) => _build(context, box.maxHeight));
+
+  Widget _build(BuildContext context, double height) {
     final l = AppLocalizations.of(context);
     final theme = SLTheme.of(context);
     final styles = SLTextStyles.of(context);
     final seed = 0x2EC0 + recipe.id.index * 13;
-    final cake = CakeImage(visual: CakeVisual.recipe(recipe.id), recipe: recipe.id, size: 100);
+    // Ô thấp (lưới 6×3, cao ~180) → ảnh, chữ, sao, khoá nhỏ lại; ô cao (5×2, ~260) giữ cỡ cũ.
+    final compact = height < 230;
+    final photoHeight = (height * 0.47).clamp(60.0, 116.0);
+    final cake = CakeImage(visual: CakeVisual.recipe(recipe.id), recipe: recipe.id, size: photoHeight * 0.86);
     final fill = unlocked
         ? (selected ? SLColors.strawberryLight : SLColors.paper)
         : (selected ? const Color(0xFFF6DCD3) : SLColors.paperShade);
@@ -150,7 +213,7 @@ class _RecipeTile extends StatelessWidget {
                       Positioned(
                         right: 2,
                         bottom: 4,
-                        child: SLIconDisc('lock', size: 44, iconScale: 0.62, lift: 2, seed: seed + 5),
+                        child: SLIconDisc('lock', size: compact ? 32 : 44, iconScale: 0.62, lift: 2, seed: seed + 5),
                       ),
                     ],
                   ),
@@ -160,7 +223,7 @@ class _RecipeTile extends StatelessWidget {
           left: 0,
           right: 0,
           top: -9,
-          child: Center(child: SLTapeStrip(width: 46, height: 16, angle: (recipe.id.index.isEven ? -1 : 1) * 0.06, seed: seed)),
+          child: Center(child: SLTapeStrip(width: compact ? 38 : 46, height: compact ? 13 : 16, angle: (recipe.id.index.isEven ? -1 : 1) * 0.06, seed: seed)),
         ),
       ],
     );
@@ -177,25 +240,26 @@ class _RecipeTile extends StatelessWidget {
                 spec: spec,
                 lift: selected ? 4.5 : 3,
                 press: press,
-                padding: const EdgeInsets.fromLTRB(8, 14, 8, 8),
+                padding: compact ? const EdgeInsets.fromLTRB(6, 12, 6, 6) : const EdgeInsets.fromLTRB(8, 14, 8, 8),
                 child: Column(
                   children: [
-                    SizedBox(height: 116, child: photo),
-                    const SizedBox(height: 8),
+                    SizedBox(height: photoHeight, child: photo),
+                    SizedBox(height: compact ? 5 : 8),
                     Expanded(
                       child: Text(
-                        unlocked ? l.recipeName(recipe.id) : l.recipesMissingPage(recipe.unlockLevel),
+                        unlocked ? l.recipeName(recipe.id) : missingTileText(context, recipe.id),
                         textAlign: TextAlign.center,
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                         style: styles.label.copyWith(
-                          fontSize: unlocked ? 17 : 14,
-                          fontWeight: FontWeight.w800,
-                          color: unlocked ? theme.ink : theme.inkSoft,
+                          fontSize: unlocked ? (compact ? 14.5 : 17) : (compact ? 16 : 18),
+                          height: compact ? 1.15 : null,
+                          fontWeight: unlocked ? FontWeight.w800 : FontWeight.w900,
+                          color: theme.ink,
                         ),
                       ),
                     ),
-                    if (unlocked) StarRow(stars: mastery, max: 3, size: 26),
+                    if (unlocked) StarRow(stars: mastery, max: 3, size: compact ? 20 : 26),
                   ],
                 ),
               ),
@@ -209,13 +273,15 @@ class _RecipeTile extends StatelessWidget {
   }
 }
 
-/// Trang sổ chi tiết: hình, tên, mô tả, giá, nguyên liệu, thành thạo — trên giấy kẻ bút chì có gáy lò xo.
+/// Trang sổ chi tiết: hình, tên, mô tả, giá (đã cộng bí quyết), nguyên liệu, thành thạo, Bí quyết của bà — trên giấy
+/// kẻ bút chì có gáy lò xo.
 class _RecipePage extends StatelessWidget {
-  const _RecipePage({required this.recipe, required this.unlocked, required this.mastery});
+  const _RecipePage({required this.recipe, required this.unlocked, required this.mastery, required this.state});
 
   final Recipe recipe;
   final bool unlocked;
   final int mastery;
+  final GameState state;
 
   @override
   Widget build(BuildContext context) {
@@ -243,7 +309,7 @@ class _RecipePage extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          CakeImage(visual: CakeVisual.recipe(recipe.id), recipe: recipe.id, size: 120),
+                          CakeImage(visual: CakeVisual.recipe(recipe.id), recipe: recipe.id, size: 96),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
@@ -259,8 +325,13 @@ class _RecipePage extends StatelessWidget {
                                 Row(
                                   children: [
                                     Text(
-                                      l.recipesPrice(recipe.price),
-                                      style: styles.body.copyWith(fontSize: 17, fontWeight: FontWeight.w800),
+                                      l.recipesPrice(state.recipeSellPrice(recipe.id)),
+                                      key: const ValueKey('recipe-price'),
+                                      style: styles.body.copyWith(
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.w800,
+                                        color: state.recipeSecretPricePct(recipe.id) > 0 ? SLColors.goodDeep : null,
+                                      ),
                                     ),
                                     const SizedBox(width: 4),
                                     const CoinIcon(size: 22),
@@ -273,53 +344,77 @@ class _RecipePage extends StatelessWidget {
                       ),
                       Text(
                         l.recipeDesc(recipe.id),
-                        maxLines: 3,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: styles.body.copyWith(fontSize: 17, fontStyle: FontStyle.italic, height: 1.3),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 6),
                       _Heading(l.recipesIngredients),
-                      const SizedBox(height: 4),
-                      _Ingredient(icon: MouldImage(recipe.mould, size: 30), text: l.mouldName(recipe.mould)),
-                      _Ingredient(icon: BatterSwatch(recipe.batter, size: 26), text: l.batterName(recipe.batter)),
+                      const SizedBox(height: 2),
+                      // Khuôn và bột tên ngắn → chung một hàng; kem và topping (có thể nhiều loại) mỗi thứ một hàng.
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _Ingredient(icon: MouldImage(recipe.mould, size: 28), text: l.mouldName(recipe.mould)),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _Ingredient(icon: BatterSwatch(recipe.batter, size: 24), text: l.batterName(recipe.batter)),
+                          ),
+                        ],
+                      ),
                       _Ingredient(
                         icon: Row(
                           mainAxisSize: MainAxisSize.min,
-                          children: [for (final f in recipe.frostings) FrostingSwatch(f, size: 26)],
+                          children: [for (final f in recipe.frostings) FrostingSwatch(f, size: 24)],
                         ),
                         text: recipe.frostings.map(l.frostingName).join(', '),
                       ),
                       _Ingredient(
                         icon: Row(
                           mainAxisSize: MainAxisSize.min,
-                          children: [for (final t in recipe.toppings) ToppingImage(t, size: 26)],
+                          children: [for (final t in recipe.toppings) ToppingImage(t, size: 24)],
                         ),
                         text: recipe.toppings.map(l.toppingName).join(', '),
                       ),
-                      const Spacer(),
+                      const SizedBox(height: 12),
                       _Heading(l.recipesMastery),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 4),
                       Row(
                         children: [
-                          StarRow(stars: mastery, max: 3, size: 40, spacing: 6),
-                          const SizedBox(width: 12),
+                          StarRow(stars: mastery, max: 3, size: 34, spacing: 5),
+                          const SizedBox(width: 10),
                           if (mastery >= 3)
+                            // Cả chip co nhỏ cho vừa chỗ còn lại thay vì cắt chữ ("Thành thạo! +2 kim cương").
                             Flexible(
                               child: SLBounceIn(
-                                child: TagChip(
-                                  l.recipesMasteryReward(Economy.masteryGemReward),
-                                  color: SLColors.butter,
-                                  iconId: 'trophy',
+                                child: FittedBox(
+                                  key: const ValueKey('recipe-mastery-chip'),
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerLeft,
+                                  child: ConstrainedBox(
+                                    constraints: const BoxConstraints(maxWidth: 480),
+                                    child: TagChip(
+                                      l.recipesMasteryReward(Economy.masteryGemReward),
+                                      color: SLColors.butter,
+                                      iconId: 'trophy',
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       Text(
                         l.recipesMasteryHint,
-                        style: styles.body.copyWith(fontSize: 15, fontWeight: FontWeight.w700, color: theme.inkSoft),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: styles.body.copyWith(fontSize: 14, fontWeight: FontWeight.w700, color: theme.inkSoft),
                       ),
+                      const SizedBox(height: 12),
+                      _SecretsSection(recipe: recipe.id, state: state),
+                      const Spacer(),
                     ],
                   ),
                 )
@@ -348,10 +443,18 @@ class _RecipePage extends StatelessWidget {
                         ),
                         const SizedBox(height: 22),
                         Text(
-                          l.recipesMissingPage(recipe.unlockLevel),
+                          missingPageText(context, recipe.id),
                           textAlign: TextAlign.center,
                           style: styles.heading.copyWith(fontSize: 24, color: theme.inkSoft),
                         ),
+                        if (state.recipeSecretsUnlocked) ...[
+                          const SizedBox(height: 10),
+                          _SecretNote(
+                            key: const ValueKey('recipe-secret-recipe-locked'),
+                            icon: 'lock',
+                            text: l.recipeSecretsRecipeLocked,
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -360,6 +463,213 @@ class _RecipePage extends StatelessWidget {
       ),
     );
   }
+}
+
+/// "Bí quyết của bà" (GĐ8) trên trang sổ: hàng huy hiệu lá các bậc (đã học = bạc hà, chưa = xám), % giá đang cộng →
+/// bậc kế (đậm, lớn), nút "Học bí quyết" có giá xu bên trong. Khoá tới màn `recipeSecretsConfig.level` (41) — kèm dòng giải
+/// thích; đã học hết → huy hiệu. Thiếu xu: nút mờ, giá đỏ, vẫn bấm được để rung + nhắc "Không đủ xu".
+class _SecretsSection extends StatefulWidget {
+  const _SecretsSection({required this.recipe, required this.state});
+
+  final RecipeId recipe;
+  final GameState state;
+
+  @override
+  State<_SecretsSection> createState() => _SecretsSectionState();
+}
+
+class _SecretsSectionState extends State<_SecretsSection> {
+  int _shortTries = 0;
+
+  void _buy() {
+    final services = AppScope.read(context);
+    final l = AppLocalizations.of(context);
+    final state = services.state;
+    final price = state.recipeSecretPrice(widget.recipe);
+    if (state.buyRecipeSecret(widget.recipe)) {
+      services.audio.success();
+      showToast(context, l.recipeSecretsTier(state.recipeSecretTier(widget.recipe), state.recipeSecretMaxTier));
+    } else if (price != null && state.coins < price) {
+      // Chỉ nhắc "không đủ xu" khi thật sự thiếu xu; không mua được vì lý do khác (khoá / tối đa) → im lặng.
+      services.audio.fail();
+      setState(() => _shortTries++);
+      showToast(context, l.commonNotEnoughCoins, success: false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final styles = SLTextStyles.of(context);
+    final state = widget.state;
+    final id = widget.recipe;
+    final cfg = state.recipeSecretsConfig;
+    if (cfg == null) return const SizedBox.shrink();
+    final max = state.recipeSecretMaxTier;
+    final open = state.recipeSecretsUnlocked;
+    final tier = state.recipeSecretTier(id);
+    final pct = state.recipeSecretPricePct(id);
+    final nextPct = state.recipeSecretNextPricePct(id);
+    final price = state.recipeSecretPrice(id);
+    final bonusStyle = styles.body.copyWith(fontWeight: FontWeight.w800);
+
+    final Widget info;
+    if (!open) {
+      info = Text(
+        l.recipeSecretsHint,
+        key: const ValueKey('recipe-secret-hint'),
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: styles.body.copyWith(fontSize: 14, height: 1.15, fontWeight: FontWeight.w700, color: SLColors.inkSoft),
+      );
+    } else {
+      info = FittedBox(
+        key: const ValueKey('recipe-secret-bonus'),
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            if (nextPct == null)
+              Text(l.recipeSecretsBonus(pct), style: bonusStyle.copyWith(fontSize: 21, color: SLColors.goodDeep))
+            else ...[
+              Text(
+                l.recipeSecretsBonus(pct),
+                key: const ValueKey('recipe-secret-bonus-now'),
+                style: bonusStyle.copyWith(fontSize: 16, fontWeight: FontWeight.w700, color: SLColors.inkSoft),
+              ),
+              const SizedBox(width: 6),
+              const SLIcon('forward', size: 22, color: SLColors.ink),
+              const SizedBox(width: 6),
+              Text(
+                l.recipeSecretsBonus(nextPct),
+                key: const ValueKey('recipe-secret-bonus-next'),
+                style: bonusStyle.copyWith(fontSize: 22, fontWeight: FontWeight.w900, color: SLColors.goodDeep),
+              ),
+            ],
+          ],
+        ),
+      );
+    }
+
+    final Widget action;
+    if (!open) {
+      action = _SecretNote(key: const ValueKey('recipe-secret-locked'), icon: 'lock', text: l.recipeSecretsLocked(cfg.level));
+    } else if (!state.isRecipeUnlocked(id)) {
+      action = _SecretNote(key: const ValueKey('recipe-secret-recipe-locked'), icon: 'lock', text: l.recipeSecretsRecipeLocked);
+    } else if (price == null) {
+      action = _SecretNote(
+        key: const ValueKey('recipe-secret-maxed'),
+        icon: 'medal_max',
+        text: l.recipeSecretsMaxed,
+        color: SLColors.goodDeep,
+      );
+    } else {
+      final affordable = state.coins >= price;
+      action = SLShake(
+        trigger: _shortTries,
+        child: Opacity(
+          opacity: affordable ? 1 : 0.6,
+          child: SLButton(
+            key: const ValueKey('recipe-secret-buy'),
+            label: l.recipeSecretsBuy,
+            icon: 'sparkle',
+            trailing: PriceTag(key: const ValueKey('recipe-secret-price'), amount: price, affordable: affordable, size: 20),
+            color: affordable ? SLColors.butter : SLColors.paperShade,
+            width: double.infinity,
+            height: 48,
+            fontSize: 18,
+            onPressed: _buy,
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: FittedBox(fit: BoxFit.scaleDown, child: _Heading(l.recipeSecretsTitle)),
+              ),
+            ),
+            const SizedBox(width: 8),
+            if (open)
+              Text(
+                l.recipeSecretsTier(tier, max),
+                key: const ValueKey('recipe-secret-tier'),
+                style: styles.label.copyWith(fontSize: 15, color: SLColors.inkSoft),
+              ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        SizedBox(
+          height: 38,
+          child: Row(
+            children: [
+              for (var i = 0; i < max; i++) ...[
+                if (i > 0) const SizedBox(width: 4),
+                _SecretPip(learned: i < tier, seed: 0x5EC0 + i),
+              ],
+              const SizedBox(width: 10),
+              Expanded(child: Align(alignment: Alignment.centerLeft, child: info)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 4),
+        SizedBox(height: SLMetrics.minTap, child: action),
+      ],
+    );
+  }
+}
+
+/// Một bậc bí quyết: huy hiệu lá vẽ tay (đã học → bạc hà, chưa → giấy cũ, lá xám) — khác sao thành thạo.
+class _SecretPip extends StatelessWidget {
+  const _SecretPip({required this.learned, required this.seed});
+
+  final bool learned;
+  final int seed;
+
+  @override
+  Widget build(BuildContext context) => SLIconDisc(
+        'leaf_logo',
+        size: 36,
+        iconScale: 0.66,
+        lift: learned ? 2 : 1,
+        color: learned ? SLColors.mint : SLColors.paperShade,
+        iconColor: learned ? null : SLColors.disabledInk,
+        seed: seed,
+      );
+}
+
+/// Dòng trạng thái của bí quyết (khoá / món chưa mở / đã học hết): icon + chữ tối đa 2 dòng.
+class _SecretNote extends StatelessWidget {
+  const _SecretNote({super.key, required this.icon, required this.text, this.color = SLColors.inkSoft});
+
+  final String icon;
+  final String text;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SLIcon(icon, size: 26, color: color),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              text,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: SLTextStyles.of(context).body.copyWith(fontSize: 15, height: 1.15, fontWeight: FontWeight.w800, color: color),
+            ),
+          ),
+        ],
+      );
 }
 
 /// Ảnh món chưa mở: giảm ~80% độ bão hoà, ngả ấm về màu giấy, mờ còn ~45% (một lớp lọc màu duy nhất, gồm cả
@@ -458,7 +768,7 @@ class _Ingredient extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
+      padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
         children: [
           icon,

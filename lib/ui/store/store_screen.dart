@@ -6,20 +6,23 @@ import '../../core/app_scope.dart';
 import '../../core/art/art_sprites.dart';
 import '../../core/art/item_art.dart';
 import '../../core/art/shop_art.dart';
-import '../../core/catalog.dart';
 import '../../core/constants.dart' show kRefSize;
 import '../../core/economy.dart';
 import '../../core/l10n_lookup.dart';
 import '../../core/models/ids.dart';
-import '../../core/services/iap_service.dart';
+import '../../core/monetization/monetization_config.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../common/art.dart';
 import '../common/dialogs.dart';
 import '../common/shop_scene.dart';
+import '../common/staff_portrait.dart';
 import '../common/sugar_screen.dart';
+import '../level/level_common.dart';
 import '../sugarleaf/sugarleaf.dart';
 
-/// Cửa hàng (giả lập): dải vải thông báo thử nghiệm dán băng dính, 6 thẻ giấy gói IAP, thẻ nhận gem qua quảng cáo.
+/// Cửa hàng V2 (giả lập): con dấu "Chế độ thử" + dải vải thông báo thử nghiệm dán băng dính; thẻ giấy các gói IAP
+/// V2 (kim cương S/M/L, thẻ mùa, trang phục lễ hội, bỏ quảng cáo; gói khởi đầu nổi bật đứng đầu từ L4 tới khi mua);
+/// thẻ nhận kim cương qua quảng cáo. Gói xu V1 và bộ trang trí Seaside ẩn (`IapCatalog.hidden`, vẫn giữ quyền sở hữu).
 class StoreScreen extends StatefulWidget {
   const StoreScreen({super.key});
 
@@ -38,10 +41,10 @@ class _StoreScreenState extends State<StoreScreen> {
     final ok = await showConfirmDialog(
       context,
       title: l.storeConfirmTitle,
-      body: l.storeConfirmBody(l.iapName(product.id), product.displayPrice),
+      body: l.storeConfirmBody(_productName(context, l, product), product.displayPrice),
       confirmLabel: l.commonBuy,
       titleColor: SLColors.butter,
-      illustration: SizedBox(width: 120, height: 96, child: _ProductArt(id: product.id)),
+      illustration: SizedBox(width: 120, height: 96, child: _ProductArt(product: product)),
     );
     if (!ok || !mounted) return;
     setState(() => _buying = product.id);
@@ -51,6 +54,9 @@ class _StoreScreenState extends State<StoreScreen> {
     if (bought) {
       services.audio.success();
       showToast(context, l.storePurchaseSuccess);
+    } else {
+      services.audio.fail();
+      showToast(context, l.storePurchaseFailed, success: false);
     }
   }
 
@@ -79,40 +85,51 @@ class _StoreScreenState extends State<StoreScreen> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final services = AppScope.of(context);
-    final products = services.iap.products;
+    final products = [
+      for (final p in services.iap.products)
+        if (_shown(p, services)) p,
+    ]..sort((a, b) => _order(a.id).compareTo(_order(b.id)));
     return SugarScreen(
       title: l.storeTitle,
       titleIconId: 'shop_bag',
       body: Stack(
         children: [
-          // Băng thông báo giả lập — luôn hiện: dải vải vàng bơ dán băng dính hai đầu.
-          Positioned(
-            left: 34,
-            right: 34,
-            top: 10,
-            height: 52,
-            child: _NoticeBand(text: l.storeSimulatedNotice),
-          ),
+          // Băng thông báo giả lập — luôn hiện: con dấu "Chế độ thử" + dải vải vàng bơ dán băng dính hai đầu.
+          Positioned(left: 210, right: 34, top: 10, height: 52, child: _NoticeBand(text: l.storeSimulatedNotice)),
+          Positioned(left: 24, top: 6, child: _TestModeStamp(label: l.storeTestMode)),
           Positioned(
             left: 24,
             top: 80,
             width: 900,
             bottom: 24,
-            child: GridView.count(
-              crossAxisCount: 3,
-              mainAxisSpacing: 16,
-              crossAxisSpacing: 16,
-              childAspectRatio: 289 / 254,
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
-                for (final p in products)
-                  _ProductCard(
-                    product: p,
-                    owned: services.iap.isOwned(p.id),
-                    busy: _buying == p.id,
-                    onBuy: _buying == null ? () => _buy(p) : null,
-                  ),
-              ],
+            child: LayoutBuilder(
+              builder: (context, box) {
+                // 7 gói (có gói khởi đầu) → 4 cột; ≤ 6 gói → 3 cột; luôn 2 hàng vừa khung.
+                final cols = products.length > 6 ? 4 : 3;
+                const gap = 16.0;
+                final w = (box.maxWidth - gap * (cols - 1)) / cols;
+                final h = (box.maxHeight - gap) / 2;
+                return GridView.count(
+                  crossAxisCount: cols,
+                  mainAxisSpacing: gap,
+                  crossAxisSpacing: gap,
+                  childAspectRatio: w / h,
+                  physics: const NeverScrollableScrollPhysics(),
+                  clipBehavior: Clip.none,
+                  children: [
+                    for (final p in products)
+                      _ProductCard(
+                        key: ValueKey('store-product-${p.id.name}'),
+                        product: p,
+                        owned: _owned(p, services),
+                        available: services.state.canBuyIap(p.id),
+                        featured: p.id == IapProductId.starterPack,
+                        busy: _buying == p.id,
+                        onBuy: _buying == null ? () => _buy(p) : null,
+                      ),
+                  ],
+                );
+              },
             ),
           ),
           Positioned(
@@ -128,12 +145,95 @@ class _StoreScreenState extends State<StoreScreen> {
   }
 }
 
-String _productDesc(AppLocalizations l, IapProductId id) => switch (id) {
-  IapProductId.starterPack => l.storeStarterPackDesc(Catalog.iapCoins[id] ?? 0, Catalog.iapGems[id] ?? 0),
-  IapProductId.pantryS || IapProductId.pantryM || IapProductId.pantryL => l.storePantryDesc(Catalog.iapCoins[id] ?? 0),
-  IapProductId.decorSetSeaside => l.storeDecorSetDesc,
-  IapProductId.removeAds => l.storeRemoveAdsDesc,
+/// Gói có hiện ở cửa hàng V2: bỏ gói V1 ẩn; gói khởi đầu chỉ từ L4 (đã qua L3) tới khi mua.
+bool _shown(IapProduct p, AppServices services) {
+  if (IapCatalog.hidden.contains(p.id)) return false;
+  if (p.id == IapProductId.starterPack) return services.state.starterPackFeatured;
+  return true;
+}
+
+/// Đã sở hữu: gói một lần → `isOwned`; thẻ mùa → đã mở cao cấp mùa này.
+bool _owned(IapProduct p, AppServices services) =>
+    p.id == IapProductId.seasonPass ? services.state.seasonPremium : services.iap.isOwned(p.id);
+
+/// Thứ tự hiện: gói khởi đầu (nổi bật) → kim cương S/M/L → thẻ mùa → trang phục → bỏ quảng cáo.
+int _order(IapProductId id) => switch (id) {
+  IapProductId.starterPack => 0,
+  IapProductId.gemsS => 1,
+  IapProductId.gemsM => 2,
+  IapProductId.gemsL => 3,
+  IapProductId.seasonPass => 4,
+  IapProductId.staffOutfits => 5,
+  IapProductId.removeAds => 6,
+  _ => 9,
 };
+
+String _productName(BuildContext context, AppLocalizations l, IapProduct p) {
+  final name = p.name(levelLang(context));
+  return name.isNotEmpty ? name : l.iapName(p.id, fallback: l.storeTitle);
+}
+
+String _productDesc(BuildContext context, AppLocalizations l, IapProduct p) {
+  final desc = p.desc(levelLang(context));
+  if (desc.isNotEmpty) return desc;
+  final r = p.reward;
+  final perBooster = r.boosters.values.fold<int>(0, (a, b) => a > b ? a : b);
+  return switch (p.id) {
+    IapProductId.starterPack => l.storeStarterPackDescV2(r.coins, r.gems, perBooster),
+    IapProductId.gemsS || IapProductId.gemsM || IapProductId.gemsL => l.storeGemsDesc(r.gems),
+    IapProductId.removeAds => l.storeRemoveAdsDescV2,
+    IapProductId.staffOutfits => l.storeStaffOutfitsDesc,
+    IapProductId.seasonPass => l.storeSeasonPassDesc,
+    IapProductId.pantryS || IapProductId.pantryM || IapProductId.pantryL => l.storePantryDesc(r.coins),
+    IapProductId.decorSetSeaside => l.storeDecorSetDesc,
+  };
+}
+
+/// Con dấu "Chế độ thử": nhãn dán hồng dâu nghiêng nhẹ, luôn hiện ở góc trên trái cửa hàng.
+class _TestModeStamp extends StatelessWidget {
+  const _TestModeStamp({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Transform.rotate(
+    angle: -0.05,
+    child: SizedBox(
+      key: const ValueKey('store-test-mode'),
+      width: 170,
+      height: 60,
+      child: SLSurface(
+        spec: const SLSurfaceSpec(
+          shape: SLRoundRect(14),
+          material: SLMaterial.wash,
+          color: SLColors.strawberryLight,
+          sticker: true,
+          inkWidth: 2.4,
+          seed: 0x57E5,
+        ),
+        lift: 3,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SLIcon('warning', size: 26),
+            const SizedBox(width: 6),
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  style: SLTextStyles.of(context).label.copyWith(fontSize: 20, fontWeight: FontWeight.w900),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
 
 /// Dải vải thông báo (chỉ khâu dọc mép) dán hai mẩu băng dính ở hai đầu.
 class _NoticeBand extends StatelessWidget {
@@ -186,44 +286,59 @@ class _NoticeBand extends StatelessWidget {
 }
 
 class _ProductCard extends StatelessWidget {
-  const _ProductCard({required this.product, required this.owned, required this.busy, required this.onBuy});
+  const _ProductCard({
+    super.key,
+    required this.product,
+    required this.owned,
+    this.available = true,
+    required this.busy,
+    required this.onBuy,
+    this.featured = false,
+  });
 
   final IapProduct product;
   final bool owned;
+
+  /// Mua được lúc này (`GameState.canBuyIap`); false và chưa sở hữu → thẻ mờ, nút khoá (thẻ mùa: "Chưa có mùa mới").
+  final bool available;
   final bool busy;
   final VoidCallback? onBuy;
+
+  /// Gói khởi đầu: giấy hồng dâu nhạt + nhãn "Ưu đãi nhất" + sao lấp lánh.
+  final bool featured;
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final styles = SLTextStyles.of(context);
-    final best = product.id == IapProductId.starterPack;
+    final best = featured;
     final seed = 0x5700 + product.id.index * 13;
     return Stack(
       clipBehavior: Clip.none,
       children: [
         Positioned.fill(
           child: SLPaperCard(
-            color: owned ? SLColors.paperShade : SLColors.paper,
+            color: owned || !available ? SLColors.paperShade : (best ? SLColors.strawberryLight : SLColors.paper),
             radius: 20,
             seed: seed,
-            padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
             child: Column(
               children: [
-                SizedBox(width: 130, height: 84, child: _ProductArt(id: product.id)),
-                Text(
-                  l.iapName(product.id),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: styles.title.copyWith(fontSize: 21),
+                SizedBox(width: 130, height: 78, child: _ProductArt(product: product)),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    _productName(context, l, product),
+                    maxLines: 1,
+                    style: styles.title.copyWith(fontSize: 21),
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Expanded(
-                  child: Text(
-                    _productDesc(l, product.id),
-                    textAlign: TextAlign.center,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
+                  child: _FitDesc(
+                    !owned && !available && product.id == IapProductId.seasonPass
+                        ? l.storeSeasonNone
+                        : _productDesc(context, l, product),
                     style: styles.body.copyWith(fontSize: 15, fontWeight: FontWeight.w700, color: SLColors.inkSoft),
                   ),
                 ),
@@ -252,12 +367,12 @@ class _ProductCard extends StatelessWidget {
                       // Đang mua: ba chấm mực nhảy trong nút (chặn bấm).
                       child: SLButton(
                         label: owned ? l.storeOwned : l.commonBuy,
-                        icon: owned ? 'check' : null,
+                        icon: owned ? 'check' : (available ? null : 'lock'),
                         color: SLColors.strawberry,
                         height: 48,
                         fontSize: 18,
                         loading: busy,
-                        onPressed: owned ? null : (busy ? () {} : onBuy),
+                        onPressed: owned || !available ? null : (busy ? () {} : onBuy),
                       ),
                     ),
                   ],
@@ -267,10 +382,70 @@ class _ProductCard extends StatelessWidget {
           ),
         ),
         if (best && !owned) ...[
+          Positioned(
+            top: -14,
+            left: -6,
+            child: SLBadge.label(
+              l.storeStarterBadge,
+              key: const ValueKey('store-starter-badge'),
+              color: SLColors.strawberry,
+              sparkle: true,
+            ),
+          ),
           const Positioned(top: -10, right: -8, child: StarIcon(size: 42)),
           const Positioned(top: -16, right: 26, child: SLSparkle(size: 20)),
         ],
       ],
+    );
+  }
+}
+
+/// Mô tả gói: chữ giữa lấp vùng còn lại của thẻ; dài quá thì co cỡ chữ dần (15 → 11.5) cho đủ đọc thay vì cắt "…".
+class _FitDesc extends StatelessWidget {
+  const _FitDesc(this.text, {required this.style});
+
+  final String text;
+  final TextStyle style;
+
+  static const _minFontSize = 11.5;
+  static const _lineHeight = 1.15;
+
+  @override
+  Widget build(BuildContext context) {
+    final base = DefaultTextStyle.of(context).style.merge(style).copyWith(height: _lineHeight);
+    final scaler = MediaQuery.textScalerOf(context);
+    final direction = Directionality.of(context);
+    return LayoutBuilder(
+      builder: (context, box) {
+        var size = base.fontSize ?? 15;
+        if (box.maxWidth.isFinite && box.maxHeight.isFinite) {
+          while (size > _minFontSize) {
+            final painter = TextPainter(
+              text: TextSpan(
+                text: text,
+                style: base.copyWith(fontSize: size),
+              ),
+              textAlign: TextAlign.center,
+              textDirection: direction,
+              textScaler: scaler,
+            )..layout(maxWidth: box.maxWidth);
+            final fits = painter.height <= box.maxHeight;
+            painter.dispose();
+            if (fits) break;
+            size = (size - 0.5).clamp(_minFontSize, size);
+          }
+        }
+        final lines = box.maxHeight.isFinite
+            ? (box.maxHeight / scaler.scale(size * _lineHeight)).floor().clamp(1, 8)
+            : null;
+        return Text(
+          text,
+          textAlign: TextAlign.center,
+          maxLines: lines,
+          overflow: TextOverflow.ellipsis,
+          style: base.copyWith(fontSize: size),
+        );
+      },
     );
   }
 }
@@ -367,12 +542,61 @@ class _FreeGemCard extends StatelessWidget {
 /// Hình minh hoạ từng gói: ảnh vẽ tay (hộp quà, bao nguyên liệu, xu, gem, cảnh tiệm bộ biển, huy hiệu xoá quảng
 /// cáo); chưa có ảnh → hình code.
 class _ProductArt extends StatelessWidget {
-  const _ProductArt({required this.id});
+  const _ProductArt({required this.product});
 
-  final IapProductId id;
+  final IapProduct product;
+
+  IapProductId get id => product.id;
 
   @override
   Widget build(BuildContext context) {
+    // Gói V2 có ảnh riêng (`items/gem_pouch`, `items/season_ticket`…): ảnh đóng gói, thiếu → hình code bên dưới.
+    final path = product.artPath;
+    if (path != null && id != IapProductId.removeAds) {
+      return AssetArt(path, width: 130, height: 78, fallback: _fallback());
+    }
+    return _fallback();
+  }
+
+  Widget _fallback() {
+    switch (id) {
+      case IapProductId.staffOutfits:
+        // Chưa có ảnh riêng của gói: chân dung tròn Nora + Bảo mặc trang phục lễ hội (ảnh `_fest`); co theo ô
+        // (thẻ gói / minh hoạ hộp xác nhận mua).
+        return FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final c in const ['staff_nora_fest', 'staff_bao_fest'])
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  child: SizedBox.square(
+                    dimension: 60,
+                    child: SLSurface(
+                      spec: SLSurfaceSpec(
+                        shape: const SLCircle(),
+                        material: SLMaterial.wash,
+                        color: SLColors.strawberryLight,
+                        inkWidth: 1.8,
+                        seed: slSeed(content: c, salt: 0x5AD7),
+                      ),
+                      padding: const EdgeInsets.all(3),
+                      child: SLHandClip(
+                        seed: slSeed(content: c, salt: 0x5AD8),
+                        child: StaffPortrait(character: c, width: 54, height: 54, shown: 0.3),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      case IapProductId.seasonPass:
+        return const Center(child: SLArtIcon(ArtSprites.ticket, 'ticket', size: 84));
+      default:
+        break;
+    }
     if (id == IapProductId.removeAds) {
       // Huy hiệu nhãn dán vẽ tay; chưa nạp xong / thiếu ảnh → đĩa màu nước + icon vẽ code.
       return ListenableBuilder(
@@ -448,7 +672,9 @@ class _ProductArt extends StatelessWidget {
         };
         final seed = 0x5AC0 + id.index * 7;
         if (extra >= 1) _sack(canvas, sq(center.translate(h * 0.5, -h * 0.02), h * 0.6), seed: seed + 1, patch: false);
-        if (extra >= 2) _sack(canvas, sq(center.translate(-h * 0.5, 0), h * 0.56), seed: seed + 2, patch: false, flip: true);
+        if (extra >= 2) {
+          _sack(canvas, sq(center.translate(-h * 0.5, 0), h * 0.56), seed: seed + 2, patch: false, flip: true);
+        }
         _sack(canvas, sq(center.translate(0, -h * 0.06 + (1 - main) * h * 0.3), h * main), seed: seed);
         for (var i = 0; i < n; i++) {
           final row = i ~/ 3;
@@ -476,7 +702,23 @@ class _ProductArt extends StatelessWidget {
         canvas.translate(-focus.left, -focus.top);
         ShopArt.paint(canvas, kRefSize, set);
         canvas.restore();
+      case IapProductId.gemsS:
+      case IapProductId.gemsM:
+      case IapProductId.gemsL:
+        // Đống kim cương to dần (S: 1, M: 3, L: 5 viên).
+        final n = switch (id) {
+          IapProductId.gemsS => 1,
+          IapProductId.gemsM => 3,
+          _ => 5,
+        };
+        const spots = [Offset(0, 0), Offset(-0.42, 0.14), Offset(0.42, 0.14), Offset(-0.22, -0.2), Offset(0.22, -0.2)];
+        for (var i = n - 1; i >= 0; i--) {
+          final o = spots[i];
+          _gem(canvas, sq(center.translate(o.dx * h, o.dy * h), h * (i == 0 ? 0.7 : 0.5)));
+        }
       case IapProductId.removeAds:
+      case IapProductId.staffOutfits:
+      case IapProductId.seasonPass:
         break;
     }
   }

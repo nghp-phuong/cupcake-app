@@ -44,8 +44,11 @@ List<ArtRef> _allTypedRefs() => [
       for (final r in RecipeId.values) ArtSprites.cake(r),
       for (final m in MouldType.values) ArtSprites.mould(m),
       for (final b in BatterType.values) ArtSprites.batter(b),
+      // Khuôn có ảnh đế gốc × mọi bột; khuôn GĐ8 chỉ có ảnh đế theo món.
       for (final m in MouldType.values)
-        for (final b in BatterType.values) ArtSprites.baked(m, b),
+        if (ArtSprites.ids[ArtGroup.baked]!.contains(m.name))
+          for (final b in BatterType.values) ArtSprites.baked(m, b),
+      for (final r in Catalog.recipes) ArtSprites.baked(r.mould, r.batter, recipe: r.id),
       for (final f in FrostingId.values) ArtSprites.frosting(f),
       for (final t in ToppingId.values) ArtSprites.topping(t),
       for (final b in BoxType.values) ...[ArtSprites.box(b), ArtSprites.box(b, open: true)],
@@ -57,6 +60,7 @@ List<ArtRef> _allTypedRefs() => [
       ArtSprites.bakingTray, ArtSprites.servingPlate, ArtSprites.pantrySack, ArtSprites.noAdsBadge,
       for (final s in ArtScene.values) ArtSprites.scene(s),
       ArtSprites.shopBase,
+      ArtSprites.shopBaseEmpty,
       for (final s in StationId.values) ArtSprites.station(s),
     ];
 
@@ -152,6 +156,7 @@ void main() {
       expect(onDisk.difference(pending), listed.difference(pending), reason: g.name);
     }
     for (final ref in _allTypedRefs()) {
+      if (ArtSprites.pendingIds[ref.group]?.contains(ref.id) ?? false) continue;
       expect(File(ref.assetPath).existsSync(), isTrue, reason: ref.assetPath);
     }
     for (final e in CharacterSprites.expressions) {
@@ -314,7 +319,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  test('danh sách nạp trước: theo trạm, cả bếp (trạm 1 đứng đầu), theo ngày', () {
+  test('danh sách nạp trước: theo trạm, cả bếp (trạm 1 đứng đầu)', () {
     // Trạm 1: nền + mọi khuôn + khay nướng, nền đứng đầu.
     final mould = ArtSprites.stationRefs(StationId.mould);
     expect(mould.first, ArtSprites.station(StationId.mould));
@@ -337,20 +342,6 @@ void main() {
         expect(ArtSprites.ids[ref.group], contains(ref.id), reason: '$ref');
       }
     }
-
-    // Ngày: nội thất tiệm đầu tiên, đĩa phục vụ (vé đơn), đồ trang trí đang đặt, cảnh mưa khi mưa.
-    expect(ArtSprites.dayRefs(), [ArtSprites.shopBase, ArtSprites.servingPlate]);
-    final day = ArtSprites.dayRefs(
-      equippedDecor: {DecorSlot.wallpaper: DecorId.wallpaperFloral, DecorSlot.plant: DecorId.plantFern, DecorSlot.floor: null},
-      rainy: true,
-    );
-    expect(day, [
-      ArtSprites.shopBase,
-      ArtSprites.servingPlate,
-      ArtSprites.decor(DecorId.wallpaperFloral),
-      ArtSprites.decor(DecorId.plantFern),
-      ArtSprites.scene(ArtScene.rainyDay),
-    ]);
   });
 
   testWidgets('preloadKitchen: trạm 1 nạp trước; preloadStation chờ được đủ ảnh trạm', (tester) async {
@@ -367,16 +358,11 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('preloadStartup / preloadDay nạp nội thất tiệm (ảnh thật)', (tester) async {
-    ArtSprites.debugReset();
-    await tester.runAsync(() => ArtSprites.preloadDay(equippedDecor: {DecorSlot.counter: DecorId.counterFlowers}, rainy: true));
-    expect(ArtSprites.shopBase.image, isNotNull);
-    expect(ArtSprites.decor(DecorId.counterFlowers).image, isNotNull);
-    expect(ArtSprites.servingPlate.image, isNotNull);
-    expect(ArtSprites.scene(ArtScene.rainyDay).image, isNotNull);
+  testWidgets('preloadStartup nạp nền sân tiệm của màn level (ảnh thật)', (tester) async {
     ArtSprites.debugReset();
     await tester.runAsync(ArtSprites.preloadStartup);
-    expect(ArtSprites.debugIsCached(ArtSprites.shopBase), isTrue);
+    expect(ArtSprites.debugIsCached(ArtSprites.shopBaseEmpty), isTrue);
+    expect(ArtSprites.debugIsCached(ArtSprites.shopBase), isFalse);
     expect(ArtSprites.debugIsCached(ArtSprites.book), isTrue);
     // narrator_book đang chờ vẽ: thiếu thì được đánh dấu thiếu êm.
     expect(ArtSprites.debugIsCached(CustomerArt.narratorBook) || CustomerArt.narratorBook.isMissing, isTrue);

@@ -583,14 +583,7 @@ void paintPipingBag(Canvas canvas, Offset tip, Color cream, {double tilt = -0.45
 
 /// Đáy thân bánh (điểm thấp nhất) theo khuôn: ×cạnh khung vuông, tính từ tâm khung. Trùng số đo của
 /// `CakeArt` (ảnh đế đã nướng được đặt cho đáy trùng hình code dự phòng).
-double cakeBottomFactor(MouldType m) => switch (m) {
-      MouldType.cupcakeLiner || MouldType.muffinCup => 0.413,
-      MouldType.tartShell => 0.393,
-      MouldType.roundPan => 0.343,
-      MouldType.springformPan => 0.263,
-      MouldType.tallPan => 0.473,
-      MouldType.macaronMat => 0.303,
-    };
+double cakeBottomFactor(MouldType m, {RecipeId? recipe}) => CakeArt.bottomFactor(m, recipe: recipe);
 
 /// Bánh "ngồi" lên mặt phẳng: mép trước của đáy thấp hơn mặt đỡ một đoạn (×cạnh khung) — bánh đáy rộng
 /// (khuôn tròn) thấp hơn nhiều, cốc giấy đáy hẹp gần như bằng.
@@ -599,19 +592,22 @@ double _cakeSeatFactor(MouldType m) => switch (m) {
       MouldType.tartShell => 0.02,
       MouldType.macaronMat => 0.03,
       MouldType.roundPan || MouldType.springformPan || MouldType.tallPan => 0.05,
+      MouldType.pastryTray || MouldType.shellMould || MouldType.eclairTray => 0.02,
+      MouldType.piePan || MouldType.mooncakeMould || MouldType.logPan => 0.04,
     };
 
 /// Khung vuông cạnh [size] để bánh khuôn [m] ngồi lên mặt đỡ ở độ cao [surfaceY], tâm ngang [cx].
-/// [seat] co giãn độ lún của đáy (mặt đỡ nhìn gần như ngang, như giá lò, thì nhỏ hơn).
-Rect seatedCakeRect(MouldType m, double cx, double surfaceY, double size, {double seat = 1}) {
+/// [seat] co giãn độ lún của đáy (mặt đỡ nhìn gần như ngang, như giá lò, thì nhỏ hơn). [recipe]: món có số đo ảnh
+/// riêng (`CakeArt.bottomFactor`).
+Rect seatedCakeRect(MouldType m, double cx, double surfaceY, double size, {double seat = 1, RecipeId? recipe}) {
   final bottom = surfaceY + _cakeSeatFactor(m) * size * seat;
-  return Rect.fromCenter(center: Offset(cx, bottom - cakeBottomFactor(m) * size), width: size, height: size);
+  return Rect.fromCenter(center: Offset(cx, bottom - cakeBottomFactor(m, recipe: recipe) * size), width: size, height: size);
 }
 
 /// Bánh + topping đặt theo vị trí người chơi (vị trí lưu dạng toạ độ chuẩn hoá trên elip mặt bánh).
 void paintCakeWithToppings(Canvas canvas, Rect rect, CakeVisual v, List<PlacedTopping> placed, {double bounceTime = 0.32}) {
   CakeArt.paint(canvas, rect, v.copyWith(toppings: const {}));
-  final top = CakeArt.topSurface(rect, v.mould);
+  final top = CakeArt.topSurface(rect, v.mould, recipe: v.recipe);
   final size = toppingSize(top);
   final sorted = [...placed]..sort((a, b) => a.unit.dy.compareTo(b.unit.dy));
   for (final t in sorted) {

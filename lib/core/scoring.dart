@@ -110,6 +110,7 @@ abstract final class Scoring {
     return 1;
   }
 
+  /// [decorTipBonusPct]: tổng % tip cộng thêm (trang trí + mở rộng tiệm), trần `Economy.tipBonusCapPct`.
   static BakeResult evaluate({
     required Order order,
     required Customer customer,
@@ -141,7 +142,7 @@ abstract final class Scoring {
         : (recipe.price *
                 Economy.tipRate[stars]! *
                 Economy.tipKindMult[customer.kind]! *
-                (1 + math.min(math.max(0, decorTipBonusPct), Economy.decorTipCapPct) / 100))
+                (1 + math.min(math.max(0, decorTipBonusPct), Economy.tipBonusCapPct) / 100))
             .round();
     final xp = ((15 + 5 * stars) * (customer.kind == CustomerKind.vip ? 1.5 : 1)).round();
 

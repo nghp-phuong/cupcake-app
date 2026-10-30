@@ -24,7 +24,7 @@ class BoxStation extends Station {
 
   /// Dời hình bánh so với [_cakePos] (ở cỡ gốc) để đáy thân bánh ngồi trên đĩa chờ, bất kể khuôn.
   late final double _seatDy =
-      seatedCakeRect(game.recipe.mould, cakeHome.dx, cakeHome.dy + _plateDy, cakeSize).center.dy - cakeHome.dy;
+      seatedCakeRect(game.recipe.mould, cakeHome.dx, cakeHome.dy + _plateDy, cakeSize, recipe: game.recipe.id).center.dy - cakeHome.dy;
 
   /// Tâm đĩa chờ dưới bánh, tính từ [cakeHome].
   static const double _plateDy = 96;

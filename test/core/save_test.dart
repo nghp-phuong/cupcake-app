@@ -1,26 +1,53 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sugarleaf_bakery/core/economy.dart';
 import 'package:sugarleaf_bakery/core/game_state.dart';
+import 'package:sugarleaf_bakery/core/level/level.dart';
 import 'package:sugarleaf_bakery/core/models/ids.dart';
 import 'package:sugarleaf_bakery/core/save_repository.dart';
+import 'package:sugarleaf_bakery/core/unlock/unlock.dart';
 
 DateTime _clock() => DateTime(2026, 10, 27, 10);
 
+LevelResult _result(int id, {int stars = 0, int goal = 0, int coins = 0}) => LevelResult(
+      levelId: id,
+      won: stars > 0,
+      stars: stars,
+      coins: coins,
+      served: 0,
+      lost: 0,
+      specialsDone: 0,
+      bestCombo: 0,
+      perfectBakes: 0,
+      recipeStars: const {},
+      goalValue: goal,
+    );
+
+final _unlocks = UnlockConfigLoader.parse(File(UnlockConfigLoader.assetPath).readAsStringSync());
+
 void main() {
   _prefsTests();
+  _shopSaveTests();
   test('ván mới đúng mặc định và JSON đúng khuôn', () {
     final s = GameState.newGame(clock: _clock);
     expect(s.coins, Economy.startCoins);
     expect(s.gems, Economy.startGems);
-    expect(s.level, 1);
+    expect(s.highestCompletedLevel, 0);
     expect(s.dayNumber, 1);
     expect(s.quests.length, 3);
     expect(s.quests.map((q) => q.type).toSet().length, 3);
     final json = s.toJson();
-    expect(json['v'], 1);
+    expect(json['v'], 2);
+    expect(json['progress'], {'levels': <String, dynamic>{}, 'migratedFromV1': false, 'welcomeGiftPending': false});
+    expect(json['shop'], {
+      'owned': <String>[],
+      'equipment': {'goldenOven': 1, 'pipingBag': 1, 'tongs': 1, 'whisk': 1},
+      'seen': <String>[],
+    });
+    expect(json['oven'], 1);
     expect(json['questDate'], '2026-10-27');
     expect(json['adDate'], '2026-10-27');
     expect(json['lang'], 'system');
@@ -31,14 +58,24 @@ void main() {
   });
 
   test('round-trip JSON giữ nguyên dữ liệu', () {
-    final s = GameState.newGame(clock: _clock);
-    s.addXp(250);
-    s.addCoins(1000);
+    final s = GameState.newGame(clock: _clock)..attachUnlockConfig(_unlocks);
+    s.applyLevelResult(_result(1, stars: 3, goal: 12));
+    s.applyLevelResult(_result(2, stars: 2, goal: 9));
+    s.applyLevelResult(_result(3, stars: 1, goal: 700));
+    s.applyLevelResult(_result(3, goal: 500)); // thua: chỉ tăng lượt chơi
+    for (var id = 4; id <= 8; id++) {
+      s.applyLevelResult(_result(id, stars: 1, goal: 1));
+    }
+    s.addCoins(20000);
     s.addGems(40);
-    s.buyOvenUpgrade();
-    s.buyToolUpgrade(ToolId.tongs);
-    s.buyDecor(DecorId.wallpaperStripes);
-    s.buyDecor(DecorId.windowSeaView);
+    expect(s.buyEquipment(EquipmentIds.goldenOven), PurchaseResult.ok);
+    expect(s.buyEquipment('tongs'), PurchaseResult.ok);
+    expect(s.buyEquipment(EquipmentIds.fastOven), PurchaseResult.ok);
+    expect(s.buyEquipment(EquipmentIds.fastOven), PurchaseResult.ok);
+    expect(s.buyUnlock(UnlockIds.caseStand), PurchaseResult.ok);
+    s.markUnlocksSeen(['eq:wideCase:2', UnlockIds.caseStand]);
+    expect(s.buyDecor(DecorId.wallpaperStripes), PurchaseResult.ok);
+    expect(s.buyDecor(DecorId.windowSeaView), PurchaseResult.ok);
     s.equipDecor(DecorSlot.window, DecorId.windowSeaView);
     s.markSceneSeen(StorySceneId.prologue);
     s.markTutorialSeen(StationId.bake);
@@ -46,29 +83,40 @@ void main() {
     s.setSound(false);
     s.claimLogin();
     s.registerRewardedShown();
-    s.registerInterstitialShown(4);
+    s.registerLevelPlayEnded();
+    s.registerLevelPlayEnded();
     s.grantIap(IapProductId.removeAds);
     s.completeDay();
 
     final text = jsonEncode(s.toJson());
     final back = GameState.fromJson(jsonDecode(text) as Map<String, dynamic>, clock: _clock);
     expect(back.toJson(), s.toJson());
-    expect(back.level, 3);
+    expect(back.highestCompletedLevel, 8);
+    expect(back.levelRecord(3), const LevelRecord(stars: 1, best: 700, plays: 2, firstWin: true));
+    expect(back.totalStars, 11);
     expect(back.ovenLevel, 2);
     expect(back.toolLevel(ToolId.tongs), 2);
+    back.attachUnlockConfig(_unlocks);
+    expect(back.equipmentTier(EquipmentIds.fastOven), 3);
+    expect(back.unlockState(UnlockIds.caseStand), UnlockState.owned);
+    expect(back.shopSetup, s.shopSetup);
+    expect(back.shopSetup.caseSlotsBonus, 1);
+    expect(back.unseenUnlocks, s.unseenUnlocks);
+    expect(back.unseenUnlocks, isNot(contains('eq:wideCase:2')));
+    expect((back.toJson()['shop'] as Map)['seen'], ['case_stand', 'eq:wideCase:2']);
     expect(back.equippedDecor[DecorSlot.window], DecorId.windowSeaView);
     expect(back.decorTipBonusPct, 6);
     expect(back.language, LanguagePref.vi);
     expect(back.soundOn, isFalse);
     expect(back.removeAds, isTrue);
     expect(back.rewardedToday, 1);
-    expect(back.lastInterstitialDay, 4);
+    expect(back.playsSinceInterstitial, s.playsSinceInterstitial);
     expect(back.pendingLoginReward, isNull);
     expect(back.dayNumber, 2);
   });
 
   test('thiếu trường → mặc định', () {
-    final s = GameState.fromJson({'v': 1, 'coins': 777}, clock: _clock);
+    final s = GameState.fromJson({'v': GameState.saveVersion, 'coins': 777}, clock: _clock);
     expect(s.coins, 777);
     expect(s.gems, Economy.startGems);
     expect(s.dayNumber, 1);
@@ -176,7 +224,7 @@ void main() {
   });
 
   test('load: trường hỏng → giữ các trường khác + chép dự phòng; lưu hợp lệ → không chép', () async {
-    final raw = jsonEncode({'v': 1, 'coins': 4321, 'gems': 'x', 'day': 7});
+    final raw = jsonEncode({'v': GameState.saveVersion, 'coins': 4321, 'gems': 'x', 'day': 7});
     final repo = MemorySaveRepository(raw);
     final s = await GameState.load(repo, clock: _clock);
     expect(s.coins, 4321);
@@ -285,4 +333,91 @@ void _prefsTests() {
 class _FailingReadRepository extends MemorySaveRepository {
   @override
   Future<String?> read() async => throw StateError('bộ nhớ lỗi');
+}
+
+/// `shop` (GĐ3): đọc độc lập, bản v2 cũ không có `shop`, quy đổi lò/dụng cụ V1.
+void _shopSaveTests() {
+  group('shop (GĐ3)', () {
+    test('bản v2 cũ (GĐ2, không có shop): lò/dụng cụ V1 thành thiết bị, chưa mua mở rộng; ghi thêm shop, giữ trường cũ',
+        () {
+      final s = GameState.fromJson({
+        'v': 2,
+        'coins': 50,
+        'oven': 3,
+        'tools': {'whisk': 2, 'pipingBag': 3, 'tongs': 1},
+        'progress': {
+          'levels': {for (var id = 1; id <= 12; id++) '$id': {'stars': 2, 'plays': 1}},
+        },
+      }, clock: _clock)
+        ..attachUnlockConfig(_unlocks);
+      expect(s.equipmentTier(EquipmentIds.goldenOven), 3);
+      expect(s.ovenLevel, 3);
+      expect(s.equipmentTier('whisk'), 2);
+      expect(s.equipmentTier('pipingBag'), 3);
+      expect(s.equipmentTier(EquipmentIds.fastOven), 1);
+      expect(s.bakeModifiers.bakePerfectHalfWidth, 0.07);
+      expect(s.unlockState(UnlockIds.caseStand), UnlockState.available);
+      expect(s.unlockState(UnlockIds.oven2), UnlockState.available);
+      expect(s.shopSetup.owned, isEmpty);
+      final json = s.toJson();
+      expect(json['oven'], 3);
+      expect(json['tools'], {'whisk': 2, 'pipingBag': 3, 'tongs': 1});
+      expect(json['shop'], {
+        'owned': <String>[],
+        'equipment': {'goldenOven': 3, 'pipingBag': 3, 'tongs': 1, 'whisk': 2},
+        'seen': <String>[],
+      });
+    });
+
+    test('cấp thiết bị = max(trường V1, shop.equipment); id lạ giữ nguyên khi ghi', () {
+      final s = GameState.fromJson({
+        'v': 2,
+        'oven': 2,
+        'tools': {'whisk': 3},
+        'shop': {
+          'owned': ['case_stand', 'future_room'],
+          'equipment': {'goldenOven': 4, 'whisk': 1, 'fastOven': 3, 'robotMixer': 2},
+          'seen': ['eq:fastOven:4'],
+        },
+      }, clock: _clock)
+        ..attachUnlockConfig(_unlocks);
+      expect(s.ovenLevel, 4);
+      expect(s.toolLevel(ToolId.whisk), 3);
+      expect(s.equipmentTier(EquipmentIds.fastOven), 3);
+      expect(s.unlockState(UnlockIds.caseStand), UnlockState.owned);
+      expect(s.unlockState('future_room'), UnlockState.locked); // không có trong config
+      expect(s.shopSetup.owned, {'case_stand', 'future_room'});
+      expect(s.shopSetup.caseSlotsBonus, 1);
+      expect(s.shopSetup.ovenSec, closeTo(5.6, 1e-9));
+      final shop = s.toJson()['shop'] as Map<String, dynamic>;
+      expect(shop['owned'], ['case_stand', 'future_room']);
+      expect(shop['equipment'], {'fastOven': 3, 'goldenOven': 4, 'pipingBag': 1, 'robotMixer': 2, 'tongs': 1, 'whisk': 3});
+      expect(shop['seen'], ['eq:fastOven:4']);
+      expect(s.toJson()['oven'], 4);
+    });
+
+    test('shop hỏng từng phần: phần tử hỏng bị bỏ, phần khác giữ; shop sai kiểu → mặc định', () async {
+      final repo = MemorySaveRepository(jsonEncode({
+        'v': 2,
+        'coins': 321,
+        'shop': {
+          'owned': ['case_stand', 5, ''],
+          'equipment': {'fastOven': 2, 'bigTray': 'x', 'wideCase': 99},
+          'seen': 'không phải mảng',
+        },
+      }));
+      final s = await GameState.load(repo, clock: _clock);
+      s.attachUnlockConfig(_unlocks);
+      expect(s.coins, 321);
+      expect(s.unlockState(UnlockIds.caseStand), UnlockState.owned);
+      expect(s.equipmentTier(EquipmentIds.fastOven), 2);
+      expect(s.equipmentTier(EquipmentIds.bigTray), 1);
+      expect(s.equipmentTier(EquipmentIds.wideCase), 3, reason: 'kẹp theo số cấp trong config');
+      expect(repo.backups, hasLength(1), reason: 'trường hỏng → chuỗi gốc vào bản dự phòng');
+
+      final wrong = GameState.fromJson({'v': 2, 'coins': 9, 'shop': ['x']}, clock: _clock);
+      expect(wrong.coins, 9);
+      expect(wrong.shopSetup.owned, isEmpty);
+    });
+  });
 }
