@@ -2438,6 +2438,12 @@ abstract class AppLocalizations {
   /// **'Reward received!'**
   String get adRewardGranted;
 
+  /// Toast shown when the player closes a rewarded ad before it finishes (daily ad limit not yet reached).
+  ///
+  /// In en, this message translates to:
+  /// **'The ad didn\'t finish, so no reward this time.'**
+  String get adNotCompleted;
+
   /// No description provided for @settingsTitle.
   ///
   /// In en, this message translates to:

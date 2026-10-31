@@ -407,6 +407,7 @@
   "adSimulatedBody": "Bản phát hành sẽ hiện quảng cáo thật ở đây.",
   "adSimulatedClosing": "Đóng sau {seconds} giây",
   "adRewardGranted": "Đã nhận thưởng!",
+  "adNotCompleted": "Quảng cáo chưa xem xong nên chưa có thưởng.",
 
   "settingsTitle": "Cài đặt",
   "settingsLanguage": "Ngôn ngữ",

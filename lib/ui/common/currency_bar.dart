@@ -8,7 +8,7 @@ import 'art.dart';
 import 'format.dart';
 
 /// Nhãn giấy dán hiển thị một loại tiền (xu hoặc gem) — [SLTopBarItem]: ảnh xu/gem vẽ tay + số, nghiêng nhẹ,
-/// băng dính ở góc. Số đổi → nảy nhẹ.
+/// băng dính ở góc. Số đổi → nảy nhẹ. Từ 1 triệu hiện rút gọn ([formatCompact]); nhãn đọc màn hình vẫn đủ số.
 class CurrencyChip extends StatelessWidget {
   const CurrencyChip.coins(this.value, {super.key, this.height = 44}) : gems = false;
   const CurrencyChip.gems(this.value, {super.key, this.height = 44}) : gems = true;
@@ -24,7 +24,7 @@ class CurrencyChip extends StatelessWidget {
     return _Pop(
       key: ValueKey(value),
       child: SLTopBarItem(
-        value: formatInt(context, value),
+        value: formatCompact(context, value), // ≥ 1 triệu rút gọn (1.2M / 1,2 Tr) — UI-06
         leading: gems ? GemIcon(size: icon) : CoinIcon(size: icon),
         semanticLabel: gems ? l.commonGems(value) : l.commonCoins(value),
         minWidth: height * 2.4,

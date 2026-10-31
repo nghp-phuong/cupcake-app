@@ -657,7 +657,7 @@ void main() {
       expect(s.claimOffline(doubled: true), 0);
     });
 
-    test('< 10 phút không tính; đồng hồ lùi → không tính, đặt lại mốc; chưa thuê quản lý → không tính', () {
+    test('< 10 phút không tính; đồng hồ lùi → không tính, giữ mốc (không lùi); chưa thuê quản lý → không tính', () {
       final s = manager();
       s.refreshOffline(_t0.add(const Duration(minutes: 9)));
       expect(s.pendingOffline, isNull);
@@ -667,9 +667,11 @@ void main() {
       final back = manager();
       back.refreshOffline(_t0.subtract(const Duration(hours: 5)));
       expect(back.pendingOffline, isNull);
-      expect(back.toJson()['lastActive'], _t0.subtract(const Duration(hours: 5)).millisecondsSinceEpoch);
+      expect(back.toJson()['lastActive'], _t0.millisecondsSinceEpoch, reason: 'mốc không lùi (QA-01)');
       back.refreshOffline(_t0.subtract(const Duration(hours: 4)));
-      expect(back.pendingOffline!.counted, const Duration(hours: 1), reason: 'tính từ mốc mới');
+      expect(back.pendingOffline, isNull, reason: 'giờ máy chưa vượt lại mốc → vắng = 0');
+      back.refreshOffline(_t0.add(const Duration(hours: 1)));
+      expect(back.pendingOffline!.counted, const Duration(hours: 1), reason: 'chỉ tính phần vượt mốc cũ');
 
       final none = _state({'lastActive': _t0.millisecondsSinceEpoch});
       none.refreshOffline(_t0.add(const Duration(hours: 6)));

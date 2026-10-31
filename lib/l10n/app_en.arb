@@ -478,6 +478,8 @@
   "adSimulatedClosing": "Closing in {seconds}s",
   "@adSimulatedClosing": {"placeholders": {"seconds": {"type": "int"}}},
   "adRewardGranted": "Reward received!",
+  "adNotCompleted": "The ad didn't finish, so no reward this time.",
+  "@adNotCompleted": {"description": "Toast shown when the player closes a rewarded ad before it finishes (daily ad limit not yet reached)."},
 
   "settingsTitle": "Settings",
   "settingsLanguage": "Language",

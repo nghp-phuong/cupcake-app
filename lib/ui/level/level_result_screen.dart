@@ -87,7 +87,7 @@ class _LevelResultScreenState extends State<LevelResultScreen> {
       services.audio.success();
       if (added > 0) showToast(context, l.levelResultDoubled(added));
     } else {
-      showToast(context, l.adsLimitReached, success: false);
+      showRewardedFailedToast(context, services.ads);
     }
   }
 

@@ -1392,6 +1392,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adRewardGranted => 'Reward received!';
 
   @override
+  String get adNotCompleted => 'The ad didn\'t finish, so no reward this time.';
+
+  @override
   String get settingsTitle => 'Settings';
 
   @override

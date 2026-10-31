@@ -493,3 +493,52 @@ trong L17–L20; mua khay trước thì bàn ghế sang L21. Hạ giá bàn gh�
 do giá. Trong mô phỏng 50 màn, `newbie` mua `cafe_tables` trung vị sau L20 (trễ 2), `average` sau L21 (trễ 3) — trong mục
 tiêu. Lựa chọn: (a) với mốc mở từ L17 (`late`), người mới chỉ kiểm trễ TB ≤ 3, bỏ kiểm "không ai bỏ lỡ trong L1→L20" (đã
 kiểm ở `simulate_test` 50 màn); (b) quay lại thứ tự theo nhóm (`bigTray:3` trễ 4).
+
+## 9. Sửa BAL-01 — L7 "Chiều nhung đỏ" quá khó với người chơi `average` (QA 30/10/2026)
+
+**Triệu chứng.** `average` thắng lần đầu L7 28% (seed 0; seed 1 35%, seed 2 37%), trong khi L6 95%, L8 88%. Mô phỏng vẫn
+báo "0 lệch" vì sàn 45% mỗi màn (`SimTargets.floorChapters`) chỉ áp chương 2–5.
+
+**Nguyên nhân.** L7 có 4 món nhưng chỉ 3 ô tủ gốc; mốc 1★ (1460) cân theo "bộ đồ kỳ vọng" của `level_balance_test`, tức
+đã mua kệ bánh `case_stand` (+1 ô, mở sau L5, 4200 xu). Người chơi `average` thật mới có kệ ở lượt đầu L7 trong 25/200
+lượt (12%): tổng xu trung vị L1–L6 khoảng 6100, trừ lò nhanh / dụng cụ thì còn thiếu khoảng 400 xu. Nhóm có kệ thắng
+22/25 (88%), nhóm không kệ chỉ 19%: thiếu ô thì luôn có một món không bày được, mà món mới (red velvet) lại có trọng số
+gọi gấp đôi. Thua L7 trung bình 1,83 lượt nên L7 thành chỗ "cày xu" cho chương 2.
+
+**Đã thử, bỏ:**
+- `caseSlots` 4 (kệ hết tác dụng ở L7) và nâng 1★: người chơi `average` và người mới có cùng số ô nên chênh lệch kỹ năng
+  như L6 (95% so với 46%). Mốc giữ người mới ≥ 25% (`level_balance_test`) thì `average` 88–92%, chương 1 lên 88–89%.
+- `caseSlots` 4, khách tới thưa hơn 15% và 1★ 1410: L7 63/70/65% (seed 0/1/2), nhưng người mới (đồ kỳ vọng) còn 36%. Khi đó
+  trung bình người mới chương 2 dễ hơn chương 1 tới 6,07 điểm (> 6, `level_balance_test`); L12 tụt xuống 42%.
+- Giảm giá `bigTray` cấp 2 (4000 → 3600): L12 chỉ tăng khoảng 2 điểm, nhưng người mới L5–L20 trong `progression_sim_test`
+  lên 60,4% (> 60%) → bỏ, không đổi `unlocks.json`.
+
+**Cách sửa** (`assets/config/levels.json`):
+
+| Màn | Trường | Trước | Sau | Lý do |
+|---|---|---|---|---|
+| L7 | `flexibleChance` | 0.25 | **0.85** | Hầu hết khách nhận thêm món thứ hai, nên khi thiếu kệ (3 ô / 4 món) vẫn bán được. Người có kệ được lợi ít hơn nên khoảng cách giữa hai nhóm hẹp lại. Vẫn 3 ô gốc, kệ L5 vẫn có giá trị |
+| L7 | `stars` | [1460, 1970, 2100] | **[1515, 1930, 2060]** | 1★ để `average` ≈ 65–70% và người mới (đồ kỳ vọng) 42%. 2★/3★ để bot 0.75 được 2,02 sao |
+| L12 | `stars` 1★ | 4380 | **4280** | L7 dễ hơn thì người chơi thua L7 ít hơn (1,83 → 1,33 lượt), ít xu hơn trước chương 2 (−540 xu sau L7), ít người kịp mua `bigTray` cấp 2 trước L12 (không có khay thì thắng L12 khoảng 0–4%). Cần hạ 1★ để L12 trở lại sàn 45%. Người mới L12 62% (khung ≤ 65%) |
+
+Mã: `SimTargets.floorChapters` = {1, 2, 3, 4, 5} (`lib/core/sim/balance_report.dart`). `simulate_test` có thêm test
+"BAL-01: không màn nào của chương 1 dưới 45%". Không nới ngưỡng test nào.
+
+**Kết quả** (`SIM_SKILL=average SIM_RUNS=200`):
+
+| Chỉ số | seed 0 trước → sau | seed 1 trước → sau | seed 2 trước → sau |
+|---|---|---|---|
+| L7 thắng lần đầu | 28% → **71%** | 35% → **66%** | 37% → **71%** |
+| L7 số lượt thử TB | 1,83 → 1,33 | 1,79 → 1,36 | 1,75 → 1,35 |
+| L12 thắng lần đầu | 50% → 46% | 54% → 51% | 50% → 50% |
+| Chương 1 thắng lần đầu TB | 82% → 86% | 83% → 86% | 85% → 88% |
+| Chương 2 thắng lần đầu TB | 70% → 69% | 71% → 72% | 69% → 68% |
+| Lệch mục tiêu | 0 (sàn chưa áp chương 1) → **0** | 1 (L7) → 0 | 1 (L7) → 1 (chương 2 67,x% < 68%) |
+
+Chương 1, seed 0 (sau): L1 100 · L2 100 · L3 67 · L4 63 · L5 91 · L6 95 · **L7 71** · L8 88 · L9 95 · L10 93% → TB 86%.
+Người mới L7 54% (chương 1 63%), người chơi khá L7 100% (chương 1 98%).
+
+**Còn lại.** Chương 1 nằm ở nửa trên của khoảng 80 ± 8% (86–88%), vì các màn khác của chương 1 đã ≈ 88% với `average`.
+Trước đây L7 kéo trung bình xuống. Muốn về gần 80% thì phải làm khó L5/L6/L9/L10, việc này cần chủ dự án quyết. L12
+phụ thuộc hẳn vào khay lớn cấp 2 (vách đứng) và chỉ dư 1 điểm trên sàn 45% (seed 0). Seed 2 lệch nhẹ ở chương 2
+(67,x% so với 68%).

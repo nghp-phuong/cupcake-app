@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/widgets.dart';
 
 import '../../core/app_scope.dart';
+import 'sl_tap_target.dart';
 import 'sl_theme.dart';
 
 /// Hành vi bấm chung của SL*: không ripple. Nhấn → lún (press 0→1 trong [SLMetrics.pressIn]); thả → nổi lại và
@@ -107,21 +108,25 @@ class _SLPressableState extends State<SLPressable> with TickerProviderStateMixin
         child: child,
       );
     }
-    return Semantics(
-      button: widget.isButton,
+    // Vùng chạm nới tới ≥ 48 dp thật (hình giữ nguyên) — xem SLTapTarget.
+    return SLTapTarget(
       enabled: _enabled,
-      selected: widget.selected,
-      toggled: widget.toggled,
-      label: widget.semanticLabel,
-      child: MouseRegion(
-        cursor: _enabled ? SystemMouseCursors.click : MouseCursor.defer,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTapDown: _enabled ? (_) => _pressDown() : null,
-          onTapUp: _enabled ? (_) => _release() : null,
-          onTapCancel: _enabled ? () => _release(bounce: false) : null,
-          onTap: _enabled ? _tap : null,
-          child: child,
+      child: Semantics(
+        button: widget.isButton,
+        enabled: _enabled,
+        selected: widget.selected,
+        toggled: widget.toggled,
+        label: widget.semanticLabel,
+        child: MouseRegion(
+          cursor: _enabled ? SystemMouseCursors.click : MouseCursor.defer,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTapDown: _enabled ? (_) => _pressDown() : null,
+            onTapUp: _enabled ? (_) => _release() : null,
+            onTapCancel: _enabled ? () => _release(bounce: false) : null,
+            onTap: _enabled ? _tap : null,
+            child: child,
+          ),
         ),
       ),
     );

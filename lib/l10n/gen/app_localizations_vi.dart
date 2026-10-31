@@ -1373,6 +1373,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get adRewardGranted => 'Đã nhận thưởng!';
 
   @override
+  String get adNotCompleted => 'Quảng cáo chưa xem xong nên chưa có thưởng.';
+
+  @override
   String get settingsTitle => 'Cài đặt';
 
   @override

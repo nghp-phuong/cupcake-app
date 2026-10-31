@@ -76,11 +76,11 @@
       "mapPos": [0.574, 0.465] },
 
     { "id": 7, "chapter": 1, "title": {"en": "Velvet Evening", "vi": "Chiều nhung đỏ"},
-      "durationSec": 170, "goal": {"type": "coins"}, "stars": [1460, 1970, 2100],
+      "durationSec": 170, "goal": {"type": "coins"}, "stars": [1515, 1930, 2060],
       "menu": ["cupcakeVanilla", "eggTart", "macaron", "redVelvetCupcake"],
       "caseSlots": 3, "startStock": 3, "patienceSec": 32,
       "spawn": {"startEverySec": 8.625, "endEverySec": 5.75, "rushAtPct": 78, "rushEverySec": 3.22},
-      "flexibleChance": 0.25,
+      "flexibleChance": 0.85,
       "specials": [ {"atSec": 60, "who": "kenji", "recipe": "redVelvetCupcake", "scene": "kenji2"} ],
       "introScene": null, "outroScene": null, "special": false,
       "mapPos": [0.688, 0.688] },
@@ -132,7 +132,7 @@
       "mapPos": [0.344, 0.924] },
 
     { "id": 12, "chapter": 2, "title": {"en": "Happy Birthday!", "vi": "Chúc mừng sinh nhật!"},
-      "durationSec": 190, "goal": {"type": "coins"}, "stars": [4380, 6970, 7450],
+      "durationSec": 190, "goal": {"type": "coins"}, "stars": [4280, 6970, 7450],
       "menu": ["cupcakeChocolate", "macaron", "strawberryCake", "birthdayCake"],
       "caseSlots": 3, "startStock": 3, "patienceSec": 28,
       "spawn": {"startEverySec": 5.85, "endEverySec": 3.96, "rushAtPct": 75, "rushEverySec": 2.25},

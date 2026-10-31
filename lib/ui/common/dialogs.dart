@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants.dart';
+import '../../core/services/ad_service.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../sugarleaf/sugarleaf.dart';
 
@@ -41,6 +42,14 @@ class SugarDialog extends StatelessWidget {
       );
 }
 
+/// Đóng hộp thoại chứa [context] đúng một lần: hai lần chạm lọt cùng một khung hình (hai ngón / máy chậm) thì lần
+/// sau bỏ qua — route của hộp đã không còn hiện hành (đang đóng) nên không `pop` nhầm màn bên dưới.
+void popDialogOnce<T>(BuildContext context, [T? result]) {
+  final route = ModalRoute.of(context);
+  if (route == null || !route.isCurrent) return;
+  Navigator.of(context).pop<T>(result);
+}
+
 /// Hộp xác nhận Huỷ / Đồng ý. Trả true nếu người chơi đồng ý.
 Future<bool> showConfirmDialog(
   BuildContext context, {
@@ -63,13 +72,13 @@ Future<bool> showConfirmDialog(
             label: l.commonCancel,
             variant: SLButtonVariant.secondary,
             width: 180,
-            onPressed: () => Navigator.of(ctx).pop(false),
+            onPressed: () => popDialogOnce(ctx, false),
           ),
           SLButton(
             label: confirmLabel ?? l.commonConfirm,
             color: confirmColor,
             width: 200,
-            onPressed: () => Navigator.of(ctx).pop(true),
+            onPressed: () => popDialogOnce(ctx, true),
           ),
         ],
         child: Column(
@@ -89,4 +98,11 @@ Future<bool> showConfirmDialog(
 /// xanh; false = icon thông tin.
 void showToast(BuildContext context, String message, {bool success = true}) {
   SLToast.show(context, message, kind: success ? SLToastKind.success : SLToastKind.info);
+}
+
+/// Quảng cáo thưởng không trả thưởng (`showRewarded` false / lỗi): còn lượt hôm nay → người chơi đóng sớm hoặc SDK
+/// lỗi ([AppLocalizations.adNotCompleted]); hết lượt thật → [AppLocalizations.adsLimitReached] (UI-07).
+void showRewardedFailedToast(BuildContext context, AdService ads) {
+  final l = AppLocalizations.of(context);
+  showToast(context, ads.canShowRewarded() ? l.adNotCompleted : l.adsLimitReached, success: false);
 }

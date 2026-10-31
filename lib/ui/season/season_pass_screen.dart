@@ -40,6 +40,9 @@ class _SeasonPassScreenState extends State<SeasonPassScreen> {
   ScrollController? _scroll;
   bool _buying = false;
 
+  /// Hộp xác nhận mua đang mở (khoá ngay khi chạm, trước `await`).
+  bool _confirming = false;
+
   @override
   void initState() {
     super.initState();
@@ -84,18 +87,25 @@ class _SeasonPassScreenState extends State<SeasonPassScreen> {
   }
 
   Future<void> _buyPremium() async {
-    if (_buying) return;
+    if (_buying || _confirming) return;
     final l = AppLocalizations.of(context);
     final services = AppScope.read(context);
     final product = services.state.monetizationConfig.product(IapProductId.seasonPass);
-    final ok = await showConfirmDialog(
-      context,
-      title: l.storeConfirmTitle,
-      body: l.storeConfirmBody(l.iapName(product.id, fallback: product.name(levelLang(context))), product.displayPrice),
-      confirmLabel: l.commonBuy,
-      titleColor: SLColors.butter,
-      illustration: const _TicketArt(size: 96),
-    );
+    // Khoá trước khi mở hộp xác nhận: hai chạm cùng khung hình không mở hai hộp chồng nhau (UI-03).
+    _confirming = true;
+    bool ok;
+    try {
+      ok = await showConfirmDialog(
+        context,
+        title: l.storeConfirmTitle,
+        body: l.storeConfirmBody(l.iapName(product.id, fallback: product.name(levelLang(context))), product.displayPrice),
+        confirmLabel: l.commonBuy,
+        titleColor: SLColors.butter,
+        illustration: const _TicketArt(size: 96),
+      );
+    } finally {
+      _confirming = false;
+    }
     if (!ok || !mounted) return;
     setState(() => _buying = true);
     final bought = await services.iap.buy(IapProductId.seasonPass);
@@ -641,7 +651,7 @@ Future<void> showSeasonEndedDialog(BuildContext context) async {
             width: 220,
             height: 64,
             fontSize: 24,
-            onPressed: () => Navigator.of(ctx).pop(),
+            onPressed: () => popDialogOnce(ctx),
           ),
         ],
         child: Column(

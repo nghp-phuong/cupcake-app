@@ -7,10 +7,30 @@ import 'constants.dart';
 
 /// Khung tham chiếu 1280×720: co giãn giữ tỉ lệ (letterbox màu kem). Bên trong, `MediaQuery`
 /// luôn báo size 1280×720, không padding/insets, không phóng chữ → mọi màn dùng toạ độ cố định.
+///
+/// Khung luôn nằm trong vùng an toàn (`MediaQuery.viewPadding`: tai thỏ, thanh hệ thống); nền kem vẫn phủ cả màn.
+/// Máy có viền kem rộng hơn tai thỏ (19,5:9) giữ nguyên cỡ và vị trí; chỉ co/dời khi vùng an toàn thật sự hẹp hơn
+/// chỗ khung cần (máy 16:9 có tai thỏ) — xem [frameRect].
 class RefFrame extends StatelessWidget {
   const RefFrame({super.key, required this.child});
 
   final Widget child;
+
+  /// Vị trí khung trong màn [screen] có vùng không an toàn [safe]: cỡ = min(cỡ vừa cả màn, cỡ vừa vùng an toàn),
+  /// đặt giữa màn rồi đẩy vào trong vùng an toàn (dời ít nhất có thể). Padding bằng 0 → giống hệt căn giữa thường.
+  static Rect frameRect(Size screen, EdgeInsets safe) {
+    final safeW = math.max(0.0, screen.width - safe.horizontal);
+    final safeH = math.max(0.0, screen.height - safe.vertical);
+    final scale = math.min(
+      math.min(screen.width / kRefSize.width, screen.height / kRefSize.height),
+      math.min(safeW / kRefSize.width, safeH / kRefSize.height),
+    );
+    final fw = kRefSize.width * scale, fh = kRefSize.height * scale;
+    double place(double centered, double lo, double hi) => centered < lo ? lo : (centered > hi ? hi : centered);
+    final left = place((screen.width - fw) / 2, safe.left, screen.width - safe.right - fw);
+    final top = place((screen.height - fh) / 2, safe.top, screen.height - safe.bottom - fh);
+    return Rect.fromLTWH(left, top, fw, fh);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,6 +43,8 @@ class RefFrame extends StatelessWidget {
       systemGestureInsets: EdgeInsets.zero,
       textScaler: TextScaler.noScaling,
     );
+    // viewPadding (không phải padding): không đổi khi bàn phím hiện → khung không nhảy cỡ.
+    final safe = outer.viewPadding;
     return ColoredBox(
       color: AppColors.cream,
       child: LayoutBuilder(
@@ -30,7 +52,8 @@ class RefFrame extends StatelessWidget {
           final w = constraints.maxWidth.isFinite ? constraints.maxWidth : outer.size.width;
           final h = constraints.maxHeight.isFinite ? constraints.maxHeight : outer.size.height;
           final portrait = w < h;
-          final frame = Center(
+          final rect = frameRect(Size(w, h), safe);
+          Widget frame = Center(
             child: FittedBox(
               fit: BoxFit.contain,
               child: SizedBox.fromSize(
@@ -39,9 +62,20 @@ class RefFrame extends StatelessWidget {
               ),
             ),
           );
+          // Không có vùng không an toàn → giữ nguyên cây widget cũ (ảnh màn không tai thỏ không đổi).
+          if (safe != EdgeInsets.zero) {
+            frame = Padding(
+              padding: EdgeInsets.fromLTRB(
+                rect.left,
+                rect.top,
+                math.max(0.0, w - rect.right),
+                math.max(0.0, h - rect.bottom),
+              ),
+              child: frame,
+            );
+          }
           if (!portrait) return frame;
           // Màn dọc: vẫn cho chơi trong khung, phần letterbox phía trên hiện lời nhắc xoay máy.
-          final letterbox = (h - w * kRefSize.height / kRefSize.width) / 2;
           return Stack(
             children: [
               Positioned.fill(child: frame),
@@ -49,7 +83,7 @@ class RefFrame extends StatelessWidget {
                 left: 0,
                 right: 0,
                 top: 0,
-                height: math.max(letterbox, 72),
+                height: math.max(rect.top, 72),
                 child: const _RotatePrompt(),
               ),
             ],

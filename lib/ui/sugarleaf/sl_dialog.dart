@@ -111,7 +111,11 @@ class SLDialog extends StatelessWidget {
                   icon: 'close',
                   tooltip: l.commonClose,
                   size: 48,
-                  onPressed: onClose ?? () => Navigator.of(context).pop(),
+                  onPressed: onClose ??
+                      () {
+                        // Hai chạm cùng khung hình: route đã đang đóng thì bỏ qua, không pop nhầm màn dưới.
+                        if (ModalRoute.of(context)?.isCurrent ?? false) Navigator.of(context).pop();
+                      },
                 ),
               ),
           ],

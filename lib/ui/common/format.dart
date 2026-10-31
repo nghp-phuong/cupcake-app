@@ -9,6 +9,13 @@ String _lang(BuildContext context) => Localizations.localeOf(context).languageCo
 /// Số nguyên có phân tách hàng nghìn theo ngôn ngữ (1,800 / 1.800).
 String formatInt(BuildContext context, int value) => NumberFormat.decimalPattern(_lang(context)).format(value);
 
+/// Số tiền trên thanh tiền tệ: dưới 1 triệu giữ đủ ([formatInt]); từ 1 triệu rút gọn theo ngôn ngữ (1.2M / 1,2 Tr,
+/// 1B / 1 T) cho nhãn không tràn khi số rất lớn.
+String formatCompact(BuildContext context, int value) {
+  if (value.abs() < 1000000) return formatInt(context, value);
+  return (NumberFormat.compact(locale: _lang(context))..maximumFractionDigits = 1).format(value);
+}
+
 /// Số thập phân 1 chữ số theo ngôn ngữ (4.5 / 4,5).
 String formatDecimal1(BuildContext context, double value) => NumberFormat('0.0', _lang(context)).format(value);
 

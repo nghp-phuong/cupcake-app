@@ -34,18 +34,28 @@ class _StoreScreenState extends State<StoreScreen> {
   IapProductId? _buying;
   bool _watching = false;
 
+  /// Hộp xác nhận mua đang mở (khoá ngay khi chạm, trước `await`).
+  bool _confirming = false;
+
   Future<void> _buy(IapProduct product) async {
-    if (_buying != null) return;
+    if (_buying != null || _confirming) return;
     final l = AppLocalizations.of(context);
     final services = AppScope.read(context);
-    final ok = await showConfirmDialog(
-      context,
-      title: l.storeConfirmTitle,
-      body: l.storeConfirmBody(_productName(context, l, product), product.displayPrice),
-      confirmLabel: l.commonBuy,
-      titleColor: SLColors.butter,
-      illustration: SizedBox(width: 120, height: 96, child: _ProductArt(product: product)),
-    );
+    // Khoá trước khi mở hộp xác nhận: hai chạm cùng khung hình không mở hai hộp chồng nhau (UI-03).
+    _confirming = true;
+    bool ok;
+    try {
+      ok = await showConfirmDialog(
+        context,
+        title: l.storeConfirmTitle,
+        body: l.storeConfirmBody(_productName(context, l, product), product.displayPrice),
+        confirmLabel: l.commonBuy,
+        titleColor: SLColors.butter,
+        illustration: SizedBox(width: 120, height: 96, child: _ProductArt(product: product)),
+      );
+    } finally {
+      _confirming = false;
+    }
     if (!ok || !mounted) return;
     setState(() => _buying = product.id);
     final bought = await services.iap.buy(product.id);
@@ -69,7 +79,13 @@ class _StoreScreenState extends State<StoreScreen> {
       return;
     }
     setState(() => _watching = true);
-    final watched = await services.ads.showRewarded(context, AdPlacement.freeGem);
+    // SDK quảng cáo lỗi → coi như không xem được, nút trở lại bình thường (QA-02).
+    var watched = false;
+    try {
+      watched = await services.ads.showRewarded(context, AdPlacement.freeGem);
+    } catch (e) {
+      debugPrint('StoreScreen: quảng cáo kim cương lỗi ($e)');
+    }
     if (!mounted) return;
     setState(() => _watching = false);
     if (watched) {
@@ -77,7 +93,7 @@ class _StoreScreenState extends State<StoreScreen> {
       services.audio.success();
       showToast(context, l.adRewardGranted);
     } else {
-      showToast(context, l.adsLimitReached, success: false);
+      showRewardedFailedToast(context, services.ads);
     }
   }
 

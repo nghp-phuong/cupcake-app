@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/constants.dart';
 import 'paint/sl_random.dart';
+import 'sl_tap_target.dart';
 
 /// Token màu của bộ SL* (phong cách vẽ tay: giấy, gỗ, vải, mực nâu, màu nước).
 /// Cặp chữ/nền dùng thật đều đạt WCAG AA — xem `test/ui/sugarleaf/sl_contrast_test.dart`.
@@ -203,6 +204,7 @@ int slSeed({int? seed, Key? key, Object? content, int salt = 0}) {
 
 /// Bọc chung cho cây dùng SL*: đặt DefaultTextStyle (mực nâu + font nội dung) và IconTheme màu mực — để chữ
 /// vẫn đúng kiểu khi không có `Scaffold`/`Material` phía trên.
+/// SLScope ngoài cùng (app.dart: bọc ngoài RefFrame, thấy cỡ màn thật) còn đặt [SLTapTargetScope] — vùng chạm ≥ 48 dp.
 class SLScope extends StatelessWidget {
   const SLScope({super.key, required this.child});
 
@@ -211,10 +213,11 @@ class SLScope extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final styles = SLTextStyles.of(context);
-    return DefaultTextStyle(
+    final Widget body = DefaultTextStyle(
       style: styles.body,
       child: IconTheme(data: IconThemeData(color: SLTheme.of(context).ink), child: child),
     );
+    return SLTapTargetScope.isInstalled(context) ? body : SLTapTargetScope(child: body);
   }
 }
 

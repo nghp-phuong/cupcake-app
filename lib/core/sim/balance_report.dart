@@ -43,13 +43,14 @@ abstract final class SimTargets {
   /// Chương 2 thắng lần đầu trong khoảng này (nằm giữa chương 1 ~80% và chương 4 ~60%).
   static const chapter2FirstWin = (min: 0.68, max: 0.74);
 
-  /// Không màn nào của các chương [floorChapters] có tỉ lệ thắng lần đầu dưới mức này (chương 2 từng có L12 12%).
+  /// Không màn nào của các chương [floorChapters] có tỉ lệ thắng lần đầu dưới mức này (chương 2 từng có L12 12%; chương 1
+  /// từng có L7 28% mà mô phỏng vẫn báo "0 lệch" vì sàn chưa áp chương 1 — BAL-01).
   static const minLevelFirstWin = 0.45;
 
   /// GĐ8: sàn p của màn mục tiêu xu khi sinh mốc 1★ (trước 0.40). Màn đếm khách dễ hơn chương (mốc nguyên) kéo p của màn
   /// xu xuống; sàn 0.52 giữ mọi màn xu ≥ ~50% dù dao động theo seed (L48 từng 49%).
   static const minCalibratedFirstWin = 0.52;
-  static const floorChapters = {2, 3, 4, 5};
+  static const floorChapters = {1, 2, 3, 4, 5};
 
   /// % người chơi đủ sao mở chương ngay khi vừa qua hết chương trước lần đầu (không chơi lại lấy sao): mục tiêu ≈ 70–85%.
   /// Sao là số nguyên nên tỉ lệ nhảy bậc — chương 2 chỉ có 16★ → 87% hoặc 17★ → 57% — cho phép tới 88%.

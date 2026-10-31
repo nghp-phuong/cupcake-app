@@ -76,6 +76,17 @@ class GameState extends ChangeNotifier {
   static const welcomeGiftCoins = 500;
   static const welcomeGiftGems = 20;
 
+  /// Trần ví xu / kim cương: 2^53 − 1 (số nguyên lớn nhất biểu diễn chính xác trên web). Mọi phép cộng ví đi qua
+  /// [walletAdd] và bản lưu bị kẹp về [0, walletCap] khi đọc → không bao giờ tràn int rồi bị kẹp về 0.
+  static const walletCap = 9007199254740991;
+
+  /// [balance] + [amount], kẹp trong [0, [walletCap]] mà không tràn int ([balance] luôn nằm trong khoảng đó).
+  static int walletAdd(int balance, int amount) {
+    if (amount >= walletCap - balance) return walletCap;
+    if (amount <= -balance) return 0;
+    return balance + amount;
+  }
+
   final DateTime Function() _clock;
 
   int _coins = Economy.startCoins;
@@ -131,7 +142,7 @@ class GameState extends ChangeNotifier {
   /// config (giữ nguyên khi lưu).
   final Map<String, ({int speed, int skill})> _staffLevels = {};
 
-  /// Mốc hoạt động gần nhất (epoch ms); null = chưa có.
+  /// Mốc hoạt động gần nhất (epoch ms); null = chưa có. Chỉ tiến, không bao giờ lùi ([_touchActive]).
   int? _lastActive;
 
   /// Thời gian vắng (ms) đã tính mà chưa nhận (cộng dồn qua nhiều lần vắng, trần [maxStoredAway]).
@@ -430,9 +441,15 @@ class GameState extends ChangeNotifier {
     void names(String key, void Function(Object? name) read) => field(key, (v) => (v as List<dynamic>).forEach(read));
 
     int asInt(Object v) => (v as num).toInt();
+    // So sánh trước khi toInt: 1e300 / ±vô cực không bị đổi thành 2^63 − 1 (NaN.toInt() ném → trường hỏng).
+    int asWallet(Object v) {
+      final n = v as num;
+      if (n >= walletCap) return walletCap;
+      return n <= 0 ? 0 : n.toInt();
+    }
 
-    field('coins', (v) => _coins = math.max(0, asInt(v)));
-    field('gems', (v) => _gems = math.max(0, asInt(v)));
+    field('coins', (v) => _coins = asWallet(v));
+    field('gems', (v) => _gems = asWallet(v));
     field('xp', (v) => _xp = math.max(0, asInt(v)));
     field('day', (v) => _day = math.max(1, asInt(v)));
     // Lò/dụng cụ V1 → thiết bị goldenOven / whisk / pipingBag / tongs (`shop.equipment` đọc sau, lấy cấp cao hơn).
@@ -851,8 +868,8 @@ class GameState extends ChangeNotifier {
     for (var id = 1; id <= last; id++) {
       _levels.putIfAbsent(id, () => const LevelRecord(stars: migrationStars, plays: 1, firstWin: true));
     }
-    _coins += welcomeGiftCoins;
-    _gems += welcomeGiftGems;
+    _coins = walletAdd(_coins, welcomeGiftCoins);
+    _gems = walletAdd(_gems, welcomeGiftGems);
     _migratedFromV1 = true;
     _welcomeGiftPending = true;
     // Người chơi V1 đã biết cách chơi: bỏ cảnh mở đầu + hướng dẫn L1–3.
@@ -1520,8 +1537,16 @@ class GameState extends ChangeNotifier {
   /// Ghi mốc hoạt động = bây giờ (main.dart gọi khi app inactive / vào nền / pause; [applyLevelResult] cũng tự ghi).
   /// Lưu cùng bản lưu (lên lịch lưu, không báo listener).
   void markActive() {
-    _lastActive = _clock().millisecondsSinceEpoch;
+    _touchActive(_clock().millisecondsSinceEpoch);
     _scheduleSave();
+  }
+
+  /// Dời mốc hoạt động tới [ms] nếu [ms] mới hơn; mốc không bao giờ lùi (QA-01). Đồng hồ máy bị lùi thì mốc giữ nguyên,
+  /// thời gian vắng = 0 cho tới khi giờ máy vượt lại mốc — chu kỳ "tiến giờ → nhận → lùi giờ → tiến giờ" không nhận lại
+  /// được. Không có giờ máy chủ nên một lần tiến giờ vẫn ăn được một lần trần giờ quản lý (chấp nhận).
+  void _touchActive(int ms) {
+    final last = _lastActive;
+    if (last == null || ms > last) _lastActive = ms;
   }
 
   /// Bật nhịp ghi mốc hoạt động mỗi [activeHeartbeat] khi app ở foreground — app bị tắt đột ngột lúc đang mở thì thời
@@ -1532,7 +1557,7 @@ class GameState extends ChangeNotifier {
     _heartbeat?.cancel();
     if (_disposed) return;
     _heartbeat = Timer.periodic(activeHeartbeat, (_) {
-      _lastActive = _clock().millisecondsSinceEpoch;
+      _touchActive(_clock().millisecondsSinceEpoch);
       if (_hiredManager() != null) _scheduleSave();
     });
   }
@@ -1543,14 +1568,15 @@ class GameState extends ChangeNotifier {
     _heartbeat = null;
   }
 
-  /// Tính thời gian vắng từ mốc hoạt động tới [now] rồi tính lại [pendingOffline]; đặt mốc mới = [now]. Lần vắng ngắn
-  /// hơn `minAwayMin` phút không tính; đồng hồ lùi ([now] < mốc) → không tính, chỉ đặt lại mốc; chưa thuê quản lý →
-  /// không tính. Gọi lặp lại vô hại. Notify (→ lưu) khi có thay đổi.
+  /// Tính thời gian vắng từ mốc hoạt động tới [now] rồi tính lại [pendingOffline]; dời mốc tới [now]. Lần vắng ngắn
+  /// hơn `minAwayMin` phút không tính; đồng hồ lùi ([now] < mốc) → không tính và GIỮ mốc cũ (mốc không lùi, QA-01: lùi
+  /// giờ rồi chỉnh lại không được tính là vắng); chưa thuê quản lý → không tính. Gọi lặp lại vô hại. Notify (→ lưu) khi
+  /// có thay đổi.
   void refreshOffline(DateTime now) {
     final before = _pendingOffline;
     final t = now.millisecondsSinceEpoch;
     final last = _lastActive;
-    _lastActive = t;
+    _touchActive(t);
     final manager = _hiredManager();
     if (manager != null && last != null && t > last) {
       final minAway = manager.param(StaffParams.minAwayMin, StaffParams.defaultMinAwayMin).toDouble();
@@ -1573,7 +1599,7 @@ class GameState extends ChangeNotifier {
     final p = _pendingOffline;
     if (p == null) return 0;
     final coins = doubled ? p.coins * 2 : p.coins;
-    _coins += coins;
+    _coins = walletAdd(_coins, coins);
     _awayMs = 0;
     _pendingOffline = null;
     notifyListeners();
@@ -1673,12 +1699,12 @@ class GameState extends ChangeNotifier {
   // ------------------------------------------------------------------ Ghi
 
   void addCoins(int amount) {
-    _coins = math.max(0, _coins + amount);
+    _coins = walletAdd(_coins, amount);
     notifyListeners();
   }
 
   void addGems(int amount) {
-    _gems = math.max(0, _gems + amount);
+    _gems = walletAdd(_gems, amount);
     notifyListeners();
   }
 
@@ -1724,7 +1750,7 @@ class GameState extends ChangeNotifier {
   /// Cộng xu (net), thành thạo, nhiệm vụ, thống kê của một đơn đã phục vụ (không cộng XP).
   void applyOrderResult(Order order, Customer customer, BakeResult result) {
     _rollDaily();
-    _coins = math.max(0, _coins + result.net);
+    _coins = walletAdd(_coins, result.net);
     _served++;
 
     _raiseMastery(order.recipe, result.stars);
@@ -1754,13 +1780,13 @@ class GameState extends ChangeNotifier {
     final gemsBefore = _gems;
     _rollDaily();
     _refreshSeason();
-    _coins = math.max(0, _coins + r.coins);
+    _coins = walletAdd(_coins, r.coins);
     _served += math.max(0, r.served);
     _recentCoins.add(math.max(0, r.coins));
     while (_recentCoins.length > recentIncomeCount) {
       _recentCoins.removeAt(0);
     }
-    _lastActive = _clock().millisecondsSinceEpoch;
+    _touchActive(_clock().millisecondsSinceEpoch);
     // Xu TB một level đổi → khoản đang chờ (chưa nhận) tính lại theo thu nhập mới.
     _recomputeOffline();
     r.recipeStars.forEach(_raiseMastery);
@@ -1785,8 +1811,10 @@ class GameState extends ChangeNotifier {
     _levels[r.levelId] = record;
 
     // Kim cương kiếm trong game (GĐ6): lần đầu 3★ một level, lần đầu qua level cuối một chương.
-    if (old.stars < 3 && record.stars >= 3) _gems += Economy.levelThreeStarGems;
-    if (!old.completed && record.completed && _isLastOfChapter(r.levelId)) _gems += Economy.chapterCompleteGems;
+    if (old.stars < 3 && record.stars >= 3) _gems = walletAdd(_gems, Economy.levelThreeStarGems);
+    if (!old.completed && record.completed && _isLastOfChapter(r.levelId)) {
+      _gems = walletAdd(_gems, Economy.chapterCompleteGems);
+    }
 
     // Thẻ mùa: mỗi sao mới của level + mỗi lượt thắng (chỉ khi mùa đang diễn ra).
     var seasonGain = 0;
@@ -1837,7 +1865,7 @@ class GameState extends ChangeNotifier {
   int doubleResultCoins(LevelResult r) {
     if (r.coins <= 0 || _doubledResults[r] == true) return 0;
     _doubledResults[r] = true;
-    _coins += r.coins;
+    _coins = walletAdd(_coins, r.coins);
     notifyListeners();
     return r.coins;
   }
@@ -1861,7 +1889,7 @@ class GameState extends ChangeNotifier {
     var mastery = math.max(old, 1);
     if (stars >= 4) mastery = math.max(mastery, 2);
     if (stars >= 5) mastery = 3;
-    if (mastery == 3 && old < 3) _gems += Economy.masteryGemReward;
+    if (mastery == 3 && old < 3) _gems = walletAdd(_gems, Economy.masteryGemReward);
     _mastery[recipe] = mastery;
   }
 
@@ -1890,8 +1918,8 @@ class GameState extends ChangeNotifier {
     _quests = List.unmodifiable([
       for (var i = 0; i < _quests.length; i++) i == index ? claimed : _quests[i],
     ]);
-    _coins += def.rewardCoins;
-    _gems += def.rewardGems;
+    _coins = walletAdd(_coins, def.rewardCoins);
+    _gems = walletAdd(_gems, def.rewardGems);
     notifyListeners();
     return claimed;
   }
@@ -1901,8 +1929,8 @@ class GameState extends ChangeNotifier {
     if (reward == null) return null;
     _loginStreak = reward.day;
     _loginDate = _todayKey();
-    _coins += reward.coins;
-    _gems += reward.gems;
+    _coins = walletAdd(_coins, reward.coins);
+    _gems = walletAdd(_gems, reward.gems);
     notifyListeners();
     return reward;
   }
@@ -1917,8 +1945,8 @@ class GameState extends ChangeNotifier {
       gems: _mochiPets == 0 ? Economy.mochiFirstPetGems : 0,
     );
     _mochiPets++;
-    _coins += gift.coins;
-    _gems += gift.gems;
+    _coins = walletAdd(_coins, gift.coins);
+    _gems = walletAdd(_gems, gift.gems);
     notifyListeners();
     return gift;
   }
@@ -2309,8 +2337,8 @@ class GameState extends ChangeNotifier {
 
   /// Cộng một phần thưởng (không notify).
   void _applyReward(Reward r) {
-    _coins += math.max(0, r.coins);
-    _gems += math.max(0, r.gems);
+    _coins = walletAdd(_coins, math.max(0, r.coins));
+    _gems = walletAdd(_gems, math.max(0, r.gems));
     r.boosters.forEach(_addBooster);
     if (r.frame != null) _frames.add(r.frame!);
   }

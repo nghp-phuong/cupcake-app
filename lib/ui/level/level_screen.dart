@@ -286,7 +286,7 @@ class _LevelScreenState extends State<LevelScreen> {
     if (watched) {
       services.audio.success();
     } else {
-      showToast(context, AppLocalizations.of(context).adsLimitReached, success: false);
+      showRewardedFailedToast(context, services.ads);
     }
   }
 
@@ -372,7 +372,7 @@ class _LevelScreenState extends State<LevelScreen> {
     final choice = await showSugarDialog<_PauseChoice>(
       context,
       dismissible: false,
-      builder: (ctx) => _PauseDialog(session: _s, onChoice: (c) => Navigator.of(ctx).pop(c)),
+      builder: (ctx) => _PauseDialog(session: _s, onChoice: (c) => popDialogOnce(ctx, c)),
     );
     _pauseOpen = false;
     if (!mounted || _leaving) return;
@@ -430,7 +430,7 @@ class _LevelScreenState extends State<LevelScreen> {
       final want = await showSugarDialog<bool>(
         context,
         dismissible: false,
-        builder: (ctx) => _ExtraTimeDialog(onChoice: (v) => Navigator.of(ctx).pop(v)),
+        builder: (ctx) => _ExtraTimeDialog(onChoice: (v) => popDialogOnce(ctx, v)),
       );
       if (!mounted || _leaving) return;
       if (want ?? false) {
@@ -449,7 +449,7 @@ class _LevelScreenState extends State<LevelScreen> {
           setState(() => _ending = false);
           return;
         }
-        showToast(context, AppLocalizations.of(context).adsLimitReached, success: false);
+        showRewardedFailedToast(context, services.ads);
       }
     }
     _finishLevel();
@@ -615,12 +615,15 @@ class _LevelScreenState extends State<LevelScreen> {
                   offstage: baking,
                   child: IgnorePointer(
                     ignoring: _phase != _Phase.playing || _ending,
-                    child: LevelPlayView(
-                      session: session,
-                      festiveOutfits: AppScope.of(context).state.outfitsEnabled,
-                      onSpecialTap: _onSpecialTap,
-                      onEvent: _onEvent,
-                      tutorialText: _tutorialText,
+                    // Sân chơi: chạm nhanh gần nút HUD không được thành bấm nút (vùng chạm nới của SLTapTarget).
+                    child: SLNoTapExpand(
+                      child: LevelPlayView(
+                        session: session,
+                        festiveOutfits: AppScope.of(context).state.outfitsEnabled,
+                        onSpecialTap: _onSpecialTap,
+                        onEvent: _onEvent,
+                        tutorialText: _tutorialText,
+                      ),
                     ),
                   ),
                 ),
@@ -776,14 +779,17 @@ class _LevelScreenState extends State<LevelScreen> {
       case _Phase.specialBaking:
         return [
           Positioned.fill(
-            child: BakeSessionView(
-              key: ValueKey('level-bake-$_specialId-$_bakeAttempt'),
-              order: _specialOrder!,
-              modifiers: session.modifiers,
-              onComplete: _onSpecialBaked,
-              tutorialFor: _tutorialFor,
-              onTutorialShown: AppScope.read(context).state.markTutorialSeen,
-              ovenLevel: AppScope.read(context).state.ovenLevel,
+            // Bếp Flame: chạm/giữ gần nút HUD không được thành bấm nút (vùng chạm nới của SLTapTarget).
+            child: SLNoTapExpand(
+              child: BakeSessionView(
+                key: ValueKey('level-bake-$_specialId-$_bakeAttempt'),
+                order: _specialOrder!,
+                modifiers: session.modifiers,
+                onComplete: _onSpecialBaked,
+                tutorialFor: _tutorialFor,
+                onTutorialShown: AppScope.read(context).state.markTutorialSeen,
+                ovenLevel: AppScope.read(context).state.ovenLevel,
+              ),
             ),
           ),
           // Nút bỏ đơn: góc trên trái, dưới thanh 6 bước (như màn ngày V1).

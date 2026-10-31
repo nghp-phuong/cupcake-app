@@ -109,7 +109,13 @@ class _OfflineEarningsDialogState extends State<OfflineEarningsDialog> {
     if (_busy || _closed) return;
     final services = AppScope.read(context);
     setState(() => _busy = true);
-    final watched = await services.ads.showRewarded(context, AdPlacement.offlineDouble);
+    // SDK quảng cáo lỗi → coi như không xem được: nhả _busy để Nhận / Back vẫn dùng được (QA-02).
+    var watched = false;
+    try {
+      watched = await services.ads.showRewarded(context, AdPlacement.offlineDouble);
+    } catch (e) {
+      debugPrint('OfflineDialog: quảng cáo x2 lỗi ($e)');
+    }
     if (!mounted || _closed) return;
     if (services.state.pendingOffline == null) {
       // Đã nhận ở nơi khác trong lúc xem quảng cáo: không còn gì để nhân đôi.
@@ -117,8 +123,9 @@ class _OfflineEarningsDialogState extends State<OfflineEarningsDialog> {
       return;
     }
     if (!watched) {
-      // Không xem được (hết lượt / lỗi): ở lại hộp, nút x2 tự ẩn nếu hết lượt.
+      // Không xem được (đóng sớm / lỗi / hết lượt): ở lại hộp, báo lý do; nút x2 tự ẩn nếu hết lượt.
       setState(() => _busy = false);
+      showRewardedFailedToast(context, services.ads);
       return;
     }
     _closed = true;

@@ -57,6 +57,8 @@ class ToppingStation extends Station {
   Offset _dragPos = Offset.zero;
   int? _pressed; // chỉ số topping trên bánh đang được nhấn (chạm để gỡ / kéo để dời)
   Offset _pressStart = Offset.zero;
+  PlacedTopping? _lifted; // topping đã đặt đang được nhấc lên để dời (để trả về chỗ cũ nếu trạm chốt giữa chừng)
+  int _liftedIndex = 0;
   final List<_Falling> _falling = [];
 
   List<PlacedTopping> get placed => game.record.toppings;
@@ -73,6 +75,7 @@ class ToppingStation extends Station {
 
   @override
   void pointerDown(Offset p) {
+    if (isDone) return;
     // Topping trên bánh (trên cùng trước).
     final size = _size;
     for (var i = placed.length - 1; i >= 0; i--) {
@@ -95,10 +98,14 @@ class ToppingStation extends Station {
 
   @override
   void pointerMove(Offset p) {
+    if (isDone) return;
     final i = _pressed;
     if (i != null && (p - _pressStart).distance > 12) {
       // Nhấc topping đang có lên để dời chỗ.
-      _dragging = placed.removeAt(i).topping;
+      final t = placed.removeAt(i);
+      _lifted = t;
+      _liftedIndex = i;
+      _dragging = t.topping;
       _pressed = null;
     }
     if (_dragging != null) _dragPos = p;
@@ -106,8 +113,10 @@ class ToppingStation extends Station {
 
   @override
   void pointerUp(Offset p) {
+    if (isDone) return;
     final i = _pressed;
     _pressed = null;
+    _lifted = null;
     if (i != null) {
       // Chạm để gỡ.
       final t = placed.removeAt(i);
@@ -128,15 +137,30 @@ class ToppingStation extends Station {
 
   @override
   void pointerCancel() {
+    if (isDone) return;
     _pressed = null;
     final t = _dragging;
     _dragging = null;
+    // Bị chen ngang (cuộc gọi, thông báo hệ thống): topping đang dời trả về chỗ cũ; topping mới từ khay thì rơi.
+    if (_restoreLifted()) return;
     if (t != null) _falling.add(_Falling(t, _dragPos));
+  }
+
+  /// Trả topping đang dời về chỗ cũ trên bánh. Trả về `true` nếu có topping được trả.
+  bool _restoreLifted() {
+    final lifted = _lifted;
+    _lifted = null;
+    if (lifted == null) return false;
+    placed.insert(math.min(_liftedIndex, placed.length), lifted);
+    return true;
   }
 
   @override
   void done() {
     if (isDone) return;
+    // Chốt giữa lúc đang thao tác: không gỡ topping đang nhấn; topping đang dời trả về chỗ cũ.
+    _pressed = null;
+    _restoreLifted();
     _dragging = null;
     game.effects.sparkle(top.center, count: 20);
     finish(delay: 0.9);

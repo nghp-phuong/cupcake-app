@@ -36,6 +36,14 @@ class _CustomerView extends ShopFigure {
   double x = 0, floor = 0;
   double fromX = 0, fromFloor = 0, fromScale = 1;
 
+  /// Chỗ HIỂN THỊ ở quầy (−1 = không đứng quầy): thứ tự tới quầy trong số khách vãng lai đang đứng quầy, 0 = đầu
+  /// quầy (bên trái). Khác `LevelCustomer.slot` (chỗ logic của session, không dồn khi khách trước rời) → khách trước
+  /// đi thì khách sau dồn lên, khách mới từ hàng chờ vào chỗ cuối (gần hàng nhất), không đi xuyên qua người khác.
+  int counterRank = -1;
+
+  /// Hoạt cảnh dồn chỗ ở quầy: 0..1 (1 = đứng yên), đi từ [shiftFromX].
+  double shiftT = 1, shiftFromX = 0;
+
   /// Đồng hồ bước đi (nhún) và lắc khi tủ không có món.
   double clock = 0, shake = 0;
   bool moving = false;
@@ -244,6 +252,8 @@ class ShopView {
       ..imagesGen = -1
       ..phase = c.phase
       ..placed = false
+      ..counterRank = -1
+      ..shiftT = 1
       ..depthKey = c.id
       ..clock = 0
       ..shake = 0
@@ -295,10 +305,17 @@ class ShopView {
         if (c.isSpecial) {
           _set(LevelLayout.specialX, LevelLayout.specialFloor, LevelLayout.counterScale);
         } else {
-          final e = easeInOut(t);
-          final (qx, qs) = _queueSpot(0);
-          _lerpTo(qx, LevelLayout.floorFor(qs), qs, LevelLayout.counterX(c.slot, spots), LevelLayout.counterFloor,
-              LevelLayout.counterScale, e);
+          final x = LevelLayout.counterX(v.counterRank, spots);
+          if (t < 1) {
+            // Bước từ đầu hàng chờ lên chỗ quầy.
+            final (qx, qs) = _queueSpot(0);
+            _lerpTo(qx, LevelLayout.floorFor(qs), qs, x, LevelLayout.counterFloor, LevelLayout.counterScale, easeInOut(t));
+          } else if (v.shiftT < 1) {
+            // Dồn lên chỗ trước khi khách phía trước rời quầy.
+            _set(v.shiftFromX + (x - v.shiftFromX) * easeInOut(v.shiftT), LevelLayout.counterFloor, LevelLayout.counterScale);
+          } else {
+            _set(x, LevelLayout.counterFloor, LevelLayout.counterScale);
+          }
         }
       case CustomerPhase.leavingHappy:
       case CustomerPhase.leavingSad:
@@ -308,6 +325,35 @@ class ShopView {
         } else {
           _lerpTo(v.fromX, v.fromFloor, v.fromScale, LevelLayout.doorX, LevelLayout.doorFloor, LevelLayout.doorScale, t * t);
         }
+    }
+  }
+
+  static bool _atCounterWalkIn(LevelCustomer c) => c.phase == CustomerPhase.atCounter && !c.isSpecial;
+
+  /// Chỗ hiển thị ở quầy của [c] = số khách vãng lai đang đứng quầy tới trước (id nhỏ hơn: hàng chờ là FIFO nên id
+  /// tăng theo thứ tự lên quầy). Chỗ đổi khi đã đứng yên ở quầy → hoạt cảnh dồn chỗ từ vị trí hiện tại.
+  void _syncCounterRank(LevelCustomer c, _CustomerView v, List<LevelCustomer> list, int spots, double dt) {
+    if (!_atCounterWalkIn(c)) {
+      v
+        ..counterRank = -1
+        ..shiftT = 1;
+      return;
+    }
+    var rank = 0;
+    for (var j = 0; j < list.length; j++) {
+      final o = list[j];
+      if (o.id < c.id && _atCounterWalkIn(o)) rank++;
+    }
+    rank = math.min(rank, math.max(1, spots) - 1);
+    if (rank != v.counterRank) {
+      if (v.counterRank >= 0 && v.placed && c.phaseT >= 1) {
+        v
+          ..shiftFromX = v.x
+          ..shiftT = 0;
+      }
+      v.counterRank = rank;
+    } else if (v.shiftT < 1) {
+      v.shiftT = math.min(1.0, v.shiftT + dt / LevelCustomer.shiftSec);
     }
   }
 
@@ -347,6 +393,7 @@ class ShopView {
       v
         ..seen = true
         ..c = c;
+      _syncCounterRank(c, v, list, spots, dt);
       if (c.phase != v.phase) {
         if (c.isLeaving) {
           v
@@ -370,7 +417,7 @@ class ShopView {
           ..scale = approach(v.scale, _ts, dt, speed: 18);
       }
       final t = c.phaseT;
-      v.moving = c.phase == CustomerPhase.entering || c.isLeaving || t < 1;
+      v.moving = c.phase == CustomerPhase.entering || c.isLeaving || t < 1 || v.shiftT < 1;
       v.clock = v.moving ? v.clock + dt : 0;
       if (v.shake > 0) v.shake = math.max(0, v.shake - dt);
       v.expr = _expression(c);

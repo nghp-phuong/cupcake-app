@@ -20,6 +20,7 @@ export 'sl_progress_bar.dart';
 export 'sl_props.dart';
 export 'sl_rule.dart';
 export 'sl_speech_bubble.dart';
+export 'sl_tap_target.dart';
 export 'sl_theme.dart';
 export 'sl_toast.dart';
 export 'sl_toggle.dart';

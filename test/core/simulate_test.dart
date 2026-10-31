@@ -148,6 +148,13 @@ void main() {
       expect(ch[1]!.firstWin, closeTo(SimTargets.chapter1FirstWin, tol));
     });
 
+    test('BAL-01: không màn nào của chương 1 dưới 45% (L7 từng 28%); sàn mỗi màn áp cả chương 1', () {
+      expect(SimTargets.floorChapters, containsAll([1, 2, 3, 4, 5]));
+      for (final l in report.levelRows(report.runs[SimPersona.average]!).where((l) => l.chapter == 1)) {
+        expect(l.firstWin, greaterThanOrEqualTo(SimTargets.minLevelFirstWin - _rateSlack), reason: 'L${l.id}');
+      }
+    });
+
     test('chương 4 ≈ 60%; chương 2–3 nằm giữa chương 1 và chương 4; chương 5 ≤ chương 4 (GĐ8: chương 3 ≈ 62%, 5 ≈ 57%)', () {
       expect(ch[4]!.firstWin, closeTo(SimTargets.chapter4FirstWin, tol));
       expect(ch[3]!.firstWin, closeTo(SimTargets.chapter3FirstWin, tol));

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -481,12 +482,30 @@ class _SecretsSection extends StatefulWidget {
 class _SecretsSectionState extends State<_SecretsSection> {
   int _shortTries = 0;
 
+  /// Chống chạm đúp (UI-05, như nút nâng thiết bị): khoảng nghỉ sau mỗi lần học + chỉ học khi bậc hiện tại khớp bậc
+  /// lúc dựng gần nhất (lần bấm thứ hai trước khi khu dựng lại bị bỏ).
+  bool _cooling = false;
+  int _shownTier = 0;
+  Timer? _coolTimer;
+
+  static const cooldown = Duration(milliseconds: 400);
+
+  @override
+  void dispose() {
+    _coolTimer?.cancel();
+    super.dispose();
+  }
+
   void _buy() {
     final services = AppScope.read(context);
     final l = AppLocalizations.of(context);
     final state = services.state;
+    if (_cooling || state.recipeSecretTier(widget.recipe) != _shownTier) return;
     final price = state.recipeSecretPrice(widget.recipe);
     if (state.buyRecipeSecret(widget.recipe)) {
+      _cooling = true;
+      _coolTimer?.cancel();
+      _coolTimer = Timer(cooldown, () => _cooling = false);
       services.audio.success();
       showToast(context, l.recipeSecretsTier(state.recipeSecretTier(widget.recipe), state.recipeSecretMaxTier));
     } else if (price != null && state.coins < price) {
@@ -507,7 +526,7 @@ class _SecretsSectionState extends State<_SecretsSection> {
     if (cfg == null) return const SizedBox.shrink();
     final max = state.recipeSecretMaxTier;
     final open = state.recipeSecretsUnlocked;
-    final tier = state.recipeSecretTier(id);
+    final tier = _shownTier = state.recipeSecretTier(id);
     final pct = state.recipeSecretPricePct(id);
     final nextPct = state.recipeSecretNextPricePct(id);
     final price = state.recipeSecretPrice(id);

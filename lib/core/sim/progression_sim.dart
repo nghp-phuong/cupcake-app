@@ -247,6 +247,9 @@ class ProgressionSim {
     final s = freshState();
     if (monetization != null) s.attachMonetizationConfig(monetization);
     final run = SimRun();
+    // Đồng hồ vắng nhà: mỗi màn vắng thêm [offlineHours] giờ, chỉ tiến (mốc hoạt động không lùi — QA-01; trước đây gọi
+    // `refreshOffline(_clock() + giờ)` với đồng hồ cố định, chính là chu kỳ lùi giờ đã chặn).
+    var awayClock = _clock();
     void shop() {
       simShop(
         s,
@@ -322,7 +325,8 @@ class ProgressionSim {
         stat.gems += s.gems - gemsBefore;
       }
       if (offlineHours > 0) {
-        s.refreshOffline(_clock().add(Duration(minutes: (offlineHours * 60).round())));
+        awayClock = awayClock.add(Duration(minutes: (offlineHours * 60).round()));
+        s.refreshOffline(awayClock);
         stat.offlineCoins = s.claimOffline();
       }
       stat.coinsAfter = s.coins;
