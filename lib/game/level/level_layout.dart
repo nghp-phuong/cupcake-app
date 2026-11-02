@@ -18,27 +18,33 @@ abstract final class LevelLayout {
 
   // ------------------------------------------------------------------ Tủ kính + quầy
 
-  /// Tủ kính TRONG ảnh nền (ảnh: x 437–846, nóc y 382; vách kính cong hai bên; phần dưới khuất sau bếp). Game không
-  /// vẽ tủ thứ hai: vẽ lại đúng mảng ảnh này (cắt theo [caseOutline]) đè lên khách để khách đứng sau tủ.
-  static const Rect caseRect = Rect.fromLTRB(435, 284, 849, kitchenTop);
+  /// Tủ kính bánh: ảnh `level/display_case` (792×363) vẽ thành tủ MỘT tầng (cắt bỏ dải kệ kính giữa ảnh), cao theo
+  /// [caseArtScale], hai đầu cong giữ tỉ lệ, phần giữa kéo ngang cho đủ bề rộng; chân gỗ khuất sau bếp. Tủ này vẽ đè
+  /// lên tủ nhỏ có sẵn trong ảnh nền (che kín, ảnh nền: x 435–849, nóc y 284) và lên khách đứng sau. Tủ to hơn tủ của
+  /// ảnh nền để bánh to, nhìn rõ món + topping trên điện thoại: mép trái sát máy tính tiền, mép phải chừa chỗ kệ tầng.
+  static const Rect caseRect = Rect.fromLTRB(416, 268, 920, kitchenTop);
 
-  /// Viền ngoài tủ (nóc gỗ + hai vách kính cong), nới ~2 px ra ngoài nét mực của ảnh.
+  /// Tỉ lệ ảnh tủ (theo chiều cao; hai đầu cong cùng tỉ lệ).
+  static const double caseArtScale = 0.8;
+
+  /// Viền ngoài tủ (nóc gỗ + hai vách kính cong) — tủ vẽ code dự phòng khi chưa có ảnh.
   static final Path caseOutline = Path()
-    ..moveTo(435, kitchenTop)
-    ..lineTo(436, 404)
-    ..cubicTo(437, 362, 441, 318, 455, 290)
-    ..quadraticBezierTo(461, 284, 482, 284)
-    ..lineTo(814, 284)
-    ..cubicTo(828, 286, 835, 314, 840, 344)
-    ..quadraticBezierTo(844, 374, 847, kitchenTop)
+    ..moveTo(caseRect.left + 8, kitchenTop)
+    ..lineTo(caseRect.left + 10, 352)
+    ..cubicTo(caseRect.left + 12, 316, caseRect.left + 28, 282, caseRect.left + 74, 270)
+    ..lineTo(caseRect.right - 74, 270)
+    ..cubicTo(caseRect.right - 28, 282, caseRect.right - 12, 316, caseRect.right - 10, 352)
+    ..lineTo(caseRect.right - 8, kitchenTop)
     ..close();
 
-  /// Lòng kính (giữa hai vách, dưới nóc gỗ) — các cột bánh nằm trong.
-  static const Rect caseGlass = Rect.fromLTRB(458, 300, 826, kitchenTop);
+  /// Lòng kính (giữa hai vách, dưới nóc gỗ, tới mép trước sàn tủ) — các cột bánh nằm trong.
+  static const Rect caseGlass = Rect.fromLTRB(440, 288, 896, 428);
 
-  /// Hai tầng kệ kính của ảnh: chỗ đáy bánh đặt (giữa mép sau và mép trước mặt kệ) và mép dưới tấm kính.
-  static const double upperShelfY = 350, upperShelfBottom = 357;
-  static const double lowerShelfY = 412, lowerShelfBottom = 421;
+  /// Đáy bánh hàng trước (trên sàn tủ). Hàng sau đứng lùi vào trong: đáy cao hơn [caseBackLift] × cạnh bánh, nhỏ đi
+  /// [caseBackScale] → lộ nửa trên (phần topping) phía trên hàng trước.
+  static const double caseFrontY = 424;
+  static const double caseBackLift = 0.5;
+  static const double caseBackScale = 0.92;
 
   /// Mặt sau quầy trái / phải trong ảnh (khách đứng sau quầy bị che từ đây xuống).
   static const double leftCounterTop = 358;
@@ -58,55 +64,78 @@ abstract final class LevelLayout {
     ..addRect(Rect.fromLTRB(register.right, 0, 846, kitchenTop))
     ..addRect(const Rect.fromLTRB(846, 0, 1280, rightCounterTop));
 
+  /// [customerClip] cho khung rộng (thế giới 1280 lệch [inset] = (W − 1280) / 2 trên màn): các dải bám mép trái / phải
+  /// kéo thêm [inset] ra hai bên (khách hàng chờ / đi ra cửa thấy được tới mép màn). [inset] ≤ 0 → [customerClip].
+  static Path customerClipFor(double inset) {
+    if (inset <= 0) return customerClip;
+    if (inset == _wideClipInset) return _wideClip!;
+    _wideClipInset = inset;
+    return _wideClip = Path()
+      ..addRect(Rect.fromLTRB(-inset, 0, register.right, registerDisplay.top))
+      ..addRect(Rect.fromLTRB(-inset, registerDisplay.top, registerDisplay.left, register.top))
+      ..addRect(Rect.fromLTRB(registerDisplay.right, registerDisplay.top, register.right, register.top))
+      ..addRect(Rect.fromLTRB(-inset, register.top, register.left, leftCounterTop))
+      ..addRect(Rect.fromLTRB(register.right, 0, 846, kitchenTop))
+      ..addRect(Rect.fromLTRB(846, 0, 1280 + inset, rightCounterTop));
+  }
+
+  static double _wideClipInset = 0;
+  static Path? _wideClip;
+
   /// Chiều cao khung ảnh nhân vật (3:4) ở tỉ lệ 1 (khách ở quầy đứng ở [counterScale]).
   static const double customerHeight = 240;
 
   /// Tỉ lệ khách ở quầy / chỗ đặc biệt (và thu ngân): nhân vật cân với đồ đạc của ảnh nền (khung cao 348).
   static const double counterScale = 1.45;
 
-  /// Đáy khung ảnh của khách ở quầy (chân khuất sau tủ / quầy): đỉnh khung y 91, thắt lưng (~56% khung) ngang nóc tủ
-  /// (y 286) → lộ từ đầu tới thắt lưng; bong bóng (đỉnh khung + 30 × tỉ lệ) nằm dưới HUD.
+  /// Đáy khung ảnh của khách ở quầy (chân khuất sau tủ / quầy): đỉnh khung y 91, ngực–thắt lưng (~50–56% khung)
+  /// ngang nóc tủ (y 270) → lộ từ đầu tới ngực; bong bóng (đỉnh khung + 30 × tỉ lệ) nằm dưới HUD.
   static const double counterFloor = 439;
 
-  /// Đáy khung ảnh của khách đặc biệt ở mép trái quầy (x 300, trái máy tính tiền nên không có tủ che): thấp hơn chỗ
-  /// quầy → mặt quầy trái (y 358) cắt ngang hông (~68% khung), đầu vẫn dưới HUD.
+  /// Đáy khung ảnh của khách đặc biệt ở mép trái quầy (x [specialX], trái máy tính tiền nên không có tủ che): thấp hơn
+  /// chỗ quầy → mặt quầy trái (y 358) cắt ngang hông (~68% khung), đầu vẫn dưới HUD.
   static const double specialFloor = 470;
 
-  /// Chỗ đứng quầy thứ [i] trong [n] chỗ (sau tủ kính).
+  /// Khoảng cách tối đa giữa hai chỗ quầy: đủ cho bong bóng gọi món ([bubbleWidth]) nằm giữa mặt khách này và mặt
+  /// khách bên phải.
+  static const double counterGap = 190;
+
+  /// Chỗ đứng quầy thứ [i] trong [n] chỗ (sau tủ kính, dàn trong ±[counterGap] quanh giữa tủ).
   static double counterX(int i, int n) {
     if (n <= 1) return caseRect.center.dx;
-    final spacing = math.min(164.0, 340 / (n - 1));
+    final spacing = math.min(counterGap, counterGap * 2 / (n - 1));
     return caseRect.center.dx + (i - (n - 1) / 2) * spacing;
   }
 
-  /// Chỗ khách đặc biệt (mép trái quầy).
-  static const double specialX = 300;
+  /// Chỗ khách đặc biệt (mép trái quầy, trước chậu cây; thân sát trái thu ngân).
+  static const double specialX = 322;
 
-  /// Hàng chờ (0 = đầu hàng, gần quầy) kéo về cửa bên phải; xa hơn → nhỏ hơn, đứng cao hơn.
-  static double queueX(int k) => math.min(1272.0, 972 + queueGap * math.min(k, 4) + 6.0 * math.max(0, k - 4));
+  /// Hàng chờ (0 = đầu hàng, gần quầy) kéo về cửa bên phải, bắt đầu sau bong bóng của chỗ quầy cuối; xa hơn → nhỏ
+  /// hơn, đứng cao hơn.
+  static double queueX(int k) => math.min(1272.0, 1050 + queueGap * math.min(k, 3) + 6.0 * math.max(0, k - 3));
   static double queueScale(int k) => math.max(0.9, 1.2 - 0.06 * k);
   static double queueFloor(int k) => floorFor(queueScale(k));
 
   // ------------------------------------------------------------------ Đồ mua thêm (GĐ3)
 
-  /// Kệ bánh tầng (ảnh `level/case_stand` 264×360) trên quầy phải, sát vách phải tủ kính; đáy chân kệ giữa mặt quầy.
-  static const Rect standRect = Rect.fromLTWH(851, 190, 133, 181);
+  /// Kệ bánh tầng (ảnh `level/case_stand` 264×360) trên quầy phải, sát vách phải tủ kính; đáy chân kệ ở mép trước
+  /// mặt quầy; đỉnh kệ dưới mép bong bóng của chỗ quầy cuối.
+  static const Rect standRect = Rect.fromLTWH(926, 199, 140, 191);
 
   /// Trong ảnh kệ (tỉ lệ theo cao ảnh): mặt tầng trên / dưới (chỗ đáy bánh), nửa bề ngang mặt đĩa mỗi tầng (tỉ lệ
-  /// theo ngang ảnh), dải đĩa tầng trên (vẽ lại đè lên bánh tầng dưới → bánh nằm dưới tầng trên).
+  /// theo ngang ảnh). Bánh tầng dưới (gần mắt hơn) vẽ đè lên mép đĩa tầng trên.
   static const double standUpperY = 0.312, standLowerY = 0.628;
   static const double standUpperHalfW = 0.40, standLowerHalfW = 0.47;
-  static const double standUpperPlateTop = 0.21, standUpperPlateBottom = 0.415;
 
   /// Cạnh một cái bánh trên kệ tầng.
-  static const double standCake = 48;
+  static const double standCake = 60;
 
   /// Hai bộ bàn ghế (ảnh `level/cafe_table` 420×309): vẽ ở độ sâu [tableDepth] (như khách hàng chờ cùng tỉ lệ), đáy
-  /// chân ở [tableFloor]; phần dưới khuất sau quầy. Trái: góc tường trái (sau quầy trái); phải: trước cửa sổ.
+  /// chân ở [tableFloor]; phần dưới khuất sau quầy. Trái: góc tường trái (sau quầy trái); phải: trước cửa sổ, phải kệ.
   static const double tableDepth = 1.0;
   static const double tableWidth = 188;
   static const double tableFloor = 376;
-  static const List<double> tableX = [96, 1146];
+  static const List<double> tableX = [96, 1170];
 
   /// Cây trang trí (ảnh decor 512×512, chậu/giỏ ở đáy ảnh): chậu đặt trên quầy sau (bên trái máy tính tiền), giữa
   /// bàn trái và chỗ khách đặc biệt (khách đặc biệt đứng trước cây; tán lá lấn sau máy tính tiền bị che).
@@ -126,44 +155,48 @@ abstract final class LevelLayout {
       return (stand ? _tableQueueStand : _tableQueue)[k];
     }
     if (stand) {
-      // Bốn chỗ đầu cách [standQueueGap] (kệ tới x 984), từ chỗ thứ 5 dồn về cửa.
-      if (k <= 3) return (1040 + standQueueGap * k, queueScale(k));
-      return (math.min(1272.0, 1262 + 5.0 * (k - 4)), 0.9);
+      // Ba chỗ đầu cách [standQueueGap] (kệ tới x 1066), từ chỗ thứ 4 dồn về cửa.
+      if (k <= 2) return (1104 + standQueueGap * k, queueScale(k));
+      return (math.min(1272.0, 1262 + 5.0 * (k - 3)), 0.9);
     }
     return (queueX(k), queueScale(k));
   }
 
   /// Khoảng cách giữa hai khách chờ đứng cạnh nhau ở hàng trước (≈ bề ngang thân ở tỉ lệ 1.2); có kệ tầng thì hàng
-  /// chật hơn một chút ([standQueueGap]).
-  static const double queueGap = 73;
-  static const double standQueueGap = 70;
+  /// chật hơn ([standQueueGap]).
+  static const double queueGap = 70;
+  static const double standQueueGap = 64;
 
-  /// Chỗ chờ quanh bàn phải (bàn x 1052–1240): trái bàn, cạnh ghế trái (trước bàn), phải bàn, sau bàn, sau-trái.
-  static const List<(double, double)> _tableQueue = [(980, 1.2), (1056, 1.14), (1246, 1.1), (1150, 0.9), (1084, 0.88)];
+  /// Chỗ chờ quanh bàn phải (bàn x 1076–1264): trái bàn, cạnh ghế trái (trước bàn), phải bàn, sau bàn, sau-trái.
+  static const List<(double, double)> _tableQueue = [(1046, 1.2), (1118, 1.14), (1262, 1.1), (1176, 0.9), (1104, 0.88)];
 
-  /// Như [_tableQueue] khi có kệ tầng (kệ tới x 984): chỗ đầu lùi sang phải, chỗ thứ hai đứng trước ghế trái của bàn;
+  /// Như [_tableQueue] khi có kệ tầng (kệ tới x 1066): chỗ đầu lùi sang phải, chỗ thứ hai đứng trước ghế trái của bàn;
   /// hai chỗ sau bàn dời theo để lộ giữa các khách hàng trước.
-  static const List<(double, double)> _tableQueueStand = [(1040, 1.2), (1110, 1.12), (1246, 1.1), (1180, 0.9), (1090, 0.88)];
+  static const List<(double, double)> _tableQueueStand = [(1104, 1.2), (1170, 1.12), (1262, 1.1), (1214, 0.9), (1130, 0.88)];
 
   /// Đáy khung ảnh của khách đứng ở tỉ lệ [scale] (xa hơn → nhỏ hơn, cao hơn).
   static double floorFor(double scale) => 402 - (1.2 - scale) * 110;
 
   /// Cửa (ngoài mép phải khung).
   static const double doorX = 1360;
+
+  /// Cửa khi khung rộng (vùng 1280 lệch [inset] trên màn): vẫn ngoài mép phải MÀN (= 1280 + [inset] + 80 trong toạ độ
+  /// thế giới) → khách không hiện ra giữa màn.
+  static double doorXFor(double inset) => doorX + math.max(0.0, inset);
   static const double doorScale = 0.8;
   static const double doorFloor = 350;
 
   /// Tâm thân bong bóng gọi món so với (tâm ngang, đỉnh khung ảnh) của khách, theo tỉ lệ 1 (nhân với tỉ lệ khách).
-  static const Offset bubbleOffset = Offset(54, 30);
+  static const Offset bubbleOffset = Offset(62, 30);
 
   /// Bán kính vòng kiên nhẫn (quanh ảnh món, trong thân bong bóng); vùng chạm bong bóng = bán kính này + 18.
-  static const double bubbleRadius = 28;
+  static const double bubbleRadius = 36;
 
-  /// Bề ngang ảnh bong bóng ý nghĩ (320×270) khi vẽ, theo tỉ lệ 1.
-  static const double bubbleWidth = 104;
+  /// Bề ngang ảnh bong bóng ý nghĩ (320×270) khi vẽ (không theo tỉ lệ khách).
+  static const double bubbleWidth = 134;
 
   /// Bong bóng của khách đặc biệt khi có thu ngân: lật sang trái đầu (phía cây) để không che mặt thu ngân.
-  static const Offset bubbleOffsetLeft = Offset(-54, 30);
+  static const Offset bubbleOffsetLeft = Offset(-58, 30);
 
   // ------------------------------------------------------------------ Nhân viên (GĐ4)
 
@@ -172,6 +205,14 @@ abstract final class LevelLayout {
   /// theo số chữ số. Đo (Nunito 18 đậm): tâm biểu tượng x 1024 (≤ 3 chữ số), 1022 ("1,234"), 1011 ("12,345"), 1000
   /// ("123,456"), 984 ("1,234,567"). Lấy tâm của ca 4–6 chữ số → lệch ≤ 13 px (< bán kính 16) với 3–6 chữ số.
   static const Offset hudCoins = Offset(1011, 30);
+
+  /// [hudCoins] khi khung rộng: HUD của ui bám mép phải khung W và lùi theo tai thỏ phải ([safeRight], đơn vị ref) nên
+  /// ô xu dời W − 1280 − [safeRight] = 2 × [inset] − [safeRight] trên màn, tức + [inset] − [safeRight] trong toạ độ
+  /// thế giới (thế giới đã lệch [inset]).
+  static Offset hudCoinsFor(double inset, {double safeRight = 0}) {
+    final dx = math.max(0.0, inset) - math.max(0.0, safeRight);
+    return dx == 0 ? hudCoins : hudCoins.translate(dx, 0);
+  }
 
   /// Thu ngân: sau quầy trái, ngay sau màn máy tính tiền (thân ~362–438, giữa khách đặc biệt và chỗ quầy đầu tiên),
   /// đứng ở [counterScale] như khách ở quầy → máy tính tiền che từ thắt lưng xuống. Xếp độ sâu ngay sau cây

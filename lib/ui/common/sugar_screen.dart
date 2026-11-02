@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 
 import '../../core/art/art_sprites.dart';
+import '../../core/constants.dart';
+import '../../core/ref_frame.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../sugarleaf/sugarleaf.dart';
 import 'art.dart';
 import 'currency_bar.dart';
 import 'panel.dart';
 import 'sugar_button.dart';
+import 'wide_layout.dart';
 
 /// Chiều cao thanh trên (tấm ván gỗ) của các màn phụ.
 const double kScreenHeaderHeight = 88;
@@ -14,7 +17,8 @@ const double kScreenHeaderHeight = 88;
 /// Khung chung cho màn phụ (nâng cấp, trang trí, sổ công thức, cửa hàng, cài đặt): nền giấy dán tường hoa vẽ tay
 /// (phủ lớp kem cho dịu; chưa nạp ảnh → nền kem chấm bi), tấm ván gỗ trên cùng mang nút quay lại tròn, dải vải
 /// tiêu đề và nhãn xu/gem. Có `Material` trong suốt (widget Material cũ trong màn vẫn chạy) và [SLScope] (chữ mực
-/// nâu, font nội dung). [body] được đặt trong vùng 1280 × (720 − [kScreenHeaderHeight]).
+/// nâu, font nội dung). [body] được đặt trong vùng 1280 × (720 − [kScreenHeaderHeight]); khung rộng: vùng đó nằm giữa, nền
+/// và thanh gỗ trải hết bề ngang, nút quay lại / tiền bám mép (lùi khỏi tai thỏ).
 class SugarScreen extends StatelessWidget {
   const SugarScreen({
     super.key,
@@ -42,6 +46,9 @@ class SugarScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final metrics = RefMetrics.of(context);
+    final safe = MediaQuery.paddingOf(context);
+    final wideExtra = metrics.width - kRefMinWidth - safe.horizontal;
     return Material(
       color: SLColors.cream,
       child: SLScope(
@@ -49,10 +56,18 @@ class SugarScreen extends StatelessWidget {
           children: [
             const Positioned.fill(child: RepaintBoundary(child: WallpaperBackdrop())),
             const Positioned(left: -14, right: -14, top: -16, height: kScreenHeaderHeight + 4, child: _HeaderPlank()),
-            Positioned(left: 0, right: 0, top: kScreenHeaderHeight, bottom: 0, child: body),
+            // Thân màn: vùng 1280 giữa khung (khung rộng: nền + thanh gỗ trải tới mép, nội dung không giãn).
             Positioned(
-              left: 20,
-              right: 24,
+              left: metrics.inset,
+              width: kRefMinWidth,
+              top: kScreenHeaderHeight,
+              bottom: 0,
+              child: RefContent(child: body),
+            ),
+            // Nút quay lại + tiền bám mép khung (lùi khỏi tai thỏ).
+            Positioned(
+              left: 20 + safe.left,
+              right: 24 + safe.right,
               top: 10,
               height: 64,
               child: Row(
@@ -65,6 +80,9 @@ class SugarScreen extends StatelessWidget {
                   const SizedBox(width: 18),
                   Flexible(child: TitleRibbon(title, icon: titleIcon, iconId: titleIconId, art: titleArt)),
                   const Spacer(),
+                  // Khung rộng: phần rộng thêm dồn hết vào trước ô tiền → tiền dời đúng W − 1280 (giữ khoảng cách
+                  // tới mép phải như khung 1280), dải tiêu đề + Spacer giữ cỡ cũ.
+                  if (showCurrency && wideExtra > 0) SizedBox(width: wideExtra),
                   if (showCurrency) const CurrencyBar(),
                 ],
               ),

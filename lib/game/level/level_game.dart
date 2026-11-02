@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flame/game.dart';
@@ -30,7 +31,11 @@ import 'tutorial_layer.dart';
 /// gọi `advance` mỗi khung, rút sự kiện → hiệu ứng, vẽ và chuyển chạm thành hành động của session.
 ///
 /// Không dùng component con của Flame cho phần vẽ: [step] / [paint] gọi thẳng các lớp vẽ (test chạy được mà không cần
-/// gắn game vào cây widget). Con trỏ đến từ `Listener` của `LevelPlayView` (toạ độ khung 1280×720), như `BakeryGame`.
+/// gắn game vào cây widget). Con trỏ đến từ `Listener` của `LevelPlayView` (toạ độ thế giới 1280×720), như `BakeryGame`.
+///
+/// Khung rộng (máy 20:9, game rộng W = 1280–1600): thế giới 1280×720 nằm giữa, lệch [inset] = (W − 1280) / 2; [paint]
+/// dịch canvas [inset] rồi vẽ như cũ, nền tiệm / bếp tự trải ra hai bên (x −[inset] .. 1280 + [inset]). Con trỏ do
+/// `LevelPlayView` trừ [inset] trước khi gọi game.
 class LevelGame extends FlameGame {
   LevelGame(
       {required LevelSession session,
@@ -120,6 +125,29 @@ class LevelGame extends FlameGame {
   int artGeneration = 0;
 
   bool _wasBlocked = false;
+
+  // ------------------------------------------------------------------ Khung rộng
+
+  double _inset = 0;
+
+  /// Độ lệch của thế giới 1280 trong khung game rộng W: (W − 1280) / 2 (0 ở máy 16:9). Đặt theo cỡ game
+  /// ([onGameResize]); test đặt thẳng.
+  double get inset => _inset;
+  @visibleForTesting
+  set inset(double v) => _inset = math.max(0.0, v);
+
+  /// Tai thỏ phải của khung (đơn vị ref, `RefMetrics.safe.right`; `LevelPlayView` đặt khi build): HUD của ui lùi
+  /// theo nên đích đồng xu ([LevelLayout.hudCoinsFor]) lùi theo.
+  double hudSafeRight = 0;
+
+  /// [inset] cho game rộng [width].
+  static double insetFor(double width) => math.max(0.0, (width - kRefMinWidth) / 2);
+
+  @override
+  void onGameResize(Vector2 size) {
+    super.onGameResize(size);
+    _inset = insetFor(size.x);
+  }
 
   // ------------------------------------------------------------------ Nhân viên (GĐ4)
 
@@ -346,13 +374,19 @@ class LevelGame extends FlameGame {
     tutorial.update(dt);
   }
 
-  /// Vẽ cả cảnh (khung 1280×720).
+  /// Vẽ cả cảnh: thế giới 1280×720 dịch [inset] (khung rộng); nền tiệm / bếp trải tới hai mép khung.
   void paint(Canvas canvas) {
+    final dx = _inset;
+    if (dx > 0) {
+      canvas.save();
+      canvas.translate(dx, 0);
+    }
     shop.paint(canvas);
     kitchen.paint(canvas);
     effects.render(canvas);
     floats.paint(canvas);
     tutorial.paint(canvas);
+    if (dx > 0) canvas.restore();
   }
 
   void _show(SessionEvent e) {
@@ -406,7 +440,7 @@ class LevelGame extends FlameGame {
     effects.sparkle(head, count: 8, speed: 140);
     if (combo >= 2) floats.label(head.translate(70, 40), labels.combo(combo), color: SLColors.strawberryLight, delay: 0.15);
     final from = shop.staff.headOf(staffIndex);
-    if (from != null) floats.coinFly(from.translate(0, 18), LevelLayout.hudCoins, delay: 0.1);
+    if (from != null) floats.coinFly(from.translate(0, 18), LevelLayout.hudCoinsFor(_inset, safeRight: hudSafeRight), delay: 0.1);
     shop.staff.cheer(staffIndex);
   }
 
@@ -426,7 +460,7 @@ class LevelGame extends FlameGame {
     return LevelLayout.ovenSlot(oven.clamp(0, n - 1), n).topCenter.translate(0, 20);
   }
 
-  // ------------------------------------------------------------------ Con trỏ (toạ độ 1280×720)
+  // ------------------------------------------------------------------ Con trỏ (toạ độ thế giới 1280×720)
 
   bool get _inputBlocked => session.paused || session.isOver;
 

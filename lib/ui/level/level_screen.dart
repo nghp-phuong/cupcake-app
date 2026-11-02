@@ -17,6 +17,7 @@ import '../../core/models/bake.dart';
 import '../../core/models/customer.dart';
 import '../../core/models/ids.dart';
 import '../../core/models/order.dart';
+import '../../core/ref_frame.dart';
 import '../../core/routes.dart';
 import '../../core/scoring.dart';
 import '../../l10n/gen/app_localizations.dart';
@@ -680,7 +681,7 @@ class _LevelScreenState extends State<LevelScreen> {
             ),
           ),
           Positioned(
-            left: 20,
+            left: 20 + MediaQuery.paddingOf(context).left,
             top: 14,
             child: SLButton.icon(icon: 'back', tooltip: l.commonBack, size: 56, onPressed: _onBack),
           ),
@@ -720,59 +721,68 @@ class _LevelScreenState extends State<LevelScreen> {
         final customer = _specialLook!;
         return [
           const Positioned.fill(child: ColoredBox(color: Color(0x595A3E36))),
-          Positioned(
-            left: 170,
-            top: 140,
-            child: CustomerImage(
-              customer: customer,
-              width: 300,
-              height: 400,
-              clipBottom: 54,
-              spriteZoom: 1.6,
-              spriteDy: -23,
-            ),
-          ),
-          Positioned(
-            left: 130,
-            top: 76,
-            width: 480,
-            child: SpeechBubble(text: l.orderLineText(order.line, l.recipeName(order.recipe)), tailX: 0.4),
-          ),
-          Positioned(
-            left: 640,
-            top: 84,
-            width: 580,
-            child: OrderTicket(order: order, customer: customer),
-          ),
-          Positioned(
-            left: 640,
-            top: 532,
-            width: 580,
-            child: Row(
-              children: [
-                Expanded(
-                  child: SLButton(
-                    label: l.levelSpecialLater,
-                    variant: SLButtonVariant.secondary,
-                    height: 76,
-                    fontSize: 22,
-                    onPressed: _specialLater,
+          // Khách, bong bóng, phiếu đơn, nút: vùng 1280 giữa khung (lớp tối phủ cả khung).
+          Positioned.fill(
+            child: RefCenter(
+              child: Stack(
+                children: [
+                  Positioned(
+                    left: 170,
+                    top: 140,
+                    child: CustomerImage(
+                      customer: customer,
+                      width: 300,
+                      height: 400,
+                      clipBottom: 54,
+                      spriteZoom: 1.6,
+                      spriteDy: -23,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  flex: 2,
-                  child: SugarButton(
-                    label: l.dayStartBaking,
-                    leading: SLArtIcon(ArtSprites.cake(order.recipe), 'cake_slice', size: 34),
-                    color: SLColors.strawberry,
-                    height: 76,
-                    fontSize: 26,
-                    radius: 24,
-                    onPressed: _startSpecialBaking,
+                  Positioned(
+                    left: 130,
+                    top: 76,
+                    width: 480,
+                    child: SpeechBubble(text: l.orderLineText(order.line, l.recipeName(order.recipe)), tailX: 0.4),
                   ),
-                ),
-              ],
+                  Positioned(
+                    left: 640,
+                    top: 84,
+                    width: 580,
+                    child: OrderTicket(order: order, customer: customer),
+                  ),
+                  Positioned(
+                    left: 640,
+                    top: 532,
+                    width: 580,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: SLButton(
+                            label: l.levelSpecialLater,
+                            variant: SLButtonVariant.secondary,
+                            height: 76,
+                            fontSize: 22,
+                            onPressed: _specialLater,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          flex: 2,
+                          child: SugarButton(
+                            label: l.dayStartBaking,
+                            leading: SLArtIcon(ArtSprites.cake(order.recipe), 'cake_slice', size: 34),
+                            color: SLColors.strawberry,
+                            height: 76,
+                            fontSize: 26,
+                            radius: 24,
+                            onPressed: _startSpecialBaking,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ];
@@ -792,9 +802,9 @@ class _LevelScreenState extends State<LevelScreen> {
               ),
             ),
           ),
-          // Nút bỏ đơn: góc trên trái, dưới thanh 6 bước (như màn ngày V1).
+          // Nút bỏ đơn: góc trên trái, dưới thanh 6 bước (như màn ngày V1); khung rộng: bám mép trái, lùi khỏi tai thỏ.
           Positioned(
-            left: 16,
+            left: 16 + MediaQuery.paddingOf(context).left,
             top: 84,
             child: SLButton.icon(
               icon: 'exit',
@@ -807,22 +817,31 @@ class _LevelScreenState extends State<LevelScreen> {
       case _Phase.specialResult:
         return [
           const Positioned.fill(child: ColoredBox(color: Color(0x595A3E36))),
-          Positioned(
-            left: 280,
-            top: 160,
-            child: TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0.85, end: 1),
-              duration: slReduceMotion(context) ? Duration.zero : const Duration(milliseconds: 350),
-              curve: Curves.easeOutBack,
-              builder: (context, t, child) => Transform.scale(scale: t, child: child),
-              child: ResultCard(
-                order: _specialOrder!,
-                customer: _specialLook!,
-                outcome: _specialOutcome!,
-                result: _specialResult!,
-                canRemake: false,
-                onNext: _finishSpecial,
-                onRemake: () {},
+          // Thẻ kết quả: vùng 1280 giữa khung (lớp tối phủ cả khung).
+          Positioned.fill(
+            child: RefCenter(
+              child: Stack(
+                children: [
+                  Positioned(
+                    left: 280,
+                    top: 160,
+                    child: TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0.85, end: 1),
+                      duration: slReduceMotion(context) ? Duration.zero : const Duration(milliseconds: 350),
+                      curve: Curves.easeOutBack,
+                      builder: (context, t, child) => Transform.scale(scale: t, child: child),
+                      child: ResultCard(
+                        order: _specialOrder!,
+                        customer: _specialLook!,
+                        outcome: _specialOutcome!,
+                        result: _specialResult!,
+                        canRemake: false,
+                        onNext: _finishSpecial,
+                        onRemake: () {},
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -878,9 +897,12 @@ class _LevelHud extends StatelessWidget {
         child: clock,
       );
     }
+    // Khung rộng: HUD trải cả bề ngang W — pause bám mép trái, ô xu + combo bám mép phải (lùi khỏi tai thỏ); thanh
+    // mục tiêu ở giữa hai Spacer. Ô xu dời W − 1280 so với khung 1280 (toạ độ đích xu bay: `LevelLayout.hudCoinsFor`).
+    final safe = MediaQuery.paddingOf(context);
     return RepaintBoundary(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+        padding: EdgeInsets.fromLTRB(12 + safe.left, 6, 12 + safe.right, 0),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

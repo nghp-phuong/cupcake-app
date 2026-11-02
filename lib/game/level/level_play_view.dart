@@ -2,8 +2,8 @@ import 'package:flame/game.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
-import '../../core/constants.dart';
 import '../../core/l10n_lookup.dart';
+import '../../core/ref_frame.dart';
 import '../../core/level/level.dart';
 import '../../core/models/ids.dart';
 import '../../core/staff/staff.dart';
@@ -15,8 +15,9 @@ import 'level_labels.dart';
 /// Màn chơi level (Flame): sân tiệm (y 64–440) + bếp nhanh (y 440–720). Widget DUY NHẤT mà lib/ui import từ
 /// `lib/game/level/`.
 ///
-/// Chiếm khung 1280×720 (FittedBox như `BakeSessionView`); y 0–64 vẽ nền tiệm nhưng không nhận chạm — HUD của ui vẽ
-/// đè. Mỗi khung gọi `session.advance(dt)`, tự rút `drainEvents()` → hiệu ứng rồi chuyển cho [onEvent]. Không đọc/ghi
+/// Chiếm khung W×720 (`RefMetrics`, W = 1280–1600; FittedBox như `BakeSessionView`): thế giới 1280×720 ở giữa, nền
+/// tiệm / bếp trải tới hai mép; con trỏ trừ `LevelGame.inset` trước khi vào game. y 0–64 vẽ nền tiệm nhưng không nhận
+/// chạm — HUD của ui vẽ đè. Mỗi khung gọi `session.advance(dt)`, tự rút `drainEvents()` → hiệu ứng rồi chuyển cho [onEvent]. Không đọc/ghi
 /// `GameState`. Chịu được việc bị ẩn tạm (Offstage/TickerMode) rồi hiện lại: khung dài được session kẹp lại.
 ///
 /// Theo dõi cỡ cửa sổ (`View.physicalSize`) để ảnh nhân vật giải mã đúng độ nét của màn (`LevelCharacters.pixelScale`).
@@ -67,7 +68,7 @@ class LevelPlayView extends StatefulWidget {
 }
 
 class _LevelPlayViewState extends State<LevelPlayView> with WidgetsBindingObserver {
-  /// Khoá của lớp nhận con trỏ (test đổi toạ độ khung 1280×720 → toạ độ màn hình).
+  /// Khoá của lớp nhận con trỏ (test đổi toạ độ khung W×720 → toạ độ màn hình; thế giới = khung − inset).
   static const inputKey = ValueKey('level-play-input');
 
   late final LevelGame _game;
@@ -142,21 +143,26 @@ class _LevelPlayViewState extends State<LevelPlayView> with WidgetsBindingObserv
 
   bool _primary(PointerEvent e) => e.kind != PointerDeviceKind.mouse || (e.buttons & kPrimaryMouseButton) != 0;
 
+  /// Toạ độ khung W×720 → toạ độ thế giới 1280×720 (trừ độ lệch vùng giữa).
+  Offset _world(Offset p) => p.translate(-_game.inset, 0);
+
   @override
   Widget build(BuildContext context) {
+    final metrics = RefMetrics.of(context);
+    _game.hudSafeRight = metrics.safe.right;
     return FittedBox(
       fit: BoxFit.contain,
       child: SizedBox.fromSize(
-        size: kRefSize,
+        size: metrics.size,
         child: ClipRect(
           child: Listener(
             key: inputKey,
             behavior: HitTestBehavior.opaque,
             onPointerDown: (e) {
-              if (_primary(e)) _game.pointerDown(e.pointer, e.localPosition);
+              if (_primary(e)) _game.pointerDown(e.pointer, _world(e.localPosition));
             },
-            onPointerMove: (e) => _game.pointerMove(e.pointer, e.localPosition),
-            onPointerUp: (e) => _game.pointerUp(e.pointer, e.localPosition),
+            onPointerMove: (e) => _game.pointerMove(e.pointer, _world(e.localPosition)),
+            onPointerUp: (e) => _game.pointerUp(e.pointer, _world(e.localPosition)),
             onPointerCancel: (e) => _game.pointerCancel(e.pointer),
             child: GameWidget<LevelGame>(game: _game),
           ),

@@ -431,14 +431,27 @@ class _RainPainter extends CustomPainter {
       layout.dripTrails[i * 4 + 3] = math.max(d.y0, y - 2);
     }
 
+    // Cảnh 1280×720 ở vùng 16:9 giữa (khung rộng: hơi mưa + quầng góc trải thêm [side] mỗi bên, như ShopScene).
+    final center = wideCenterRect(size);
+    final side = center.width > 0 ? center.left * kRefSize.width / center.width : 0.0;
     canvas.save();
-    canvas.scale(size.width / kRefSize.width, size.height / kRefSize.height);
+    canvas.translate(center.left, center.top);
+    canvas.scale(center.width / kRefSize.width, center.height / kRefSize.height);
+    canvas.save();
+    canvas.translate(-side, 0);
     canvas.drawRect(_cornerLeftRect, _cornerLeft);
+    canvas.translate(side * 2, 0);
     canvas.drawRect(_cornerRightRect, _cornerRight);
+    canvas.restore();
     canvas.save();
-    canvas.clipRect(_hazeArea);
-    canvas.drawRawPoints(ui.PointMode.lines, _hazeLines, _hazeSoft);
-    canvas.drawRawPoints(ui.PointMode.lines, _hazeLines, _hazeThin);
+    canvas.clipRect(side > 0 ? Rect.fromLTRB(-side, 0, kRefSize.width + side, _hazeBottom) : _hazeArea);
+    // Vệt hơi mưa lặp theo chu kỳ hazeSpan → vẽ thêm một chu kỳ mỗi bên khi khung rộng.
+    for (final dx in side > 0 ? const [-hazeSpan, 0.0, hazeSpan] : const [0.0]) {
+      if (dx != 0) canvas.translate(dx, 0);
+      canvas.drawRawPoints(ui.PointMode.lines, _hazeLines, _hazeSoft);
+      canvas.drawRawPoints(ui.PointMode.lines, _hazeLines, _hazeThin);
+      if (dx != 0) canvas.translate(-dx, 0);
+    }
     canvas.restore();
     canvas.clipPath(glass);
     canvas.drawRawPoints(ui.PointMode.lines, _darkLines, _rainDark);

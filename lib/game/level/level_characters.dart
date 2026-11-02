@@ -57,11 +57,13 @@ abstract final class LevelCharacters {
   /// Cao khung ảnh khi giải mã ở hệ số màn hiện tại.
   static int get decodeHeight => (refDecodeHeight * pixelScale).round();
 
-  /// Bậc hệ số màn cho cửa sổ [physicalSize] (điểm ảnh thật). Khung 1280×720 co giãn giữ tỉ lệ như `RefFrame`, nên
-  /// điểm ảnh thật / px khung = min(rộng / 1280, cao / 720) (đã gồm devicePixelRatio).
+  /// Bậc hệ số màn cho cửa sổ [physicalSize] (điểm ảnh thật). Khung W×720 (W = 720 × rộng / cao, kẹp 1280–1600)
+  /// co giãn giữ tỉ lệ như `RefFrame`, nên điểm ảnh thật / px khung = min(rộng / W, cao / 720) (đã gồm
+  /// devicePixelRatio).
   static double scaleFor(ui.Size physicalSize) {
     if (physicalSize.isEmpty) return minScale;
-    final k = math.min(physicalSize.width / kRefSize.width, physicalSize.height / kRefSize.height);
+    final w = (kRefHeight * physicalSize.width / physicalSize.height).clamp(kRefMinWidth, kRefMaxWidth);
+    final k = math.min(physicalSize.width / w, physicalSize.height / kRefHeight);
     // Lên bậc trên (bớt chút sai số để đúng 1.2 không thành 1.4), rồi kẹp.
     final steps = (k / scaleStep - 1e-6).ceil();
     return (steps * scaleStep * 100).round().clamp(minScale * 100, maxScale * 100) / 100;

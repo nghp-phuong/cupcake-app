@@ -12,6 +12,7 @@ import 'package:sugarleaf_bakery/game/level/level_art.dart';
 import 'package:sugarleaf_bakery/game/level/level_game.dart';
 import 'package:sugarleaf_bakery/game/level/level_layout.dart';
 import 'package:sugarleaf_bakery/game/level/level_paint.dart';
+import 'package:sugarleaf_bakery/game/level/shop_look.dart';
 
 LevelData _level({
   int startStock = 3,
@@ -312,27 +313,37 @@ void main() {
     expect(s.isOver, isFalse);
   });
 
-  test('tủ kính trong ảnh nền: cột bánh nằm trong lòng kính, vừa khe giữa hai tầng kệ; huy hiệu trong tủ', () {
+  test('tủ kính một tầng: cột bánh nằm trong lòng kính, hai hàng vừa cột và dưới nóc tủ; bánh to; huy hiệu trong tủ', () {
     for (var slots = 1; slots <= 8; slots++) {
       for (var i = 0; i < slots; i++) {
         final cell = caseCell(i, slots);
         final s = caseCakeSize(cell);
         expect(LevelLayout.caseGlass.inflate(0.01).contains(cell.topLeft) && LevelLayout.caseGlass.inflate(0.01).contains(cell.bottomRight), isTrue);
-        for (final o in caseShelfStack[caseShelfCapacity]) {
-          expect(cell.center.dx + (o.dx - 0.5) * s, greaterThanOrEqualTo(cell.left - 0.01), reason: 'slots $slots');
-          expect(cell.center.dx + (o.dx + 0.5) * s, lessThanOrEqualTo(cell.right + 0.01), reason: 'slots $slots');
-          // Kệ dưới: bánh không chọc qua kệ trên; kệ trên (độ sâu 0.4): không chọc qua nóc tủ quá 4 px.
-          expect(LevelLayout.lowerShelfY - s + o.dy * s, greaterThanOrEqualTo(LevelLayout.upperShelfBottom - 1));
-          expect(LevelLayout.upperShelfY - s + o.dy * 0.4 * s, greaterThanOrEqualTo(LevelLayout.caseGlass.top - 4));
+        for (final (k, w) in [(caseShelfCapacity, 1.0), (caseShelfCapacity, LevelLayout.caseBackScale)]) {
+          for (var q = 0; q < k; q++) {
+            final dx = caseRowDx(q, k, w);
+            expect(cell.center.dx + (dx - w / 2) * s, greaterThanOrEqualTo(cell.left - 0.01), reason: 'slots $slots');
+            expect(cell.center.dx + (dx + w / 2) * s, lessThanOrEqualTo(cell.right + 0.01), reason: 'slots $slots');
+          }
         }
+        // Hàng sau (cao nhất) không chọc qua nóc tủ; hàng sau lộ trên hàng trước ≥ 35% cạnh bánh (phần topping).
+        expect(caseRowTop(cell, back: true), greaterThanOrEqualTo(LevelLayout.caseGlass.top));
+        expect(caseRowTop(cell, back: false) - caseRowTop(cell, back: true), greaterThanOrEqualTo(0.35 * s));
+        expect(LevelLayout.caseFrontY, lessThanOrEqualTo(LevelLayout.caseGlass.bottom));
         for (final n in [1, 3, 4, 6]) {
           expect(LevelLayout.caseRect.contains(caseBadgeAt(cell, n)), isTrue);
         }
       }
     }
-    // Khách ở quầy lộ từ đầu tới thắt lưng (~56% khung) — nóc tủ ngang thắt lưng.
+    // Tủ thường (≤ 3 cột): bánh ≥ 70 px (nhìn rõ món + topping trên điện thoại; trước đây ~40–50).
+    expect(caseCakeSize(caseCell(0, ShopLook.mainCaseMax)), greaterThanOrEqualTo(70));
+    // Tủ mới che kín tủ nhỏ có sẵn trong ảnh nền (x 435–849, nóc y 284).
+    expect(LevelLayout.caseRect.left, lessThanOrEqualTo(435));
+    expect(LevelLayout.caseRect.right, greaterThanOrEqualTo(849));
+    expect(LevelLayout.caseRect.top, lessThanOrEqualTo(284));
+    // Khách ở quầy lộ từ đầu tới ngực–thắt lưng (~50–56% khung) — nóc tủ ngang đó.
     const h = LevelLayout.customerHeight * LevelLayout.counterScale;
-    final waist = LevelLayout.counterFloor - h * (1 - 0.56);
+    final waist = LevelLayout.counterFloor - h * (1 - 0.53);
     expect((waist - LevelLayout.caseRect.top).abs(), lessThan(12));
     // Mép trên bong bóng (tâm thân − 0.437 × cao ảnh bong bóng) dưới HUD, cách ≥ 16 px.
     final bubbleTop = LevelLayout.counterFloor - h + LevelLayout.bubbleOffset.dy * LevelLayout.counterScale -

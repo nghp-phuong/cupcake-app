@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flame/game.dart';
@@ -114,7 +115,10 @@ class BakeHud extends ChangeNotifier {
 ///
 /// Đầu vào con trỏ KHÔNG đi qua hệ cử chỉ của Flame: `BakeSessionView` bọc `GameWidget` trong một
 /// `Listener` và gọi [pointerDown]/[pointerMove]/[pointerUp] với `localPosition` — Flutter đã đổi
-/// toạ độ qua mọi phép biến đổi (FittedBox của `RefFrame`), nên luôn là toạ độ khung 1280×720.
+/// toạ độ qua mọi phép biến đổi (FittedBox của `RefFrame`), view trừ [inset] → luôn là toạ độ thế giới 1280×720.
+///
+/// Khung rộng (máy 20:9, game rộng W = 1280–1600): thế giới 1280×720 nằm giữa, lệch [inset] = (W − 1280) / 2;
+/// [renderTree] dịch canvas [inset], nền bếp tự trải ra hai bên (x −[inset] .. 1280 + [inset]).
 class BakeryGame extends FlameGame {
   BakeryGame({required this.order, required this.modifiers, Set<StationId> tutorialFor = const {}, int? ovenLevel})
       : _tutorialFor = {...tutorialFor},
@@ -161,6 +165,35 @@ class BakeryGame extends FlameGame {
   @override
   Color backgroundColor() => AppColors.cream;
 
+  // ------------------------------------------------------------------ Khung rộng
+
+  double _inset = 0;
+
+  /// Độ lệch của thế giới 1280 trong khung game rộng W: (W − 1280) / 2 (0 ở máy 16:9). Đặt theo cỡ game
+  /// ([onGameResize]); test đặt thẳng.
+  double get inset => _inset;
+  @visibleForTesting
+  set inset(double v) => _inset = math.max(0.0, v);
+
+  @override
+  void onGameResize(Vector2 size) {
+    super.onGameResize(size);
+    _inset = math.max(0.0, (size.x - kRefMinWidth) / 2);
+  }
+
+  @override
+  void renderTree(Canvas canvas) {
+    final dx = _inset;
+    if (dx <= 0) {
+      super.renderTree(canvas);
+      return;
+    }
+    canvas.save();
+    canvas.translate(dx, 0);
+    super.renderTree(canvas);
+    canvas.restore();
+  }
+
   /// Chờ tối đa chừng này giây cho ảnh nền trạm 1 + khay nướng + ảnh các khuôn trước khi vào trạm 1 (quá thì vẫn chạy, vẽ
   /// hình code dự phòng). Trong lúc chờ nền là tờ giấy kem vẽ tay.
   static const double maxArtWait = 1.5;
@@ -184,7 +217,7 @@ class BakeryGame extends FlameGame {
     // Nạp sẵn ảnh vẽ tay của phiên (không chặn: trạm 1 chờ tối đa [maxArtWait] cho ảnh của nó, các trạm sau chưa
     // có ảnh thì vẽ hình code dự phòng).
     unawaited(ArtSprites.preloadKitchen(ovenLevel: ovenLevel, mould: recipe.mould, batter: recipe.batter, recipe: recipe.id));
-    add(KitchenBackdrop(station: () => hud.station, loading: () => waitingForArt));
+    add(KitchenBackdrop(station: () => hud.station, loading: () => waitingForArt, inset: () => inset));
     add(effects);
   }
 
@@ -285,7 +318,7 @@ class BakeryGame extends FlameGame {
     if (s != null) hud._set(doneEnabled: !_finished && _advanceIn == null && s.acceptsInput && s.canDone);
   }
 
-  // ------------------------------------------------------------------ Con trỏ (toạ độ 1280×720)
+  // ------------------------------------------------------------------ Con trỏ (toạ độ thế giới 1280×720)
 
   void pointerDown(int pointer, Offset p) {
     if (_pointer != null) return; // chỉ theo một ngón

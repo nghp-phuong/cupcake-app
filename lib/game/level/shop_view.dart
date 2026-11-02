@@ -81,8 +81,8 @@ class _CustomerView extends ShopFigure {
   }
 }
 
-/// Sân tiệm (y 0–440): nền `shop_base_empty` (tủ kính trống có sẵn trong ảnh), khách (ảnh nhân vật, giải mã sẵn ở cỡ
-/// hiển thị), bánh trên hai tầng kệ của tủ, bong bóng ý nghĩ gọi món + vòng kiên nhẫn. Chạm khách ở quầy → `sell`;
+/// Sân tiệm (y 0–440): nền `shop_base_empty`, khách (ảnh nhân vật, giải mã sẵn ở cỡ hiển thị), tủ kính lớn một tầng
+/// (ảnh `level/display_case`, che tủ nhỏ của ảnh nền) với hai hàng bánh, bong bóng ý nghĩ gọi món + vòng kiên nhẫn. Chạm khách ở quầy → `sell`;
 /// khách đặc biệt → `onSpecialTap`.
 ///
 /// Đồ mua thêm ([ShopLook]): bàn ghế + cây (sau quầy, xếp theo độ sâu cùng khách), kệ bánh tầng + đồ trang trí quầy
@@ -91,12 +91,12 @@ class _CustomerView extends ShopFigure {
 /// Nhân viên đã thuê ([staff], GĐ4) là hình cùng loại với khách: xếp độ sâu chung (cùng tỉ lệ thì khách che nhân
 /// viên), cắt cùng [LevelLayout.customerClip]; vòng tiến độ thợ bánh vẽ sau mặt tủ, trước bong bóng.
 ///
-/// Thứ tự vẽ: nền → khách + bàn ghế + cây (cắt theo [LevelLayout.customerClip]) → đồ trang trí quầy → mảng tủ của
-/// chính ảnh nền vẽ lại đè lên khách (cắt theo [LevelLayout.caseOutline]: nhìn liền mạch, chỉ một tủ) → bánh (tủ +
-/// kệ tầng) + vệt sáng kính + huy hiệu số → bong bóng.
+/// Thứ tự vẽ: nền → khách + bàn ghế + cây (cắt theo [LevelLayout.customerClip]) → đồ trang trí quầy → tủ kính (ảnh
+/// `display_case` dựng một tầng, đè lên khách và tủ nhỏ của ảnh nền) → bánh (tủ + kệ tầng) + vệt sáng kính + huy hiệu
+/// số → bong bóng.
 ///
-/// Sức chứa ô (`wideCase`: 6 → 8 → 10) thấy được trong tủ: mỗi tầng kệ vẽ tới 3 / 4 / 5 cái ([caseShelfCapacityFor]);
-/// quá 3 cái một tầng thì bánh nhỏ lại và xếp hai hàng (hàng sau nhô giữa khe hàng trước).
+/// Sức chứa ô (`wideCase`: 6 → 8 → 10) thấy được trong tủ: mỗi hàng (trước / sau) vẽ tới 3 / 4 / 5 cái
+/// ([caseShelfCapacityFor]); quá 3 cái một hàng thì bánh nhỏ lại và chồng mép.
 class ShopView {
   ShopView(this.game);
 
@@ -126,7 +126,11 @@ class ShopView {
 
   // Hình tĩnh dựng một lần (giữ tới khi gỡ game).
   GameArt? _caseFrameArt, _caseShineArt, _bubbleFallback, _bubbleFallbackSmall, _starFallback;
-  GameArt? _standFallback, _standPlateFallback, _tableFallback;
+  GameArt? _standFallback, _tableFallback;
+
+  /// Tủ kính dựng từ ảnh `level/display_case` (dựng lại khi ảnh đổi).
+  GameArt? _caseImageArt;
+  ui.Image? _caseImageSrc;
   final Map<int, GameArt> _badges = {};
   String? _badgeFont;
 
@@ -167,12 +171,13 @@ class ShopView {
     reset();
     for (final a in [
       _caseFrameArt, _caseShineArt, _bubbleFallback, _bubbleFallbackSmall, _starFallback, //
-      _standFallback, _standPlateFallback, _tableFallback, ..._badges.values,
+      _standFallback, _tableFallback, _caseImageArt, ..._badges.values,
     ]) {
       a?.dispose();
     }
     _caseFrameArt = _caseShineArt = _bubbleFallback = _bubbleFallbackSmall = _starFallback = null;
-    _standFallback = _standPlateFallback = _tableFallback = null;
+    _standFallback = _tableFallback = _caseImageArt = null;
+    _caseImageSrc = null;
     _badges.clear();
   }
 
@@ -190,7 +195,7 @@ class ShopView {
     return LevelLayout.caseGlass.center;
   }
 
-  /// Khung ô tủ đang chứa món [r] (cột trong lòng kính, đủ hai tầng kệ; ô trên kệ tầng → các tầng của ô); null nếu tủ
+  /// Khung ô tủ đang chứa món [r] (cột trong lòng kính, đủ hai hàng bánh; ô trên kệ tầng → các tầng của ô); null nếu tủ
   /// không có món [r].
   Rect? slotFrameOf(RecipeId r) {
     final dc = session.displayCase;
@@ -206,7 +211,7 @@ class ShopView {
     return null;
   }
 
-  /// Tâm cái bánh "đại diện" (cái đầu ở tầng dưới) của ô tủ [i]: trong tủ kính hoặc trên kệ tầng.
+  /// Tâm cái bánh "đại diện" (giữa hàng trước / tầng dưới) của ô tủ [i]: trong tủ kính hoặc trên kệ tầng.
   Offset slotCakeCenter(int i) {
     final main = look.mainSlots(session.displayCase.slots);
     if (i < main) return caseCakeCenter(caseCell(i, main));
@@ -221,11 +226,12 @@ class ShopView {
     if (i < main) return caseBadgeAt(caseCell(i, main), count, perShelf: per);
     final (first, second) = _standTiersOf(i - main);
     final tier = second != null && count > per ? second : first;
+    // Mép phải đĩa, ngang giữa hàng bánh của tầng (không đè lên bánh tầng trên).
     final t = standTier(tier);
-    return Offset(t.dx + _standHalfW(tier) * 0.8, t.dy - LevelLayout.standCake * 1.02);
+    return Offset(t.dx + _standHalfW(tier) + 6, t.dy - LevelLayout.standCake * 0.6);
   }
 
-  /// Số bánh vẽ tối đa trên một tầng kệ (tủ hoặc kệ tầng) theo sức chứa ô của lượt chơi: 3 (ô 6) · 4 (ô 8) · 5 (ô 10).
+  /// Số bánh vẽ tối đa một hàng tủ / một tầng kệ theo sức chứa ô của lượt chơi: 3 (ô 6) · 4 (ô 8) · 5 (ô 10).
   int get _perShelf => caseShelfCapacityFor(session.displayCase.slotCapacity);
 
   // ------------------------------------------------------------------ Kệ bánh tầng
@@ -271,6 +277,9 @@ class ShopView {
 
   double _tx = 0, _tf = 0, _ts = 1;
 
+  /// Cửa ngoài mép phải màn (khung rộng: dời theo `game.inset`).
+  double get _doorX => LevelLayout.doorXFor(game.inset);
+
   void _set(double x, double floor, double scale) {
     _tx = x;
     _tf = floor;
@@ -290,11 +299,11 @@ class ShopView {
       case CustomerPhase.entering:
         final e = easeInOut(t);
         if (c.isSpecial) {
-          _lerpTo(LevelLayout.doorX, LevelLayout.doorFloor, LevelLayout.doorScale, LevelLayout.specialX, LevelLayout.specialFloor,
+          _lerpTo(_doorX, LevelLayout.doorFloor, LevelLayout.doorScale, LevelLayout.specialX, LevelLayout.specialFloor,
               LevelLayout.counterScale, e);
         } else {
           final (qx, qs) = _queueSpot(c.slot);
-          _lerpTo(LevelLayout.doorX, LevelLayout.doorFloor, LevelLayout.doorScale, qx, LevelLayout.floorFor(qs), qs, e);
+          _lerpTo(_doorX, LevelLayout.doorFloor, LevelLayout.doorScale, qx, LevelLayout.floorFor(qs), qs, e);
         }
       case CustomerPhase.queued:
         final e = easeInOut(t);
@@ -321,9 +330,9 @@ class ShopView {
       case CustomerPhase.leavingSad:
         if (c.turnedAway) {
           // Ló vào cửa rồi quay đi.
-          _set(LevelLayout.doorX - math.sin(t * math.pi) * 120, LevelLayout.doorFloor, LevelLayout.doorScale);
+          _set(_doorX - math.sin(t * math.pi) * 120, LevelLayout.doorFloor, LevelLayout.doorScale);
         } else {
-          _lerpTo(v.fromX, v.fromFloor, v.fromScale, LevelLayout.doorX, LevelLayout.doorFloor, LevelLayout.doorScale, t * t);
+          _lerpTo(v.fromX, v.fromFloor, v.fromScale, _doorX, LevelLayout.doorFloor, LevelLayout.doorScale, t * t);
         }
     }
   }
@@ -467,7 +476,7 @@ class ShopView {
       ..addAll(staff.figures)
       ..sort(ShopFigure.byDepth);
     canvas.save();
-    canvas.clipPath(LevelLayout.customerClip);
+    canvas.clipPath(LevelLayout.customerClipFor(game.inset));
     // Bàn ghế + cây sau quầy xen giữa khách theo độ sâu (xa → vẽ trước).
     final props = _props;
     var p = 0;
@@ -493,7 +502,7 @@ class ShopView {
     canvas.restore();
 
     _paintCounterDecor(canvas);
-    _paintCase(canvas, bg);
+    _paintCase(canvas);
     game.boosterFx.paintCase(canvas);
     staff.paintOverlays(canvas);
 
@@ -571,21 +580,44 @@ class ShopView {
   }
 
   void _paintBackground(Canvas canvas, ui.Image? img) {
+    final dx = game.inset;
     if (img == null) {
+      if (dx > 0) _paintFallbackSides(canvas, dx);
       final art = cachedArt('lvShopFallback', buildShopFallback);
       canvas.drawPicture(art.picture);
       return;
     }
     canvas.drawImageRect(img, _artSrc(img, _shopFrame), _shopFrame, _bgPaint);
+    if (dx > 0) {
+      // Khung rộng: hai dải x −dx..0 và 1280..1280+dx lấp bằng soi gương dải mép ảnh (cắt bỏ phần giữa đã vẽ nét).
+      canvas.save();
+      canvas.clipPath(Path()
+        ..addRect(Rect.fromLTRB(-dx, 0, 0, LevelLayout.kitchenTop))
+        ..addRect(Rect.fromLTRB(_shopFrame.right, 0, _shopFrame.right + dx, LevelLayout.kitchenTop)));
+      paintWideBackdrop(canvas, img,
+          center1280: _shopFrame, full: Rect.fromLTRB(-dx, 0, _shopFrame.right + dx, LevelLayout.kitchenTop), src: _artSrc(img, _shopFrame));
+      canvas.restore();
+    }
   }
 
-  void _paintCase(Canvas canvas, ui.Image? bg) {
-    // Mặt tủ che khách: chính mảng tủ của ảnh nền (không vẽ tủ thứ hai); chưa có ảnh → tủ vẽ code cùng hình học.
-    if (bg != null) {
-      canvas.save();
-      canvas.clipPath(LevelLayout.caseOutline);
-      canvas.drawImageRect(bg, _artSrc(bg, LevelLayout.caseRect), LevelLayout.caseRect, _bgPaint);
-      canvas.restore();
+  /// Hai dải hai bên của nền tiệm dự phòng (tường kem + nẹp trên) khi khung rộng.
+  static void _paintFallbackSides(Canvas canvas, double dx) {
+    for (final x in [-dx, _shopFrame.right]) {
+      canvas.drawRect(Rect.fromLTWH(x, 0, dx, LevelLayout.kitchenTop), fill(AppColors.cream));
+      canvas.drawRect(Rect.fromLTWH(x, 0, dx, 22), fill(SLColors.paperShade));
+    }
+  }
+
+  void _paintCase(Canvas canvas) {
+    // Mặt tủ che khách + tủ nhỏ của ảnh nền: ảnh tủ một tầng (dựng một lần); chưa có ảnh → tủ vẽ code cùng hình học.
+    final caseImage = LevelArt.image(LevelArtId.displayCase);
+    if (caseImage != null) {
+      if (!identical(caseImage, _caseImageSrc)) {
+        _caseImageArt?.dispose();
+        _caseImageArt = buildCaseArt(caseImage);
+        _caseImageSrc = caseImage;
+      }
+      canvas.drawPicture(_caseImageArt!.picture);
     } else {
       canvas.drawPicture((_caseFrameArt ??= buildCaseFrameArt()).picture);
     }
@@ -625,48 +657,47 @@ class ShopView {
     canvas.restore();
   }
 
-  /// Bánh trong tủ (ghi một lần mỗi khi tủ đổi / có ảnh mới / look đổi): mỗi ô = một cột, kệ dưới đầy trước rồi tới
-  /// kệ trên; mỗi tầng tối đa [_perShelf] cái (ô `wideCase` 8 / 10 cái → 4 / 5 cái một tầng, xếp hai hàng chặt). Các
-  /// ô cuối nằm trên kệ bánh tầng nếu [look] có kệ.
+  /// Bánh trong tủ (ghi một lần mỗi khi tủ đổi / có ảnh mới / look đổi): mỗi ô = một cột, hàng trước đầy trước rồi
+  /// tới hàng sau (đứng lùi, cao hơn, lộ nửa trên); mỗi hàng tối đa [_perShelf] cái (ô `wideCase` 8 / 10 cái → 4 / 5
+  /// cái một hàng, nhỏ lại và chồng mép). Các ô cuối nằm trên kệ bánh tầng nếu [look] có kệ.
   void _recordCase(Canvas canvas, DisplayCase dc, ui.Image? standImage) {
     final main = look.mainSlots(dc.slots);
     final per = _perShelf;
     if (main < dc.slots) _recordStand(canvas, dc, main, standImage);
+    const front = LevelLayout.caseFrontY;
     for (var i = 0; i < main; i++) {
       final slot = dc.items[i];
       final cell = caseCell(i, main);
       final s = caseCakeSize(cell);
       final recipe = slot.recipe;
       if (recipe == null || slot.isEmpty) {
-        // Ô trống: giấy lót ren mờ trên kệ dưới.
-        final doily = Rect.fromCenter(center: Offset(cell.center.dx, LevelLayout.lowerShelfY - 2), width: s * 1.5, height: s * 0.3);
+        // Ô trống: giấy lót ren mờ trên sàn tủ.
+        final doily = Rect.fromCenter(center: Offset(cell.center.dx, front - 2), width: s * 1.5, height: s * 0.3);
         canvas.drawOval(doily, fill(const Color(0x40FFFFFF)));
         canvas.drawOval(doily, stroke(SLColors.pencil, 1.4));
         continue;
       }
       final n = math.min(slot.count, per * 2);
-      // Kệ trên trước (nằm sau, cao hơn), rồi kệ dưới.
-      // Kệ trên nhìn gần ngang tầm mắt (mặt kệ mỏng hơn) → cái ở sau nhô lên ít hơn.
-      // Cái thứ j của ô (thứ tự vào tủ) ↔ topping thật `slot.toppingAt(j)`: kệ dưới 0..per−1, kệ trên per..n−1.
-      for (final (shelf, k, depth, first) in [
-        (LevelLayout.upperShelfY, n - per, 0.4, per),
-        (LevelLayout.lowerShelfY, math.min(n, per), 1.0, 0),
+      final w = s * caseShelfCakeScale(per);
+      // Hàng sau trước (nằm sau, cao hơn, nhỏ hơn), rồi hàng trước.
+      // Cái thứ j của ô (thứ tự vào tủ) ↔ topping thật `slot.toppingAt(j)`: hàng trước 0..per−1, hàng sau per..n−1.
+      for (final (base, k, size, first) in [
+        (front - LevelLayout.caseBackLift * s, n - per, w * LevelLayout.caseBackScale, per),
+        (front, math.min(n, per), w, 0),
       ]) {
         if (k <= 0) continue;
-        paintShadow(canvas, Offset(cell.center.dx, shelf - 2), s * (k >= 2 ? 1.7 : 1.05), s * 0.2, alpha: 0.18);
-        final w = s * caseShelfCakeScale(k);
-        final stack = caseShelfStack[k];
-        for (var j = 0; j < stack.length; j++) {
-          final o = stack[j];
-          _paintCake(canvas, Rect.fromCenter(center: Offset(cell.center.dx + o.dx * s, shelf - w / 2 + o.dy * depth * s), width: w, height: w),
-              recipe, topping: _toppingOf(slot, first + j));
+        paintShadow(canvas, Offset(cell.center.dx, base - 2), s * (k >= 2 ? 1.9 : 1.05), s * 0.18, alpha: 0.18);
+        for (var q = 0; q < k; q++) {
+          final dx = caseRowDx(q, k, size / s) * s;
+          _paintCake(canvas, Rect.fromLTWH(cell.center.dx + dx - size / 2, base - size, size, size), recipe,
+              topping: _toppingOf(slot, first + q));
         }
       }
     }
   }
 
-  /// Kệ bánh tầng (ảnh hoặc hình code dự phòng) + bánh của các ô từ [main] trên đó: tầng dưới → dải đĩa tầng trên vẽ
-  /// lại đè lên (bánh tầng dưới nằm dưới tầng trên) → tầng trên.
+  /// Kệ bánh tầng (ảnh hoặc hình code dự phòng) + bánh của các ô từ [main] trên đó: tầng trên trước, rồi tầng dưới
+  /// (gần mắt hơn, đè lên mép đĩa tầng trên).
   void _recordStand(Canvas canvas, DisplayCase dc, int main, ui.Image? img) {
     const r = LevelLayout.standRect;
     paintShadow(canvas, Offset(r.center.dx, r.bottom - 3), r.width * 0.62, 8, alpha: 0.2);
@@ -677,18 +708,7 @@ class ShopView {
     }
     const s = LevelLayout.standCake;
     final per = _perShelf;
-    for (final tier in const [0, 1]) {
-      if (tier == 1) {
-        // Dải đĩa tầng trên đè lên đầu bánh tầng dưới.
-        final band = Rect.fromLTRB(
-            r.left, r.top + r.height * LevelLayout.standUpperPlateTop, r.right, r.top + r.height * LevelLayout.standUpperPlateBottom);
-        if (img != null) {
-          final k = img.height / r.height;
-          canvas.drawImageRect(img, Rect.fromLTRB(0, (band.top - r.top) * k, img.width.toDouble(), (band.bottom - r.top) * k), band, _bgPaint);
-        } else {
-          canvas.drawPicture((_standPlateFallback ??= buildCaseStandFallback(r, upperPlateOnly: true)).picture);
-        }
-      }
+    for (final tier in const [1, 0]) {
       for (var j = 0; main + j < dc.slots; j++) {
         final slot = dc.items[main + j];
         final recipe = slot.recipe;
@@ -700,12 +720,14 @@ class ShopView {
         final base = tier == first ? 0 : per;
         final at = standTier(tier);
         paintShadow(canvas, Offset(at.dx, at.dy - 2), s * (k >= 2 ? 1.6 : 1.0), s * 0.18, alpha: 0.16);
-        final w = s * caseShelfCakeScale(k);
-        final stack = caseShelfStack[k];
-        for (var q = 0; q < stack.length; q++) {
-          final o = stack[q];
-          _paintCake(canvas, Rect.fromCenter(center: Offset(at.dx + o.dx * s, at.dy - w / 2 + o.dy * 0.6 * s), width: w, height: w), recipe,
-              topping: _toppingOf(slot, base + q));
+        // Hàng trên một đĩa: bề ngang hàng đầy ≈ bề ngang đĩa của tầng (hai cái ngoài nhô khỏi mép đĩa một chút).
+        final w = s * caseShelfCakeScale(per);
+        final span = _standHalfW(tier) * 2 / s + 0.3;
+        for (var q = 0; q < k; q++) {
+          final step = k <= 1 ? 0.0 : math.min(w / s, (span - w / s) / (k - 1));
+          final jj = q.isEven ? q ~/ 2 : k - 1 - q ~/ 2;
+          final dx = (jj - (k - 1) / 2) * step * s;
+          _paintCake(canvas, Rect.fromLTWH(at.dx + dx - w / 2, at.dy - w, w, w), recipe, topping: _toppingOf(slot, base + q));
         }
       }
     }
@@ -748,7 +770,7 @@ class ShopView {
       drawArt(canvas, img, Rect.fromLTWH(center.dx - w * _cloudCx, center.dy - h * _cloudCy, w, h));
       return;
     }
-    final art = small ? (_bubbleFallbackSmall ??= buildBubbleArt(19, seed: 0xB0D)) : (_bubbleFallback ??= buildBubbleArt(LevelLayout.bubbleRadius + 6));
+    final art = small ? (_bubbleFallbackSmall ??= buildBubbleArt(LevelLayout.bubbleRadius * 0.5 + 5, seed: 0xB0D)) : (_bubbleFallback ??= buildBubbleArt(LevelLayout.bubbleRadius + 6));
     drawPictureAt(canvas, art.picture, center - art.origin);
   }
 
@@ -766,12 +788,12 @@ class ShopView {
       canvas.drawArc(Rect.fromCircle(center: center, radius: r), -math.pi / 2, math.pi * 2 * frac, false,
           softStroke(_ringColors[(frac * 20).round().clamp(0, 20)], 5));
     }
-    _paintCake(canvas, Rect.fromCircle(center: center, radius: r - 5), c.want);
+    _paintCake(canvas, Rect.fromCircle(center: center, radius: r - 3), c.want);
     if (c.wants.length > 1) {
       // Món thứ hai: bong bóng nhỏ dính mép dưới-phải bong bóng chính (cụm mây ý nghĩ).
       final c2 = center + const Offset(w * 0.38, w * 0.24);
       _paintCloud(canvas, cloud, c2, w * 0.48, small: true);
-      _paintCake(canvas, Rect.fromCircle(center: c2, radius: 14), c.wants[1]);
+      _paintCake(canvas, Rect.fromCircle(center: c2, radius: r * 0.5), c.wants[1]);
     }
     if (c.isSpecial) {
       final at = center + Offset(-w * 0.44, -r * 0.95 + math.sin(game.time * 4) * 2);

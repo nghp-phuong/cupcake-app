@@ -7,6 +7,7 @@ import '../../core/art/art_sprites.dart';
 import '../../core/art/shop_art.dart';
 import '../../core/constants.dart';
 import '../../core/models/ids.dart';
+import 'wide_layout.dart';
 
 /// Cảnh tiệm vẽ tay: ảnh nền `shop_base` (tường kem, kệ, tủ bánh, quầy gỗ, cửa sổ lớn bên phải) + đồ trang trí
 /// đang đặt chồng lên theo ô. Vẽ theo khung 1280×720 của ảnh nền rồi co về kích thước được cấp.
@@ -156,12 +157,22 @@ abstract final class ShopScene {
   }
 
   /// [rainy]: nhuộm ô kính cửa sổ thành trời mưa (dưới đồ trang trí, nên rèm vẫn giữ màu).
+  /// [size] rộng hơn 16:9 (khung W×720 máy 20:9): cảnh 1280×720 nằm ở vùng 16:9 giữa ([wideCenterRect]); cảnh ảnh
+  /// lấp hai bên bằng soi gương dải mép ảnh nền ([paintWideBackdrop]), cảnh hình code kéo dài tường/sàn (`ShopArt`).
   static void paint(Canvas canvas, Size size, Map<DecorSlot, DecorId?> equipped, {bool rainy = false}) {
     final art = usesArt(equipped);
     if (!art) ShopArt.paint(canvas, size, equipped);
+    final center = wideCenterRect(size);
     canvas.save();
     canvas.clipRect(Offset.zero & size);
-    canvas.scale(size.width / kRefSize.width, size.height / kRefSize.height);
+    final base = ArtSprites.shopBase.image;
+    if (art && base != null && center.width < size.width) {
+      final img = Size(base.width.toDouble(), base.height.toDouble());
+      final src = coverSourceRect(img, kRefSize);
+      paintWideBackdrop(canvas, base, center1280: center, full: Offset.zero & size, src: src);
+    }
+    canvas.translate(center.left, center.top);
+    canvas.scale(center.width / kRefSize.width, center.height / kRefSize.height);
     if (art) {
       paintRef(canvas, equipped, rainy: rainy);
     } else if (rainy) {

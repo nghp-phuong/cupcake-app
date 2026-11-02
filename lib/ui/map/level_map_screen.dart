@@ -17,6 +17,7 @@ import '../common/currency_bar.dart';
 import '../common/dialogs.dart';
 import '../common/format.dart';
 import '../common/navigation.dart';
+import '../common/wide_layout.dart';
 import '../level/level_common.dart';
 import '../menu/login_gift_dialog.dart';
 import '../menu/quests_dialog.dart';
@@ -393,6 +394,7 @@ class _LevelMapScreenState extends State<LevelMapScreen> with SingleTickerProvid
     final chapters = config.chapters;
     final lang = levelLang(context);
     final reduce = slReduceMotion(context);
+    final safe = MediaQuery.paddingOf(context);
 
     final Widget body;
     if (chapters.isEmpty) {
@@ -484,7 +486,7 @@ class _LevelMapScreenState extends State<LevelMapScreen> with SingleTickerProvid
                     children: [
                       if (page > 0)
                         Positioned(
-                          left: 14,
+                          left: 14 + safe.left,
                           top: 330,
                           child: SLButton.icon(
                             key: const ValueKey('map-prev'),
@@ -496,7 +498,7 @@ class _LevelMapScreenState extends State<LevelMapScreen> with SingleTickerProvid
                         ),
                       if (page < chapters.length - 1)
                         Positioned(
-                          right: 14,
+                          right: 14 + safe.right,
                           top: 330,
                           child: SLButton.icon(
                             key: const ValueKey('map-next'),
@@ -540,7 +542,7 @@ class _LevelMapScreenState extends State<LevelMapScreen> with SingleTickerProvid
       builder: (context, c) {
         final size = c.biggest;
         final special = level.isSpecial;
-        final center = Offset(level.mapPos.dx * size.width, level.mapPos.dy * size.height);
+        final center = mapPoint(wideCenterRect(size), level.mapPos);
         final v = _fx.value;
         final children = <Widget>[];
         if (_fxStep == _Fx.stars) {
@@ -640,12 +642,15 @@ class _ChapterPage extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, c) {
         final size = c.biggest;
-        Offset at(LevelData l) => Offset(l.mapPos.dx * size.width, l.mapPos.dy * size.height);
+        // `mapPos` là tỉ lệ trong vùng 16:9 giữa trang (khung rộng: nút giữ trong vùng 1280, nền trải tới mép).
+        final area = wideCenterRect(size);
+        final wide = area.width < size.width;
+        Offset at(LevelData l) => mapPoint(area, l.mapPos);
         final reached = nodes.where((n) => n.state != MapNodeState.locked).length;
         return Stack(
           clipBehavior: Clip.none,
           children: [
-            Positioned.fill(child: RepaintBoundary(child: _MapBackground(chapter: chapter, seed: _seed))),
+            Positioned.fill(child: RepaintBoundary(child: _MapBackground(chapter: chapter, seed: _seed, wide: wide))),
             Positioned.fill(
               child: IgnorePointer(
                 child: RepaintBoundary(
@@ -698,21 +703,29 @@ class _ChapterPage extends StatelessWidget {
   }
 }
 
+/// Điểm `mapPos` (tỉ lệ 0..1) trong vùng [area] của trang — vùng 16:9 giữa ([wideCenterRect]); trang 16:9 → cả trang.
+Offset mapPoint(Rect area, Offset pos) => Offset(area.left + pos.dx * area.width, area.top + pos.dy * area.height);
+
 /// Ảnh bản đồ của [chapter] (giải mã tối đa 1600 px ngang) — dùng chung cho nền trang và nạp sẵn.
 ImageProvider mapImageProvider(ChapterData chapter) =>
     ResizeImage(AssetImage(chapter.mapAssetPath), width: 1600, policy: ResizeImagePolicy.fit);
 
 /// Nền trang chương: ảnh `assets/art/map/<mapArt>.webp` (giải mã tối đa 1600 px ngang); đang nạp / thiếu ảnh →
 /// nền giấy vẽ code.
+///
+/// Khung rộng (trang rộng hơn 16:9): ảnh ở vùng 1280 giữa, hai bên lấp bằng soi gương dải mép ảnh
+/// ([WideImageBackdrop]).
 class _MapBackground extends StatelessWidget {
-  const _MapBackground({required this.chapter, required this.seed});
+  const _MapBackground({required this.chapter, required this.seed, this.wide = false});
 
   final ChapterData chapter;
   final int seed;
+  final bool wide;
 
   @override
   Widget build(BuildContext context) {
     final fallback = MapPaperBackdrop(seed: seed);
+    if (wide) return WideImageBackdrop(image: mapImageProvider(chapter), fallback: fallback);
     return Image(
       image: mapImageProvider(chapter),
       fit: BoxFit.cover,
@@ -902,6 +915,7 @@ class _MapTopBar extends StatelessWidget {
     final l = AppLocalizations.of(context);
     final questReady = state.quests.any((q) => !q.claimed && q.progress >= Catalog.quest(q.type).target);
     final stars = state.totalStars;
+    final safe = MediaQuery.paddingOf(context);
     return Stack(
       children: [
         const Positioned.fill(
@@ -918,7 +932,8 @@ class _MapTopBar extends StatelessWidget {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(22, 10, 12, 0),
+          // Bám mép khung (khung rộng: trải cả W, lùi khỏi tai thỏ).
+          padding: EdgeInsets.fromLTRB(22 + safe.left, 10, 12 + safe.right, 0),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

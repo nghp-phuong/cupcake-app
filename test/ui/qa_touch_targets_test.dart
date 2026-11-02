@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sugarleaf_bakery/core/models/ids.dart';
+import 'package:sugarleaf_bakery/core/ref_frame.dart';
 import 'package:sugarleaf_bakery/core/routes.dart';
 import 'package:sugarleaf_bakery/ui/ui_routes.dart';
 
@@ -50,7 +51,12 @@ void main() {
   // 1024×768 dp → 0,8. Nút 54 px tham chiếu còn 27–43 dp → SLTapTarget nới vùng chạm (semantics + hit test) ≥ 48 dp
   // mà không đổi hình nút (UI-01).
   group('vùng chạm trên máy thật (khung co lại theo dp)', () {
-    for (final vp in qaRealDevices) {
+    // + máy 20:9 / 19,5:9 có tai thỏ (khung rộng W > 1280: hệ số co tính theo W).
+    for (final vp in [
+      ...qaRealDevices,
+      qaNotch20x9,
+      const QaViewport('2340x1080@2.75+notch', Size(2340, 1080), dpr: 2.75, notch: 48),
+    ]) {
       testWidgets('$vp: mọi nút ≥ 48×48 dp trên mọi màn chính', (tester) async {
         final failures = <String>[];
         for (final e in _routes.entries) {
@@ -90,14 +96,20 @@ void main() {
         vp.apply(tester);
         await tester.pumpAndSettle();
         final w = vp.logical.width;
-        // Khung 1280×720 sau co giãn (phần ngoài khung bị ClipRect cắt, không chạm được).
-        final scale = math.min(w / 1280, vp.logical.height / 720);
-        final frame = Rect.fromCenter(
-            center: vp.logical.center(Offset.zero), width: 1280 * scale, height: 720 * scale);
+        // Khung W×720 sau co giãn (W = 1280–1600 theo tỉ lệ máy; phần ngoài khung bị ClipRect cắt, không chạm được).
+        final safe = EdgeInsets.symmetric(horizontal: vp.notch);
+        final width = RefFrame.widthFor(vp.logical, safe);
+        final frame = width > 1280
+            ? Rect.fromCenter(
+                center: vp.logical.center(Offset.zero),
+                width: width * math.min(w / width, vp.logical.height / 720),
+                height: 720 * math.min(w / width, vp.logical.height / 720),
+              )
+            : RefFrame.frameRect(vp.logical, safe);
         for (final el in find.byWidgetPredicate((w) => w is GestureDetector && w.onTap != null).evaluate()) {
           final box = el.renderObject;
           if (box is! RenderBox || !box.hasSize || !box.attached) continue;
-          final r = (box.localToGlobal(Offset.zero) & (box.size * scale)).intersect(frame);
+          final r = MatrixUtils.transformRect(box.getTransformTo(null), Offset.zero & box.size).intersect(frame);
           if (r.width <= 0 || r.height <= 0) continue;
           if (r.left < vp.notch || r.right > w - vp.notch) {
             bad.add('${e.key}: nút ở x=${r.left.round()}..${r.right.round()}');
@@ -109,9 +121,13 @@ void main() {
       return bad;
     }
 
-    testWidgets('máy 19,5:9 (2340×1080 @2.75) tai thỏ 48 dp: viền kem che tai thỏ, không nút nào nằm dưới', (tester) async {
+    testWidgets('máy 19,5:9 (2340×1080 @2.75) tai thỏ 48 dp: khung rộng, nền tràn dưới tai thỏ, không nút nào nằm dưới', (tester) async {
       expect(await underNotch(tester, const QaViewport('2340x1080@2.75', Size(2340, 1080), dpr: 2.75, notch: 48)),
           isEmpty);
+    });
+
+    testWidgets('máy 20:9 (2400×1080 @2.625) tai thỏ: không nút nào nằm dưới', (tester) async {
+      expect(await underNotch(tester, qaNotch20x9), isEmpty);
     });
 
     testWidgets('máy 16:9 (1280×720) tai thỏ 48: không nút nào nằm dưới vùng tai thỏ', (tester) async {

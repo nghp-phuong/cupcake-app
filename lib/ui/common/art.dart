@@ -9,6 +9,7 @@ import '../../core/models/customer.dart';
 import '../../core/models/ids.dart';
 import '../sugarleaf/sugarleaf.dart';
 import 'shop_scene.dart';
+import 'wide_layout.dart';
 
 /// Hàm vẽ nhận Canvas + kích thước vùng vẽ.
 typedef ArtPaint = void Function(Canvas canvas, Size size);
@@ -131,7 +132,8 @@ class ShopBackdrop extends StatelessWidget {
   }
 }
 
-/// Cảnh nền toàn màn vẽ tay (phủ kín, cắt mép thừa); chưa nạp/thiếu → [fallback] (null = trong suốt, thấy lớp dưới).
+/// Cảnh nền toàn màn vẽ tay (phủ kín, cắt mép thừa; khung rộng hơn 16:9 → ảnh giữa + soi gương hai bên); chưa
+/// nạp/thiếu → [fallback] (null = trong suốt, thấy lớp dưới).
 class SceneBackdrop extends StatelessWidget {
   const SceneBackdrop({super.key, required this.scene, this.fallback, this.tint});
 
@@ -156,9 +158,18 @@ class SceneBackdrop extends StatelessWidget {
           repaintKey: Object.hash(scene, tint),
           repaint: ArtSprites.changes,
           paint: (c, s) {
-            if (paintArtRef(c, Offset.zero & s, art, fit: BoxFit.cover) && tint != null) {
-              c.drawRect(Offset.zero & s, Paint()..color = tint!);
+            final image = art.image;
+            if (image == null || s.isEmpty) return;
+            final full = Offset.zero & s;
+            final center = wideCenterRect(s);
+            if (center.width < s.width) {
+              // Khung rộng hơn 16:9: ảnh ở vùng 16:9 giữa, hai bên soi gương dải mép (không cắt mất cảnh).
+              final img = Size(image.width.toDouble(), image.height.toDouble());
+              paintWideBackdrop(c, image, center1280: center, full: full, src: coverSourceRect(img, center.size));
+            } else {
+              paintArt(c, full, image, fit: BoxFit.cover);
             }
+            if (tint != null) c.drawRect(full, Paint()..color = tint!);
           },
         ),
       ],

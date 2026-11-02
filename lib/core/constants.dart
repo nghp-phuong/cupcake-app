@@ -1,7 +1,16 @@
 import 'package:flutter/painting.dart';
 
-/// Khung tham chiếu: mọi màn bố cục theo 1280×720 (xem `RefFrame`).
-const Size kRefSize = Size(1280, 720);
+/// Chiều cao khung tham chiếu (cố định); chiều rộng co giãn [kRefMinWidth]–[kRefMaxWidth] theo tỉ lệ máy (xem `RefFrame`).
+const double kRefHeight = 720;
+
+/// Rộng tối thiểu của khung = rộng vùng nội dung ở giữa (máy 16:9 và hẹp hơn).
+const double kRefMinWidth = 1280;
+
+/// Rộng tối đa của khung (20:9); máy dài hơn letterbox hai bên.
+const double kRefMaxWidth = 1600;
+
+/// Vùng nội dung 1280×720: mọi màn bố cục theo toạ độ này (xem `RefFrame`, `RefCenter`).
+const Size kRefSize = Size(kRefMinWidth, kRefHeight);
 
 abstract final class AppColors {
   static const cream = Color(0xFFFFF4E6);

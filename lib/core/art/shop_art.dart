@@ -6,6 +6,8 @@ import '../models/ids.dart';
 import 'item_art.dart';
 
 /// Nền tiệm + đồ trang trí đang đặt (null = "Cơ bản"). Vẽ theo khung 1280×720 rồi co về [size].
+/// [size] rộng hơn 16:9 (khung W×720 của máy 20:9): co theo chiều cao, cảnh 1280 nằm giữa (đồ trang trí dịch theo),
+/// tường/lát chân tường/sàn kéo dài tới hai mép.
 ///
 /// Bố cục tham chiếu: tường y 0–540, cửa sổ x 760–1100 y 80–330, kệ x 120–520 y 150–260,
 /// quầy x 40–1240 y 500–640 (khách đứng sau quầy), sàn y 540–720, cây ở góc phải x 1140–1270.
@@ -21,30 +23,42 @@ abstract final class ShopArt {
   static final _cache = <Object, Picture>{}; // LinkedHashMap: giữ thứ tự dùng gần nhất.
 
   static void paint(Canvas canvas, Size size, Map<DecorSlot, DecorId?> equipped) {
+    // Phần rộng thêm (đơn vị khung) khi co theo chiều cao; ghi hình mỗi bên dư lên số nguyên để dùng lại cache.
+    final scale = size.height / kRefSize.height;
+    final extra = scale > 0 ? size.width / scale - kRefSize.width : 0.0;
+    final side = extra > 0.5 ? (extra / 2).ceilToDouble() : 0.0;
     final key = (
       equipped[DecorSlot.wallpaper],
       equipped[DecorSlot.floor],
       equipped[DecorSlot.window],
       equipped[DecorSlot.counter],
       equipped[DecorSlot.plant],
+      side,
     );
     var picture = _cache.remove(key);
-    picture ??= _record(equipped);
+    picture ??= _record(equipped, side: side);
     _cache[key] = picture;
     if (_cache.length > _cacheLimit) _cache.remove(_cache.keys.first);
     canvas.save();
     canvas.clipRect(Offset.zero & size);
-    canvas.scale(size.width / kRefSize.width, size.height / kRefSize.height);
+    if (side == 0) {
+      canvas.scale(size.width / kRefSize.width, size.height / kRefSize.height);
+    } else {
+      canvas.scale(scale);
+      canvas.translate(extra / 2, 0);
+    }
     canvas.drawPicture(picture);
     canvas.restore();
   }
 
-  static Picture _record(Map<DecorSlot, DecorId?> equipped) {
+  /// Ghi hình cảnh; [side] > 0 → tường/sàn kéo thêm [side] mỗi bên (x từ −side tới 1280 + side).
+  static Picture _record(Map<DecorSlot, DecorId?> equipped, {double side = 0}) {
     final recorder = PictureRecorder();
     final canvas = Canvas(recorder);
-    canvas.clipRect(Offset.zero & kRefSize);
-    _wall(canvas, equipped[DecorSlot.wallpaper]);
-    _floor(canvas, equipped[DecorSlot.floor]);
+    final x0 = -side, x1 = kRefSize.width + side;
+    canvas.clipRect(Rect.fromLTRB(x0, 0, x1, kRefSize.height));
+    _wall(canvas, equipped[DecorSlot.wallpaper], x0, x1);
+    _floor(canvas, equipped[DecorSlot.floor], x0, x1);
     _window(canvas, equipped[DecorSlot.window]);
     _hangingPlant(canvas);
     _shelf(canvas);
@@ -54,6 +68,10 @@ abstract final class ShopArt {
     _plant(canvas, equipped[DecorSlot.plant]);
     return recorder.endRecording();
   }
+
+  /// Điểm lưới đầu tiên (gốc [origin], bước [step]) để phủ từ [x0]; x0 ≥ 0 → đúng [origin] như bản 1280.
+  static double _from(double x0, double origin, double step) =>
+      x0 < 0 ? origin - ((origin - x0) / step).ceil() * step : origin;
 
   static Paint _f(Color c) => ItemArt.fill(c);
   static Paint _s(Color c, double w) => ItemArt.stroke(c, w);
@@ -99,12 +117,12 @@ abstract final class ShopArt {
 
   // ------------------------------------------------------------------ Tường
 
-  static void _wall(Canvas canvas, DecorId? id) {
-    const wall = Rect.fromLTRB(0, 0, 1280, wallBottom);
+  static void _wall(Canvas canvas, DecorId? id, double x0, double x1) {
+    final wall = Rect.fromLTRB(x0, 0, x1, wallBottom);
     switch (id) {
       case DecorId.wallpaperStripes:
         canvas.drawRect(wall, _f(AppColors.cream));
-        for (var x = 0.0; x < 1280; x += 80) {
+        for (var x = _from(x0, 0, 80); x < x1; x += 80) {
           canvas.drawRect(Rect.fromLTWH(x, 0, 36, wallBottom), _f(const Color(0xFFFBE0E6)));
           canvas.drawLine(Offset(x + 18, 0), Offset(x + 18, wallBottom), _s(const Color(0x33FFFFFF), 2));
         }
@@ -112,7 +130,7 @@ abstract final class ShopArt {
         canvas.drawRect(wall, _f(const Color(0xFFE6F4EC)));
         final rnd = math.Random(7);
         for (var y = 30.0; y < wallBottom - 60; y += 70) {
-          for (var x = 20.0 + ((y ~/ 70).isOdd ? 35 : 0); x < 1280; x += 70) {
+          for (var x = _from(x0, 20.0 + ((y ~/ 70).isOdd ? 35 : 0), 70); x < x1; x += 70) {
             final c = Offset(x + rnd.nextDouble() * 10, y + rnd.nextDouble() * 10);
             _leaf(canvas, c + const Offset(4, 6), 12, 0.7 + rnd.nextDouble() * 0.4, const Color(0xFFA8D5B5));
             for (var k = 0; k < 5; k++) {
@@ -130,21 +148,22 @@ abstract final class ShopArt {
     }
     // Vân giấy/vữa nhẹ cho mọi loại tường.
     final rnd = math.Random(3);
-    for (var i = 0; i < 700; i++) {
-      final p = Offset(rnd.nextDouble() * 1280, rnd.nextDouble() * (wallBottom - 70));
+    final span = x1 - x0, grains = (700 * span / 1280).round(), strokes = (60 * span / 1280).round();
+    for (var i = 0; i < grains; i++) {
+      final p = Offset(x0 + rnd.nextDouble() * span, rnd.nextDouble() * (wallBottom - 70));
       final r = 0.6 + rnd.nextDouble() * 1.4;
       canvas.drawCircle(p, r, _f((rnd.nextBool() ? const Color(0xFFB9805A) : const Color(0xFFFFFFFF)).withValues(alpha: 0.07 + rnd.nextDouble() * 0.06)));
     }
-    for (var i = 0; i < 60; i++) {
-      final p = Offset(rnd.nextDouble() * 1280, rnd.nextDouble() * (wallBottom - 80));
+    for (var i = 0; i < strokes; i++) {
+      final p = Offset(x0 + rnd.nextDouble() * span, rnd.nextDouble() * (wallBottom - 80));
       final len = 10 + rnd.nextDouble() * 24;
       canvas.drawLine(p, p + Offset(len, rnd.nextDouble() * 4 - 2), _s(const Color(0xFFB9805A).withValues(alpha: 0.06), 1.4));
     }
     // Hơi ấm hắt từ cửa sổ.
     canvas.drawRect(wall, _radial(const Offset(930, 200), 700, const [Color(0x40FFF6D8), Color(0x00FFF6D8)]));
     // Góc trên tối nhẹ cho có chiều sâu.
-    canvas.drawRect(const Rect.fromLTRB(0, 0, 1280, 60), _linear(Offset.zero, const Offset(0, 60), const [Color(0x22B9805A), Color(0x00B9805A)]));
-    _wainscot(canvas);
+    canvas.drawRect(Rect.fromLTRB(x0, 0, x1, 60), _linear(Offset.zero, const Offset(0, 60), const [Color(0x22B9805A), Color(0x00B9805A)]));
+    _wainscot(canvas, x0, x1);
   }
 
   /// Mảng gạch lộ ra sau lớp vữa (mép lởm chởm theo hình elip).
@@ -168,10 +187,10 @@ abstract final class ShopArt {
     }
   }
 
-  static void _wainscot(Canvas canvas) {
+  static void _wainscot(Canvas canvas, double x0, double x1) {
     const top = wallBottom - 76;
-    canvas.drawRect(const Rect.fromLTRB(0, top, 1280, wallBottom), _linear(const Offset(0, top), const Offset(0, wallBottom), const [Color(0xFFEBC7A2), Color(0xFFDDB38B)]));
-    for (var x = 12.0; x < 1280; x += 128) {
+    canvas.drawRect(Rect.fromLTRB(x0, top, x1, wallBottom), _linear(const Offset(0, top), const Offset(0, wallBottom), const [Color(0xFFEBC7A2), Color(0xFFDDB38B)]));
+    for (var x = _from(x0, 12, 128); x < x1; x += 128) {
       final panel = RRect.fromRectAndRadius(Rect.fromLTWH(x, top + 16, 104, 46), const Radius.circular(6));
       canvas.drawRRect(panel, _f(const Color(0xFFE4BD96)));
       canvas.drawLine(Offset(x + 4, top + 17), Offset(x + 100, top + 17), _s(const Color(0xFFC79A70), 2.4));
@@ -179,21 +198,21 @@ abstract final class ShopArt {
       canvas.drawRRect(panel, _s(const Color(0xFFC79A70), 1.4));
     }
     // Thanh nẹp trên.
-    canvas.drawRect(const Rect.fromLTRB(0, top - 8, 1280, top + 4), _f(const Color(0xFFC99467)));
-    canvas.drawLine(const Offset(0, top - 6), const Offset(1280, top - 6), _s(const Color(0xFFE9BE93), 2));
-    canvas.drawLine(const Offset(0, top - 8), const Offset(1280, top - 8), _s(AppColors.caramel, 2.5));
-    canvas.drawRect(const Rect.fromLTRB(0, top + 4, 1280, top + 12), _linear(const Offset(0, top + 4), const Offset(0, top + 12), const [Color(0x33B9805A), Color(0x00B9805A)]));
+    canvas.drawRect(Rect.fromLTRB(x0, top - 8, x1, top + 4), _f(const Color(0xFFC99467)));
+    canvas.drawLine(Offset(x0, top - 6), Offset(x1, top - 6), _s(const Color(0xFFE9BE93), 2));
+    canvas.drawLine(Offset(x0, top - 8), Offset(x1, top - 8), _s(AppColors.caramel, 2.5));
+    canvas.drawRect(Rect.fromLTRB(x0, top + 4, x1, top + 12), _linear(const Offset(0, top + 4), const Offset(0, top + 12), const [Color(0x33B9805A), Color(0x00B9805A)]));
   }
 
   // ------------------------------------------------------------------ Sàn
 
-  static void _floor(Canvas canvas, DecorId? id) {
-    const floor = Rect.fromLTRB(0, wallBottom, 1280, 720);
+  static void _floor(Canvas canvas, DecorId? id, double x0, double x1) {
+    final floor = Rect.fromLTRB(x0, wallBottom, x1, 720);
     switch (id) {
       case DecorId.floorCheckered:
         const tile = 60.0;
         for (var y = wallBottom; y < 720; y += tile) {
-          for (var x = 0.0; x < 1280; x += tile) {
+          for (var x = _from(x0, 0, tile); x < x1; x += tile) {
             final dark = ((x / tile).floor() + ((y - wallBottom) / tile).floor()).isEven;
             canvas.drawRect(Rect.fromLTWH(x, y, tile, tile), _f(dark ? const Color(0xFFF7C7D3) : const Color(0xFFFFF8EE)));
             canvas.drawLine(Offset(x + 6, y + 5), Offset(x + 24, y + 5), _s(const Color(0x55FFFFFF), 2));
@@ -205,7 +224,7 @@ abstract final class ShopArt {
         canvas.save();
         canvas.clipRect(floor);
         for (var y = wallBottom - l; y < 720 + l; y += w * 2) {
-          for (var x = -l; x < 1280 + l; x += l) {
+          for (var x = _from(x0, 0, l) - l; x < x1 + l; x += l) {
             final a = Path()
               ..moveTo(x, y)
               ..lineTo(x + l / 2, y + l / 2)
@@ -230,8 +249,8 @@ abstract final class ShopArt {
         final rnd = math.Random(21);
         const tones = [Color(0xFFDDB48A), Color(0xFFD6AB80), Color(0xFFE2BC93), Color(0xFFD9B086)];
         for (var y = wallBottom; y < 720; y += 30) {
-          var x = -rnd.nextDouble() * 160;
-          while (x < 1280) {
+          var x = x0 - rnd.nextDouble() * 160;
+          while (x < x1) {
             final len = 160 + rnd.nextDouble() * 140;
             final plank = Rect.fromLTWH(x, y, len, 30);
             canvas.drawRect(plank, _f(tones[rnd.nextInt(tones.length)]));
@@ -245,14 +264,14 @@ abstract final class ShopArt {
             canvas.drawLine(Offset(x, y + 2), Offset(x, y + 28), _s(const Color(0xFFC49A70), 2));
             x += len;
           }
-          canvas.drawLine(Offset(0, y), Offset(1280, y), _s(const Color(0xFFC49A70), 2));
-          canvas.drawLine(Offset(0, y + 2), Offset(1280, y + 2), _s(const Color(0x33FFF4E6), 1.2));
+          canvas.drawLine(Offset(x0, y), Offset(x1, y), _s(const Color(0xFFC49A70), 2));
+          canvas.drawLine(Offset(x0, y + 2), Offset(x1, y + 2), _s(const Color(0x33FFF4E6), 1.2));
         }
     }
     // Sàn tối dần về phía trước, sáng gần chân tường.
     canvas.drawRect(floor, _linear(const Offset(0, wallBottom), const Offset(0, 720), const [Color(0x00000000), Color(0x2A5A3E36)]));
-    canvas.drawRect(const Rect.fromLTRB(0, wallBottom, 1280, wallBottom + 14), _linear(const Offset(0, wallBottom), const Offset(0, wallBottom + 14), const [Color(0x405A3E36), Color(0x005A3E36)]));
-    canvas.drawLine(const Offset(0, wallBottom), const Offset(1280, wallBottom), _s(_outline, 3));
+    canvas.drawRect(Rect.fromLTRB(x0, wallBottom, x1, wallBottom + 14), _linear(const Offset(0, wallBottom), const Offset(0, wallBottom + 14), const [Color(0x405A3E36), Color(0x005A3E36)]));
+    canvas.drawLine(Offset(x0, wallBottom), Offset(x1, wallBottom), _s(_outline, 3));
   }
 
   // ------------------------------------------------------------------ Cửa sổ

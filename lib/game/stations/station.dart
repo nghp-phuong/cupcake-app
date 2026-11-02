@@ -84,10 +84,13 @@ abstract class Station extends Component {
       alpha = t;
     }
     if (alpha <= 0) return;
+    // Vùng dưới thanh bước; khung rộng → trải tới hai mép màn (x −inset .. 1280 + inset).
+    final inset = game.inset;
+    final area = inset > 0 ? Rect.fromLTRB(-inset, 72, 1280 + inset, 720) : const Rect.fromLTWH(0, 72, 1280, 648);
     canvas.save();
-    canvas.clipRect(const Rect.fromLTWH(0, 72, 1280, 648));
+    canvas.clipRect(area);
     if (alpha < 1) {
-      canvas.saveLayer(const Rect.fromLTWH(0, 72, 1280, 648), Paint()..color = Color.fromRGBO(0, 0, 0, alpha));
+      canvas.saveLayer(area, Paint()..color = Color.fromRGBO(0, 0, 0, alpha));
     }
     paintFixed(canvas);
     canvas.translate(dx, 0);

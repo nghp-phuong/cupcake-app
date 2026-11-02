@@ -7,6 +7,7 @@ import '../../core/art/art_sprites.dart';
 import '../../core/l10n_lookup.dart';
 import '../../core/models/ids.dart';
 import '../../core/models/story.dart';
+import '../../core/ref_frame.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../common/art.dart';
 import '../common/panel.dart';
@@ -101,117 +102,126 @@ class _StoryOverlayState extends State<StoryOverlay> {
           // Chưa có ảnh nền → trong suốt, thấy cảnh tiệm của màn ngày bên dưới.
           Positioned.fill(child: SceneBackdrop(scene: backdropOf(scene))),
           const Positioned.fill(child: ColoredBox(color: Color(0x405A3E36))),
-          if (scene.id == StorySceneId.prologue && _line == 0)
-            Positioned(
-              top: 90,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: TweenAnimationBuilder<double>(
-                  tween: Tween(begin: slReduceMotion(context) ? 1 : 0.6, end: 1),
-                  duration: const Duration(milliseconds: 600),
-                  curve: Curves.easeOutBack,
-                  builder: (context, t, child) => Transform.scale(scale: t, child: child),
-                  child: TitleRibbon(
-                    l.storyChapter1Title,
-                    color: SLColors.butter,
-                    fontSize: 34,
-                    iconId: 'book',
-                    art: ArtSprites.book,
-                  ),
-                ),
-              ),
-            ),
-          if (leftSpeaker != null)
-            Positioned(
-              left: 70,
-              top: 150,
-              child: _Actor(speaker: leftSpeaker, active: line.speaker == leftSpeaker),
-            ),
-          if (maiInScene)
-            Positioned(
-              right: 70,
-              top: 150,
-              child: _Actor(speaker: Speaker.mai, active: line.speaker == Speaker.mai),
-            ),
-          // Bong bóng thoại: đuôi ở mép trên chỉ lên người đang nói (trái: bạn quen, phải: Mai).
-          Positioned(
-            left: 40,
-            right: 40,
-            top: 466,
-            height: 232,
-            child: SLSpeechBubble(
-              tail: tail,
-              tailAt: speakerRight ? 0.82 : 0.2,
-              tailSize: 20,
-              maxWidth: double.infinity,
-              color: SLColors.paper,
-              seed: 0x5701,
-              padding: const EdgeInsets.fromLTRB(32, 28, 32, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          // Nhân vật, bong bóng thoại, tên: vùng 1280 giữa khung (khung rộng: nền trải tới mép, Bỏ qua bám mép).
+          Positioned.fill(
+            child: RefCenter(
+              child: Stack(
                 children: [
-                  Expanded(
-                    child: AnimatedSwitcher(
-                      duration: slReduceMotion(context) ? Duration.zero : const Duration(milliseconds: 200),
-                      child: Align(
-                        key: ValueKey(_line),
-                        alignment: Alignment.topLeft,
-                        child: Text(
-                          line.text(l),
-                          style: SLTextStyles.of(context).body.copyWith(
-                                fontSize: 26,
-                                height: 1.35,
-                                fontWeight: FontWeight.w700,
-                                fontStyle: narrator ? FontStyle.italic : FontStyle.normal,
-                              ),
+                  if (scene.id == StorySceneId.prologue && _line == 0)
+                    Positioned(
+                      top: 90,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: TweenAnimationBuilder<double>(
+                          tween: Tween(begin: slReduceMotion(context) ? 1 : 0.6, end: 1),
+                          duration: const Duration(milliseconds: 600),
+                          curve: Curves.easeOutBack,
+                          builder: (context, t, child) => Transform.scale(scale: t, child: child),
+                          child: TitleRibbon(
+                            l.storyChapter1Title,
+                            color: SLColors.butter,
+                            fontSize: 34,
+                            iconId: 'book',
+                            art: ArtSprites.book,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  Row(
-                    children: [
-                      // Chấm tiến trình các dòng: chấm màu nước vẽ tay.
-                      for (var i = 0; i < scene.lines.length; i++)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 7),
-                          child: _ProgressDot(filled: i <= _line, seed: i),
-                        ),
-                      const Spacer(),
-                      Text(
-                        l.storyTapToContinue,
-                        key: const ValueKey('story-tap-hint'),
-                        style: SLTextStyles.of(context).label.copyWith(fontSize: 19, fontWeight: FontWeight.w800, color: SLColors.ink),
+                  if (leftSpeaker != null)
+                    Positioned(
+                      left: 70,
+                      top: 150,
+                      child: _Actor(speaker: leftSpeaker, active: line.speaker == leftSpeaker),
+                    ),
+                  if (maiInScene)
+                    Positioned(
+                      right: 70,
+                      top: 150,
+                      child: _Actor(speaker: Speaker.mai, active: line.speaker == Speaker.mai),
+                    ),
+                  // Bong bóng thoại: đuôi ở mép trên chỉ lên người đang nói (trái: bạn quen, phải: Mai).
+                  Positioned(
+                    left: 40,
+                    right: 40,
+                    top: 466,
+                    height: 232,
+                    child: SLSpeechBubble(
+                      tail: tail,
+                      tailAt: speakerRight ? 0.82 : 0.2,
+                      tailSize: 20,
+                      maxWidth: double.infinity,
+                      color: SLColors.paper,
+                      seed: 0x5701,
+                      padding: const EdgeInsets.fromLTRB(32, 28, 32, 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: AnimatedSwitcher(
+                              duration: slReduceMotion(context) ? Duration.zero : const Duration(milliseconds: 200),
+                              child: Align(
+                                key: ValueKey(_line),
+                                alignment: Alignment.topLeft,
+                                child: Text(
+                                  line.text(l),
+                                  style: SLTextStyles.of(context).body.copyWith(
+                                        fontSize: 26,
+                                        height: 1.35,
+                                        fontWeight: FontWeight.w700,
+                                        fontStyle: narrator ? FontStyle.italic : FontStyle.normal,
+                                      ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          Row(
+                            children: [
+                              // Chấm tiến trình các dòng: chấm màu nước vẽ tay.
+                              for (var i = 0; i < scene.lines.length; i++)
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 7),
+                                  child: _ProgressDot(filled: i <= _line, seed: i),
+                                ),
+                              const Spacer(),
+                              Text(
+                                l.storyTapToContinue,
+                                key: const ValueKey('story-tap-hint'),
+                                style: SLTextStyles.of(context).label.copyWith(fontSize: 19, fontWeight: FontWeight.w800, color: SLColors.ink),
+                              ),
+                              const SizedBox(width: 4),
+                              const _BobbingArrow(),
+                            ],
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 4),
-                      const _BobbingArrow(),
-                    ],
+                    ),
                   ),
+                  if (name.isNotEmpty)
+                    Positioned(
+                      left: speakerRight ? null : 80,
+                      right: speakerRight ? 80 : null,
+                      top: 444,
+                      child: SLNameTag(
+                        name,
+                        height: 46,
+                        fontSize: 22,
+                        maxWidth: 360,
+                        color: switch (line.speaker) {
+                          Speaker.mai => SLColors.strawberry,
+                          Speaker.rosa => SLColors.butter,
+                          _ => SLColors.mint,
+                        },
+                        seed: line.speaker.index,
+                      ),
+                    ),
                 ],
               ),
             ),
           ),
-          if (name.isNotEmpty)
-            Positioned(
-              left: speakerRight ? null : 80,
-              right: speakerRight ? 80 : null,
-              top: 444,
-              child: SLNameTag(
-                name,
-                height: 46,
-                fontSize: 22,
-                maxWidth: 360,
-                color: switch (line.speaker) {
-                  Speaker.mai => SLColors.strawberry,
-                  Speaker.rosa => SLColors.butter,
-                  _ => SLColors.mint,
-                },
-                seed: line.speaker.index,
-              ),
-            ),
           Positioned(
             top: 20,
-            right: 24,
+            right: 24 + MediaQuery.paddingOf(context).right,
             child: SLButton(
               label: l.storySkip,
               icon: 'skip',

@@ -77,22 +77,24 @@ GameArt buildBubbleArt(double r, {Color color = SLColors.paper, Color ink = SLCo
   return GameArt(picture, Size.square(r * 2), origin: Offset(m, m), parts: [art]);
 }
 
-/// Nền bếp nhanh: mặt bàn gỗ sáng có gờ caramel phía trên (khung y 436..720).
-GameArt buildKitchenBackdrop() {
-  const size = Size(1300, 290);
+/// Nền bếp nhanh: mặt bàn gỗ sáng có gờ caramel phía trên (khung y 436..720). [inset] > 0 (khung rộng): mặt bàn kéo
+/// dài thêm [inset] mỗi bên (x −[inset] .. 1280 + [inset], toạ độ thế giới).
+GameArt buildKitchenBackdrop({double inset = 0}) {
+  final width = 1300 + 2 * inset;
+  final size = Size(width, 290);
   final art = buildSurfaceArt(
     const SLSurfaceSpec(shape: SLRoundRect(4), material: SLMaterial.wood, color: SLColors.woodLight, inkWidth: 2, seed: 0xB17C),
     size,
   );
   final picture = recordArt((c) {
-    c.translate(-10, LevelLayout.kitchenTop - 4);
+    c.translate(-10 - inset, LevelLayout.kitchenTop - 4);
     c.drawPicture(art.picture);
     // Gờ bàn: dải gỗ đậm + nét mực run tay.
-    final edge = wobblePath(Path()..addRect(const Rect.fromLTWH(0, 0, 1300, 11)), seed: 0xB17D, amplitude: 0.8, step: 4);
+    final edge = wobblePath(Path()..addRect(Rect.fromLTWH(0, 0, width, 11)), seed: 0xB17D, amplitude: 0.8, step: 4);
     c.drawPath(edge, fill(AppColors.caramel));
     c.drawPath(edge, stroke(SLColors.ink, 2));
     // Bóng đổ của gờ xuống mặt bàn.
-    c.drawRect(const Rect.fromLTWH(0, 11, 1300, 6), fill(const Color(0x267A4A34)));
+    c.drawRect(Rect.fromLTWH(0, 11, width, 6), fill(const Color(0x267A4A34)));
   });
   return GameArt(picture, size, parts: [art]);
 }
@@ -126,13 +128,14 @@ GameArt buildShopFallback() {
   return GameArt(picture, size, parts: [wood]);
 }
 
-/// Tủ kính vẽ code (dự phòng khi chưa có ảnh nền `shop_base_empty`), cùng hình học với tủ trong ảnh: viền
-/// [LevelLayout.caseOutline] gỗ caramel, lòng kính gần đục (che khách đứng sau), hai tầng kệ kính. Toạ độ khung.
+/// Tủ kính vẽ code (dự phòng khi chưa có ảnh `level/display_case`), cùng hình học với tủ ảnh: viền
+/// [LevelLayout.caseOutline] gỗ caramel, lòng kính gần đục (che khách đứng sau + tủ nhỏ của ảnh nền), một sàn tủ.
+/// Toạ độ khung.
 GameArt buildCaseFrameArt() {
   const r = LevelLayout.caseRect;
   const glass = LevelLayout.caseGlass;
   final outline = LevelLayout.caseOutline;
-  final glassPath = wobblePath(Path()..addRRect(RRect.fromRectAndCorners(glass, topLeft: const Radius.circular(14), topRight: const Radius.circular(14))),
+  final glassPath = wobblePath(Path()..addRRect(RRect.fromRectAndCorners(glass, topLeft: const Radius.circular(40), topRight: const Radius.circular(40))),
       seed: 0xCA51, amplitude: 0.7, step: 4);
   final picture = recordArt((c) {
     c.drawPath(outline, fill(AppColors.caramel));
@@ -142,27 +145,70 @@ GameArt buildCaseFrameArt() {
     c.drawRect(Rect.fromLTWH(glass.left, glass.top, glass.width, glass.height * 0.55), fill(const Color(0x1FA8DCC8)));
     // Bóng gỗ đổ xuống mép trên lòng tủ.
     c.drawRect(Rect.fromLTWH(glass.left, glass.top, glass.width, 10), fill(const Color(0x2E7A4A34)));
-    // Hai tầng kệ kính: mặt kệ (hình thang) + mép trước.
-    for (final (y, bottom) in const [(LevelLayout.upperShelfY, LevelLayout.upperShelfBottom), (LevelLayout.lowerShelfY, LevelLayout.lowerShelfBottom)]) {
-      final top = y - 12;
-      final plate = Path()
-        ..moveTo(glass.left + 14, top)
-        ..lineTo(glass.right - 14, top)
-        ..lineTo(glass.right, bottom - 6)
-        ..lineTo(glass.left, bottom - 6)
-        ..close();
-      c.drawPath(plate, fill(const Color(0x40A8DCC8)));
-      c.drawRect(Rect.fromLTRB(glass.left, bottom - 6, glass.right, bottom), fill(const Color(0x66DDEFF2)));
-      c.drawLine(Offset(glass.left, bottom - 6), Offset(glass.right, bottom - 6), stroke(SLColors.inkSoft, 1.4));
-      c.drawLine(Offset(glass.left, bottom), Offset(glass.right, bottom), stroke(SLColors.inkSoft, 1.4));
-      c.drawLine(Offset(glass.left + 14, top), Offset(glass.right - 14, top), stroke(SLColors.pencil, 1.2));
-    }
+    // Sàn tủ (hình thang: mép sau hẹp hơn) + mép trước.
+    final floorTop = LevelLayout.caseFrontY - 36;
+    final floor = Path()
+      ..moveTo(glass.left + 24, floorTop)
+      ..lineTo(glass.right - 24, floorTop)
+      ..lineTo(glass.right, glass.bottom)
+      ..lineTo(glass.left, glass.bottom)
+      ..close();
+    c.drawPath(floor, fill(const Color(0x66E9C9A0)));
+    c.drawLine(Offset(glass.left + 24, floorTop), Offset(glass.right - 24, floorTop), stroke(SLColors.pencil, 1.2));
     c.restore();
+    c.drawRect(Rect.fromLTRB(r.left + 8, glass.bottom, r.right - 8, r.bottom), fill(SLColors.wood));
+    c.drawLine(Offset(r.left + 8, glass.bottom), Offset(r.right - 8, glass.bottom), stroke(SLColors.ink, 1.6));
     c.drawPath(glassPath, stroke(SLColors.ink, 1.6));
     c.drawPath(outline, stroke(SLColors.ink, 2));
   });
   return GameArt(picture, r.size);
 }
+
+/// Ảnh `level/display_case` (792×363: nóc gỗ cong, kệ kính giữa, sàn, chân gỗ) dựng thành tủ MỘT tầng ở
+/// [LevelLayout.caseRect]: bỏ dải kệ kính (hàng ảnh [_caseCutTop]..[_caseCutBottom]), nối hai nửa bằng dải chuyển mờ
+/// [_caseFade] hàng; hai đầu cong ([_caseCap] cột ảnh) giữ tỉ lệ [LevelLayout.caseArtScale], phần giữa kéo ngang. Cắt
+/// ở mép trên bếp. Ghi một lần thành Picture.
+GameArt buildCaseArt(Image img) {
+  const r = LevelLayout.caseRect;
+  const k = LevelLayout.caseArtScale;
+  final sx = img.width / _caseArtW, sy = img.height / _caseArtH;
+  const cap = _caseCap * k;
+  final cols = [
+    (0.0, _caseCap, r.left, r.left + cap),
+    (_caseCap, _caseArtW - _caseCap, r.left + cap, r.right - cap),
+    (_caseArtW - _caseCap, _caseArtW, r.right - cap, r.right),
+  ];
+  const keep = _caseCutTop - _caseFade;
+  final paint = Paint()
+    ..filterQuality = FilterQuality.medium
+    ..isAntiAlias = true;
+  void band(Canvas c, double srcTop, double srcBottom, double dstTop) {
+    for (final (s0, s1, d0, d1) in cols) {
+      c.drawImageRect(img, Rect.fromLTRB(s0 * sx, srcTop * sy, s1 * sx, srcBottom * sy),
+          Rect.fromLTRB(d0, dstTop, d1, dstTop + (srcBottom - srcTop) * k), paint);
+    }
+  }
+
+  final picture = recordArt((c) {
+    c.save();
+    c.clipRect(Rect.fromLTRB(r.left - 2, r.top - 2, r.right + 2, r.bottom));
+    // Nửa dưới (dưới kệ kính) nối ngay dưới phần nóc giữ nguyên; dải chuyển của nửa trên phủ mờ dần lên đầu nửa dưới.
+    band(c, _caseCutBottom, _caseArtH, r.top + keep * k);
+    band(c, 0, keep, r.top);
+    for (var i = 0; i < _caseFade; i++) {
+      paint.color = Color.fromRGBO(0, 0, 0, 1 - (i + 0.5) / _caseFade);
+      band(c, keep + i, keep + i + 1, r.top + (keep + i) * k);
+    }
+    c.restore();
+  });
+  return GameArt(picture, r.size);
+}
+
+/// Cỡ gốc ảnh `level/display_case`; hàng ảnh của dải kệ kính bị bỏ; số hàng chuyển mờ; bề ngang mỗi đầu cong.
+const double _caseArtW = 792, _caseArtH = 363;
+const double _caseCutTop = 102, _caseCutBottom = 144;
+const int _caseFade = 10;
+const double _caseCap = 100;
 
 /// Kệ bánh gỗ hai tầng vẽ code (dự phòng khi chưa có ảnh `level/case_stand`), cùng hình học với ảnh trong khung [r]
 /// (toạ độ khung): chân đế, trụ giữa, hai đĩa gỗ có giấy lót ren. [upperPlateOnly] → chỉ đĩa tầng trên (vẽ đè lên bánh
@@ -267,49 +313,63 @@ GameArt buildCaseShineArt() {
   return GameArt(picture, glass.size);
 }
 
-/// Cột thứ [i] trong [slots] cột của tủ: mỗi ô tủ là một cột trong lòng kính, đủ hai tầng kệ. Toạ độ khung.
+/// Cột thứ [i] trong [slots] cột của tủ: mỗi ô tủ là một cột trong lòng kính, đủ hai hàng bánh. Toạ độ khung.
 Rect caseCell(int i, int slots) {
   final area = LevelLayout.caseGlass.deflate(4);
   final cw = area.width / math.max(1, slots);
   return Rect.fromLTWH(area.left + i * cw, area.top, cw, area.height);
 }
 
-/// Số bánh tối đa trên một tầng kệ của một cột ở sức chứa gốc (ô 6 cái; kệ dưới đầy trước, rồi kệ trên).
+/// Số bánh tối đa một hàng (trước / sau) của một cột ở sức chứa gốc (ô 6 cái; hàng trước đầy trước, rồi hàng sau).
 const int caseShelfCapacity = 3;
 
-/// Số bánh vẽ tối đa trên một tầng kệ (ô sức chứa 10 — thiết bị `wideCase` cấp cao nhất).
+/// Số bánh vẽ tối đa một hàng (ô sức chứa 10 — thiết bị `wideCase` cấp cao nhất).
 const int caseShelfMax = 5;
 
-/// Số bánh vẽ tối đa trên một tầng kệ của ô chứa [slotCapacity] cái: 6 → 3, 8 → 4, 10 → 5 (hai tầng chia đều).
+/// Số bánh vẽ tối đa một hàng của ô chứa [slotCapacity] cái: 6 → 3, 8 → 4, 10 → 5 (hai hàng chia đều).
 int caseShelfCapacityFor(int slotCapacity) => ((slotCapacity + 1) ~/ 2).clamp(caseShelfCapacity, caseShelfMax);
 
-/// Vị trí (theo cạnh bánh gốc, so với tâm cột trên mặt kệ) của từng cái khi xếp [k] cái trên một tầng kệ: cái ở sau
-/// (cao hơn) vẽ trước. 4–5 cái (ô `wideCase`): hai hàng chặt — hai cái hàng sau lộ nửa trên giữa khe hàng trước, mọi
-/// cái nhỏ lại theo [caseShelfCakeScale]. Hằng số, không cấp phát.
-const List<List<Offset>> caseShelfStack = [
-  [],
-  [Offset(0, 0)],
-  [Offset(-0.36, 0), Offset(0.36, 0)],
-  [Offset(0, -0.12), Offset(-0.42, 0.02), Offset(0.42, 0.02)],
-  [Offset(-0.26, -0.28), Offset(0.26, -0.28), Offset(-0.52, 0.03), Offset(0.52, 0.03)],
-  [Offset(-0.26, -0.28), Offset(0.26, -0.28), Offset(-0.52, 0.03), Offset(0.52, 0.03), Offset(0, 0.06)],
-];
+/// Bề ngang một hàng đầy (theo cạnh bánh gốc, từ mép ngoài cái trái tới mép ngoài cái phải) = bề ngang cột.
+const double caseRowSpan = 2.12;
 
-/// Cỡ bánh (theo cạnh gốc) khi một tầng kệ có [k] cái.
-double caseShelfCakeScale(int k) => k > caseShelfCapacity ? 0.8 : 1;
+/// Cạnh bánh tối đa trong tủ (cột rộng khi tủ ít ô).
+const double caseCakeMax = 80;
 
-/// Cỡ một cái bánh trong cột [cell] (vừa ba cái một tầng; cao vừa khe giữa hai tầng kệ).
-double caseCakeSize(Rect cell) => math.min(50, cell.width / 1.84);
+/// Cỡ bánh (theo cạnh gốc) khi hàng chứa tối đa [per] cái: 4–5 cái (ô `wideCase`) nhỏ lại.
+double caseShelfCakeScale(int per) => per > caseShelfCapacity ? 0.8 : 1;
 
-/// Tâm cái bánh "đại diện" của cột [cell] (cái đầu tiên ở kệ dưới).
-Offset caseCakeCenter(Rect cell) => Offset(cell.center.dx, LevelLayout.lowerShelfY - caseCakeSize(cell) / 2);
+/// Khoảng tâm–tâm (theo cạnh gốc) giữa hai cái cạnh nhau khi hàng có [k] cái cỡ [w] (theo cạnh gốc): sát nhau nếu
+/// đủ chỗ, không thì chồng mép vừa đủ cho hàng nằm gọn trong cột.
+double caseRowStep(int k, double w) => k <= 1 ? 0 : math.min(w, (caseRowSpan - w) / (k - 1));
 
-/// Huy hiệu số của cột [cell] có [count] cái (mỗi tầng tối đa [perShelf] cái): góc trên phải của tầng kệ cao nhất
-/// đang có bánh.
+/// Độ lệch ngang (theo cạnh gốc, so với tâm cột) của cái vẽ thứ [q] trong hàng [k] cái cỡ [w]: vẽ từ ngoài vào trong
+/// (cái giữa vẽ sau cùng, nằm trên) → topping của mọi cái đều lộ.
+double caseRowDx(int q, int k, double w) {
+  final j = q.isEven ? q ~/ 2 : k - 1 - q ~/ 2;
+  return (j - (k - 1) / 2) * caseRowStep(k, w);
+}
+
+/// Cỡ một cái bánh trong cột [cell] (ba cái vừa bề ngang cột).
+double caseCakeSize(Rect cell) => math.min(caseCakeMax, cell.width / caseRowSpan);
+
+/// Tâm cái bánh "đại diện" của cột [cell] (giữa hàng trước).
+Offset caseCakeCenter(Rect cell) => Offset(cell.center.dx, LevelLayout.caseFrontY - caseCakeSize(cell) / 2);
+
+/// Mép trên hàng bánh (hàng sau nếu [back]) của cột [cell], mỗi hàng tối đa [perShelf] cái.
+double caseRowTop(Rect cell, {required bool back, int perShelf = caseShelfCapacity}) {
+  final s = caseCakeSize(cell);
+  final w = s * caseShelfCakeScale(perShelf);
+  return back
+      ? LevelLayout.caseFrontY - LevelLayout.caseBackLift * s - LevelLayout.caseBackScale * w
+      : LevelLayout.caseFrontY - w;
+}
+
+/// Huy hiệu số của cột [cell] có [count] cái (mỗi hàng tối đa [perShelf] cái): góc trên phải của hàng cao nhất đang
+/// có bánh.
 Offset caseBadgeAt(Rect cell, int count, {int perShelf = caseShelfCapacity}) {
   final s = caseCakeSize(cell);
-  final shelf = count > perShelf ? LevelLayout.upperShelfY : LevelLayout.lowerShelfY;
-  return Offset(math.min(cell.right - 12, cell.center.dx + s * 0.9), math.max(LevelLayout.caseGlass.top + 12, shelf - s * 1.05));
+  final top = caseRowTop(cell, back: count > perShelf, perShelf: perShelf);
+  return Offset(math.min(cell.right - 12, cell.center.dx + s * 0.9), math.max(LevelLayout.caseGlass.top + 12, top - 4));
 }
 
 /// Huy hiệu số (nhãn dán tròn màu bơ): số bánh trong ô tủ / trên thẻ món. Gốc = tâm trừ [GameArt.origin].

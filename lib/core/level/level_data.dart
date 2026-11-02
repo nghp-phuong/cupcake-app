@@ -293,7 +293,8 @@ class LevelData {
   /// Các trường của `defaults` mà level ghi đè.
   final Map<String, num> overrides;
 
-  /// Vị trí nút trên trang bản đồ chương: `dx`, `dy` trong 0..1 theo khung 1280×720 (`dy` ≥ 0.14, chừa thanh trên).
+  /// Vị trí nút trên trang bản đồ chương: `dx`, `dy` trong 0..1 là tỉ lệ trong vùng nội dung 1280×720 ở giữa khung
+  /// (máy 20:9 khung rộng tới 1600 thì vẫn tính theo vùng 1280 ở giữa, cộng `RefMetrics.inset`); `dy` ≥ 0.14, chừa thanh trên.
   final Offset mapPos;
 
   /// Id kịch bản hướng dẫn lần đầu ([TutorialIds]); null = không có.

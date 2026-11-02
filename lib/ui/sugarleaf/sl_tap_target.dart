@@ -4,6 +4,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
 import '../../core/constants.dart';
+import '../../core/ref_frame.dart';
 
 /// Vùng chạm tối thiểu theo chuẩn Android (dp thật trên máy).
 const double kSLMinTapDp = 48;
@@ -13,7 +14,8 @@ const double kSLMinTapDp = 48;
 /// semantics (rect nút đọc màn hình) và hit test qua [SLTapTargetScope] ở gốc cây.
 ///
 /// Cỡ cần nới tính theo phép biến đổi thật từ nút lên scope (scope nằm ngoài RefFrame, toạ độ = dp). Scope còn đọc cỡ màn
-/// thật (`min(w/1280, h/720)`) để báo nút tính lại semantics khi cỡ màn / mật độ đổi.
+/// thật (`min(w/W, h/720)`, W = rộng khung theo `RefFrame.widthFor`) để báo nút tính lại semantics khi cỡ màn / mật độ
+/// đổi.
 class SLTapTargetScope extends StatelessWidget {
   const SLTapTargetScope({super.key, required this.child});
 
@@ -31,7 +33,9 @@ class SLTapTargetScope extends StatelessWidget {
     final size = MediaQuery.maybeSizeOf(context);
     var scale = 1.0;
     if (size != null && size.width > 0 && size.height > 0) {
-      scale = math.min(size.width / kRefSize.width, size.height / kRefSize.height);
+      // Khung rộng W (1280–1600, máy 20:9) theo cùng phép tính của RefFrame → hệ số co thật của khung.
+      final width = RefFrame.widthFor(size, MediaQuery.maybeViewPaddingOf(context) ?? EdgeInsets.zero);
+      scale = math.min(size.width / width, size.height / kRefSize.height);
     }
     // +1% để không rơi sát ngưỡng vì sai số làm tròn.
     final minRef = kSLMinTapDp * 1.01 / scale;

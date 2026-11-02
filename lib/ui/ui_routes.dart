@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../core/art/art_sprites.dart';
+import '../core/ref_frame.dart';
 import '../core/routes.dart';
 import 'decor/decor_screen.dart';
 import 'intro/intro_screen.dart';
@@ -70,16 +71,21 @@ Route<dynamic>? onGenerateUiRoute(RouteSettings settings) {
     // Tuyến lạ (vd. `/day` của V1, đường dẫn gõ tay trên web) → về bản đồ có sẵn, không dựng thêm bản đồ chồng lên.
     _ => const LevelRedirect(),
   };
-  return fadeRoute(settings, page);
+  // Màn trong bảng này đã co giãn theo khung rộng; màn gallery (debug) giữ vùng 1280 giữa.
+  return fadeRoute(settings, page, wide: page is! UiGalleryScreen);
 }
 
 /// Route mờ dần 280ms (dùng chung cho mọi màn). Trang được bọc [SLScope] (chữ mực nâu + font nội dung) để màn
 /// không còn `Scaffold`/`Material` vẫn đúng kiểu chữ.
-PageRoute<void> fadeRoute(RouteSettings settings, Widget page) => PageRouteBuilder<void>(
+///
+/// Khung rộng (máy 20:9, W > 1280): [wide] = true → trang nhận cả khung W×720 (màn đã tự trải nền tới mép, bám mép
+/// theo `MediaQuery.padding`, đặt nội dung giữa); false → trang đặt trong vùng 1280×720 giữa ([RefCenter]), hai bên
+/// nền kem. Khung 1280 → hai cách như nhau.
+PageRoute<void> fadeRoute(RouteSettings settings, Widget page, {bool wide = false}) => PageRouteBuilder<void>(
   settings: settings,
   transitionDuration: const Duration(milliseconds: 280),
   reverseTransitionDuration: const Duration(milliseconds: 220),
-  pageBuilder: (context, animation, secondaryAnimation) => SLScope(child: page),
+  pageBuilder: (context, animation, secondaryAnimation) => SLScope(child: wide ? page : RefCenter(child: page)),
   transitionsBuilder: (context, animation, secondaryAnimation, child) => FadeTransition(
     opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
     child: child,

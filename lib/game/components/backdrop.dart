@@ -18,17 +18,33 @@ import 'hand_paint.dart';
 /// Hình code: tường vữa kem + gạch ốp, cửa sổ nắng chiều nhìn ra đồi và biển (có chậu thảo mộc trên bậu),
 /// kệ gỗ có lọ bột/đường/mứt, dây cờ vải, bàn gỗ vân có khăn kẻ ô và vết bột. Chỉ ghi vào Picture khi cần
 /// (lần đầu thiếu ảnh) rồi tái dùng (không cấp phát mỗi khung hình).
+///
+/// Khung rộng ([inset] > 0, thế giới 1280 lệch [inset]): nền trải tới hai mép màn (x −inset .. 1280 + inset) — ảnh
+/// khung 1280 lấp hai bên bằng soi gương dải mép ([paintWideBackdrop]), ảnh đã dời (nướng / kem) lật gương phần hở,
+/// hình code / tờ giấy / cột phải dựng lại theo bề ngang mới khi đổi cỡ.
 class KitchenBackdrop extends Component {
   /// [station] = trạm đang chơi (null → luôn vẽ hình code). [loading] true = đang chờ ảnh của trạm đầu: vẽ tờ giấy
-  /// kem vẽ tay (không thoáng hiện cảnh code), xong thì ảnh nền hoà dần lên trên giấy.
-  KitchenBackdrop({StationId Function()? station, bool Function()? loading})
+  /// kem vẽ tay (không thoáng hiện cảnh code), xong thì ảnh nền hoà dần lên trên giấy. [inset] = độ lệch thế giới
+  /// trong khung rộng (`BakeryGame.inset`; null → 0).
+  KitchenBackdrop({StationId Function()? station, bool Function()? loading, double Function()? inset})
       : _stationOf = station,
         _loading = loading,
+        _insetOf = inset,
         super(priority: 0);
 
   final StationId Function()? _stationOf;
   final bool Function()? _loading;
+  final double Function()? _insetOf;
   Picture? _picture;
+
+  /// [inset] lúc ghi [_picture] (hình code); đổi cỡ → ghi lại.
+  double _pictureInset = 0;
+
+  /// Mép trái / phải vùng vẽ hình code (toạ độ thế giới) khi đang ghi.
+  double _l = 0, _r = 1280;
+
+  /// Độ lệch thế giới trong khung rộng (0 ở máy 16:9).
+  double get inset => math.max(0.0, _insetOf?.call() ?? 0);
   StationId? _current;
   StationId? _previous;
   double _fade = 1;
@@ -129,38 +145,76 @@ class KitchenBackdrop extends Component {
 
   /// Cột phải (vé đơn + gợi ý): tờ giấy kem vẽ tay toàn chiều cao, mép trái xé nhẹ — tách khỏi vùng chơi và làm
   /// dịu chi tiết ảnh. Dựng một lần.
-  void _paintColumn(Canvas canvas) => canvas.drawPicture(cachedArt('columnSheet', buildColumnSheetArt).picture);
-
-  /// Tờ giấy kem vẽ tay phủ cả khung (lúc chờ ảnh nền của trạm đầu). Dựng một lần.
-  void _paintPaper(Canvas canvas) => canvas.drawPicture(cachedArt('loadingPaper', _buildPaper).picture);
-
-  static GameArt _buildPaper() {
-    final art = buildSurfaceArt(
-      const SLSurfaceSpec(shape: SLRoundRect(0), color: AppColors.cream, outline: false, seed: 0xCA9E),
-      const Size(1280, 720),
-    );
-    final picture = recordArt((c) {
-      c.drawPicture(art.picture);
-      // Gợi ý mặt bàn: dải màu nước caramel nhạt loang ở nửa dưới.
-      paintWashBand(c, const Rect.fromLTRB(-20, 430, 1300, 760), const Color(0xFFF1D9BC), 0xCA9F, alpha: 0.4, highlight: false);
-    });
-    return GameArt(picture, const Size(1280, 720), parts: [art]);
+  void _paintColumn(Canvas canvas) {
+    final dx = inset;
+    final art = dx > 0
+        ? cachedArt(('columnSheet', dx), () => buildColumnSheetArt(inset: dx))
+        : cachedArt('columnSheet', buildColumnSheetArt);
+    canvas.drawPicture(art.picture);
   }
 
-  void _paintCode(Canvas canvas) => canvas.drawPicture(_picture ??= _record());
+  /// Tờ giấy kem vẽ tay phủ cả khung (lúc chờ ảnh nền của trạm đầu). Dựng một lần (mỗi bề ngang khung).
+  void _paintPaper(Canvas canvas) {
+    final dx = inset;
+    final art = dx > 0 ? cachedArt(('loadingPaper', dx), () => _buildPaper(dx)) : cachedArt('loadingPaper', _buildPaper);
+    canvas.drawPicture(art.picture);
+  }
 
-  /// Ảnh nền vẽ vào [dst]; phần hở bên phải khung (nếu có) lấp bằng ảnh lật gương.
+  static GameArt _buildPaper([double inset = 0]) {
+    final size = Size(1280 + 2 * inset, 720);
+    final art = buildSurfaceArt(
+      const SLSurfaceSpec(shape: SLRoundRect(0), color: AppColors.cream, outline: false, seed: 0xCA9E),
+      size,
+    );
+    final picture = recordArt((c) {
+      if (inset > 0) c.translate(-inset, 0);
+      c.drawPicture(art.picture);
+      // Gợi ý mặt bàn: dải màu nước caramel nhạt loang ở nửa dưới.
+      paintWashBand(c, Rect.fromLTRB(-20, 430, size.width + 20, 760), const Color(0xFFF1D9BC), 0xCA9F, alpha: 0.4, highlight: false);
+    });
+    return GameArt(picture, size, parts: [art]);
+  }
+
+  void _paintCode(Canvas canvas) {
+    final dx = inset;
+    if (_picture != null && _pictureInset != dx) {
+      _picture!.dispose();
+      _picture = null;
+    }
+    _pictureInset = dx;
+    canvas.drawPicture(_picture ??= _record());
+  }
+
+  /// Ảnh nền vẽ vào [dst]; phần hở hai bên khung (gồm cả dải mở rộng của khung rộng) lấp bằng ảnh lật gương. Ảnh
+  /// phủ đúng khung 1280 ([_frameRect]) ở khung rộng: hai dải mở rộng vẽ bằng [paintWideBackdrop] (soi gương + tối nhẹ).
   void _paintArt(Canvas canvas, Image image, Rect dst, double opacity) {
     drawArt(canvas, image, dst, fit: BoxFit.cover, opacity: opacity);
-    if (dst.right < 1280) {
-      final seam = dst.right;
+    final dx = inset;
+    final left = -dx, right = 1280 + dx;
+    if (dx > 0 && dst == _frameRect) {
+      final sides = Path()
+        ..addRect(Rect.fromLTRB(left, 0, 0, 720))
+        ..addRect(Rect.fromLTRB(1280, 0, right, 720));
       canvas.save();
-      canvas.clipRect(Rect.fromLTRB(seam, 0, 1280, 720));
-      canvas.translate(seam * 2, 0);
-      canvas.scale(-1, 1);
-      drawArt(canvas, image, dst, fit: BoxFit.cover, opacity: opacity);
+      canvas.clipPath(sides);
+      if (opacity < 1) canvas.saveLayer(Rect.fromLTRB(left, 0, right, 720), Paint()..color = Color.fromRGBO(0, 0, 0, opacity));
+      paintWideBackdrop(canvas, image, center1280: _frameRect, full: Rect.fromLTRB(left, 0, right, 720));
+      if (opacity < 1) canvas.restore();
       canvas.restore();
+      return;
     }
+    if (dst.right < right) _mirror(canvas, image, dst, dst.right, Rect.fromLTRB(dst.right, 0, right, 720), opacity);
+    if (dst.left > left) _mirror(canvas, image, dst, dst.left, Rect.fromLTRB(left, 0, dst.left, 720), opacity);
+  }
+
+  /// Vẽ lại ảnh [dst] lật gương quanh đường x = [seam], chỉ trong [clip].
+  static void _mirror(Canvas canvas, Image image, Rect dst, double seam, Rect clip, double opacity) {
+    canvas.save();
+    canvas.clipRect(clip);
+    canvas.translate(seam * 2, 0);
+    canvas.scale(-1, 1);
+    drawArt(canvas, image, dst, fit: BoxFit.cover, opacity: opacity);
+    canvas.restore();
   }
 
   @override
@@ -173,6 +227,8 @@ class KitchenBackdrop extends Component {
   Picture _record() {
     final rec = PictureRecorder();
     final c = Canvas(rec);
+    _l = -_pictureInset;
+    _r = 1280 + _pictureInset;
     _paint(c);
     return rec.endRecording();
   }
@@ -194,7 +250,7 @@ class KitchenBackdrop extends Component {
   void _wall(Canvas c) {
     // Vữa kem: trên sẫm nhẹ (bóng trần), dưới sáng dần.
     c.drawRect(
-      const Rect.fromLTWH(0, 0, 1280, counterTop),
+      Rect.fromLTRB(_l, 0, _r, counterTop),
       Paint()
         ..shader = Gradient.linear(const Offset(0, 72), const Offset(0, counterTop), const [
           Color(0xFFF4DFC3),
@@ -218,13 +274,15 @@ class KitchenBackdrop extends Component {
 
     // Gạch ốp chân tường xếp so le, vài viên bạc hà điểm xuyết.
     const tilesTop = 236.0;
-    c.drawRect(const Rect.fromLTRB(0, tilesTop, 1280, counterTop), fill(const Color(0xFFE6D2BA)));
+    c.drawRect(Rect.fromLTRB(_l, tilesTop, _r, counterTop), fill(const Color(0xFFE6D2BA)));
     const tw = 46.0;
     const th = 20.0;
+    // Khung rộng: lùi điểm bắt đầu theo bước gạch (gạch trong khung 1280 giữ nguyên vị trí và màu).
+    final back = _l < 0 ? (-_l / (tw + 4)).ceil() : 0;
     var row = 0;
     for (var y = tilesTop + 4; y < counterTop; y += th + 4, row++) {
-      var col = 0;
-      for (var x = row.isOdd ? -tw / 2 : 2.0; x < 1280; x += tw + 4, col++) {
+      var col = -back;
+      for (var x = (row.isOdd ? -tw / 2 : 2.0) - back * (tw + 4); x < _r; x += tw + 4, col++) {
         final r = RRect.fromRectAndRadius(Rect.fromLTWH(x, y, tw, th), const Radius.circular(5));
         final accent = (col * 7 + row * 3) % 11 == 0;
         final base = accent ? const Color(0xFFCDE8DA) : ((col + row).isEven ? const Color(0xFFFFF8EE) : const Color(0xFFFBEFE0));
@@ -234,9 +292,9 @@ class KitchenBackdrop extends Component {
       }
     }
     // Nẹp gỗ trên dải gạch.
-    const rail = Rect.fromLTRB(0, tilesTop - 6, 1280, tilesTop + 4);
+    final rail = Rect.fromLTRB(_l, tilesTop - 6, _r, tilesTop + 4);
     c.drawRect(rail, fill(const Color(0xFFD5A272)));
-    c.drawRect(const Rect.fromLTRB(0, tilesTop - 6, 1280, tilesTop - 3), fill(const Color(0xFFE8BE8E)));
+    c.drawRect(Rect.fromLTRB(_l, tilesTop - 6, _r, tilesTop - 3), fill(const Color(0xFFE8BE8E)));
     c.drawLine(rail.topLeft, rail.topRight, stroke(kInk.withValues(alpha: 0.55), 1.5));
     c.drawLine(rail.bottomLeft, rail.bottomRight, stroke(kInk.withValues(alpha: 0.55), 1.5));
   }
@@ -922,7 +980,7 @@ class KitchenBackdrop extends Component {
   // ------------------------------------------------------------------ Mặt bàn gỗ
 
   void _counter(Canvas c) {
-    const top = Rect.fromLTWH(0, counterTop, 1280, 720 - counterTop);
+    final top = Rect.fromLTRB(_l, counterTop, _r, 720);
     c.drawRect(
       top,
       Paint()
@@ -943,10 +1001,10 @@ class KitchenBackdrop extends Component {
     for (var y = counterTop + 14; y < 720; y += plank, row++) {
       final tone = row % 3;
       if (tone != 1) {
-        c.drawRect(Rect.fromLTWH(0, y, 1280, plank), fill(tone == 0 ? const Color(0x12FFF4DA) : const Color(0x14A86A3C)));
+        c.drawRect(Rect.fromLTRB(_l, y, _r, y + plank), fill(tone == 0 ? const Color(0x12FFF4DA) : const Color(0x14A86A3C)));
       }
-      c.drawLine(Offset(0, y), Offset(1280, y), stroke(const Color(0x547A4A34), 2));
-      c.drawLine(Offset(0, y + 2), Offset(1280, y + 2), stroke(const Color(0x40FFF1D6), 1.5));
+      c.drawLine(Offset(_l, y), Offset(_r, y), stroke(const Color(0x547A4A34), 2));
+      c.drawLine(Offset(_l, y + 2), Offset(_r, y + 2), stroke(const Color(0x40FFF1D6), 1.5));
       // Mối nối đầu ván.
       for (var j = 0; j < 2; j++) {
         final x = 160.0 + rnd.nextDouble() * 960 + j * 120;
@@ -974,17 +1032,17 @@ class KitchenBackdrop extends Component {
       }
     }
     // Mép bàn sát tường: dải gỗ sẫm + bóng tường đổ xuống.
-    c.drawRect(const Rect.fromLTWH(0, counterTop, 1280, 14), fill(const Color(0xFFD7A776)));
-    c.drawRect(const Rect.fromLTWH(0, counterTop + 10, 1280, 4), fill(const Color(0xFFC79563)));
+    c.drawRect(Rect.fromLTRB(_l, counterTop, _r, counterTop + 14), fill(const Color(0xFFD7A776)));
+    c.drawRect(Rect.fromLTRB(_l, counterTop + 10, _r, counterTop + 14), fill(const Color(0xFFC79563)));
     c.drawRect(
-      const Rect.fromLTWH(0, counterTop + 14, 1280, 26),
+      Rect.fromLTRB(_l, counterTop + 14, _r, counterTop + 40),
       Paint()
         ..shader = Gradient.linear(const Offset(0, counterTop + 14), const Offset(0, counterTop + 40), const [
           Color(0x2E7A4A34),
           Color(0x007A4A34),
         ]),
     );
-    c.drawLine(const Offset(0, counterTop), const Offset(1280, counterTop), stroke(kInk, 2.5));
+    c.drawLine(Offset(_l, counterTop), Offset(_r, counterTop), stroke(kInk, 2.5));
   }
 
   // ------------------------------------------------------------------ Nắng chiều
@@ -1041,7 +1099,7 @@ class KitchenBackdrop extends Component {
     );
     // Ấm nắng tổng thể góc trên phải.
     c.drawRect(
-      const Rect.fromLTWH(0, 72, 1280, 648),
+      Rect.fromLTRB(_l, 72, _r, 720),
       Paint()
         ..shader = Gradient.radial(const Offset(900, 120), 760, const [
           Color(0x1FFFE2A8),
@@ -1130,7 +1188,7 @@ class KitchenBackdrop extends Component {
 
   void _vignette(Canvas c) {
     c.drawRect(
-      const Rect.fromLTWH(0, 72, 1280, 648),
+      Rect.fromLTRB(_l, 72, _r, 720),
       Paint()
         ..shader = Gradient.radial(const Offset(560, 380), 820, const [
           Color(0x007A4A34),

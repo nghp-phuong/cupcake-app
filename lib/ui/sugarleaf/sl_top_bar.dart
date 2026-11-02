@@ -20,10 +20,12 @@ class SLTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Khung rộng: thanh trải cả bề ngang, lùi khỏi tai thỏ (`MediaQuery.padding`, đơn vị ref; khung 1280 = 0).
+    final safe = MediaQuery.paddingOf(context);
     return SizedBox(
       height: 72,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        padding: EdgeInsets.fromLTRB(20 + safe.left, 8, 20 + safe.right, 8),
         child: Row(
           children: [
             if (leading != null) ...[leading!, const SizedBox(width: 14)],

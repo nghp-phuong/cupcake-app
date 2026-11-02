@@ -515,10 +515,15 @@ GameArt buildServingPlateArt(Size size) {
 // ------------------------------------------------------------------ Tờ giấy cột phải (vé đơn + gợi ý)
 
 /// Tờ giấy kem phủ cột phải (x ≥ 940) toàn chiều cao vùng chơi: mép trái xé nhẹ run tay, vân giấy, mép đọng màu,
-/// bóng mềm hắt sang trái. Toạ độ khung 1280×720 (gốc hình = 0,0); phần tràn ra ngoài khung bị cắt.
-GameArt buildColumnSheetArt({double alpha = 0.78}) {
+/// bóng mềm hắt sang trái. Toạ độ khung 1280×720 (gốc hình = 0,0); phần tràn ra ngoài khung bị cắt. [inset] > 0 (khung
+/// rộng, thế giới lệch [inset]): tờ giấy kéo tới mép phải màn (x 1280 + [inset]), vân giấy rải theo bề ngang mới
+/// (cùng mật độ, seed cố định).
+GameArt buildColumnSheetArt({double alpha = 0.78, double inset = 0}) {
   final rnd = SLRandom(0xC01A);
-  const left = 941.0, top = 62.0, right = 1300.0, bottom = 740.0;
+  const left = 941.0, top = 62.0, bottom = 740.0;
+  final right = 1300.0 + inset, edge = 1280.0 + inset;
+  // Số chấm / sợi xơ theo bề ngang tờ (inset 0 → 520 / 46 như cũ).
+  final spread = (edge - left) / (1280 - left);
   // Mép trái xé: lượn chậm + răng nhỏ không đều.
   final ideal = Path()
     ..moveTo(right, top)
@@ -555,11 +560,12 @@ GameArt buildColumnSheetArt({double alpha = 0.78}) {
     }
     // Vân giấy: chấm sáng/tối li ti + sợi xơ ngắn.
     final dark = <Offset>[], light = <Offset>[], fibers = <Offset>[];
-    for (var i = 0; i < 520; i++) {
-      (i.isEven ? dark : light).add(Offset(rnd.range(left, 1280), rnd.range(72, 720)));
+    final dots = (520 * spread).round(), threads = (46 * spread).round();
+    for (var i = 0; i < dots; i++) {
+      (i.isEven ? dark : light).add(Offset(rnd.range(left, edge), rnd.range(72, 720)));
     }
-    for (var i = 0; i < 46; i++) {
-      final p = Offset(rnd.range(left, 1280), rnd.range(72, 720));
+    for (var i = 0; i < threads; i++) {
+      final p = Offset(rnd.range(left, edge), rnd.range(72, 720));
       final a = rnd.range(0, math.pi), l = rnd.range(3, 7);
       fibers
         ..add(p)
@@ -571,7 +577,7 @@ GameArt buildColumnSheetArt({double alpha = 0.78}) {
     c.restore();
     inkOutline(c, outline, width: 1.6, ink: SLColors.inkSoft.withValues(alpha: 0.55), seed: 0xC01C);
   });
-  return GameArt(picture, const Size(right - left, bottom - top));
+  return GameArt(picture, Size(right - left, bottom - top));
 }
 
 // ------------------------------------------------------------------ Chấm / vòng mực (gợi ý)

@@ -68,6 +68,8 @@ class _ShortIntroScreenState extends State<ShortIntroScreen> with SingleTickerPr
       image: introSceneImage(context, IntroAssets.shop),
       fallback: const IntroPaperBackdrop(icon: 'storefront', seed: 0x5402),
     );
+    // Khung rộng: ảnh ở vùng 1280 giữa (hai bên soi gương), lấp lánh theo vùng đó, máy quay lấy tâm W/2.
+    final width = introFrameWidth(MediaQuery.sizeOf(context));
     final scene = reduce
         ? image
         : AnimatedBuilder(
@@ -76,16 +78,14 @@ class _ShortIntroScreenState extends State<ShortIntroScreen> with SingleTickerPr
               final u = Curves.easeOut.transform(_c.value);
               final s = 1.0 + 0.14 * u;
               final f = Offset.lerp(const Offset(640, 360), IntroLayout.caseCenter, u)!;
-              final hw = 640 / s, hh = 360 / s;
-              final fx = f.dx.clamp(hw, 1280 - hw), fy = f.dy.clamp(hh, 720 - hh);
-              return Transform(
-                transform: Matrix4.diagonal3Values(s, s, 1)..setTranslationRaw(640 - fx * s, 360 - fy * s, 0),
-                child: child,
-              );
+              return Transform(transform: introCamera(f, s, width: width), child: child);
             },
             child: Stack(
               fit: StackFit.expand,
-              children: [image, RepaintBoundary(child: CustomPaint(painter: _sparkle, size: Size.infinite))],
+              children: [
+                image,
+                introStage(width, RepaintBoundary(child: CustomPaint(painter: _sparkle, size: Size.infinite))),
+              ],
             ),
           );
     final hintStyle = SLTextStyles.of(context).label.copyWith(fontSize: 24, color: SLColors.paper);

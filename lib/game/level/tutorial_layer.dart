@@ -525,7 +525,8 @@ class TutorialLayer {
   }
 
   static const double _tagMaxWidth = 280;
-  static const Rect _frame = Rect.fromLTWH(0, 0, 1280, 720);
+  /// Nền tối phủ cả khung rộng nhất (thế giới lệch tối đa (1600 − 1280) / 2 mỗi bên; phần thừa bị cắt ở mép game).
+  static const Rect _frame = Rect.fromLTRB(-(kRefMaxWidth - kRefMinWidth) / 2, 0, 1280 + (kRefMaxWidth - kRefMinWidth) / 2, 720);
 
   /// Vùng nhãn được phép nằm (dưới HUD, lề 8).
   static const Rect _tagArea = Rect.fromLTRB(8, LevelLayout.hudBottom + 6, 1272, 712);

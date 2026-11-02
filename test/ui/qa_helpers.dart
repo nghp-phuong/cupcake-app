@@ -58,6 +58,10 @@ const qaRealDevices = [
   QaViewport('2048x1536@2.0 (tablet)', Size(2048, 1536), dpr: 2),
 ];
 
+/// Máy 20:9 có tai thỏ ngang (1080×2400 @2.625 → ~914×411 dp, tai thỏ 40 dp): khung rộng W = 1600, nền tràn dưới
+/// tai thỏ, phần tử bám mép lùi vào vùng an toàn.
+const qaNotch20x9 = QaViewport('2400x1080@2.625+notch', Size(2400, 1080), dpr: 2.625, notch: 40);
+
 Map<String, dynamic> _arb(String lang) =>
     jsonDecode(File('lib/l10n/app_$lang.arb').readAsStringSync()) as Map<String, dynamic>;
 

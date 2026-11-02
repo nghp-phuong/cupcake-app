@@ -14,8 +14,8 @@ class ShopLook {
   /// id mở rộng / thiết bị trong `unlocks.json` mà cảnh tiệm vẽ theo.
   static const String caseStandId = 'case_stand', cafeTablesId = 'cafe_tables';
 
-  /// Tủ kính chính vẽ gọn tối đa chừng này cột; ô dư sang kệ bánh tầng.
-  static const int mainCaseMax = 4;
+  /// Tủ kính chính vẽ tối đa chừng này cột (bánh to, nhìn rõ món + topping); ô dư sang kệ bánh tầng.
+  static const int mainCaseMax = 3;
 
   /// Kệ bánh tầng chứa tối đa chừng này ô (1 ô: hai tầng như tủ; 2 ô: mỗi tầng một ô).
   static const int standMax = 2;

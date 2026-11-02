@@ -154,7 +154,7 @@ class BoxStation extends Station {
         canvas.save();
         canvas.clipPath(Path()
           ..fillType = PathFillType.evenOdd
-          ..addRect(const Rect.fromLTWH(0, 0, 1280, 720))
+          ..addRect(Rect.fromLTRB(-game.inset, 0, 1280 + game.inset, 720))
           ..addRect(on(_cakeBoxFront))
           ..addRect(on(_cakeBoxWindow))
           ..addRect(on(_cakeBoxSide)));

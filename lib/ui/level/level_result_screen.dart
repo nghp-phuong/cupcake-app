@@ -4,6 +4,7 @@ import '../../core/app_scope.dart';
 import '../../core/art/art_sprites.dart';
 import '../../core/level/level.dart';
 import '../../core/models/ids.dart';
+import '../../core/ref_frame.dart';
 import '../../core/routes.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../common/art.dart';
@@ -136,6 +137,8 @@ class _LevelResultScreenState extends State<LevelResultScreen> {
     final after = _r.won ? config.next(_r.levelId) : null;
     final next = after != null && services.state.isLevelUnlocked(after.id) ? after : null;
     final goal = level?.goal;
+    // Khung rộng: nền trải tới mép, thẻ số liệu giữ bề rộng như khung 1280 (lề 250 tính từ vùng 1280 giữa).
+    final inset = RefMetrics.of(context).inset;
 
     return PopScope(
       canPop: false,
@@ -170,8 +173,8 @@ class _LevelResultScreenState extends State<LevelResultScreen> {
                 ),
               ),
               Positioned(
-                left: 250,
-                right: 250,
+                left: 250 + inset,
+                right: 250 + inset,
                 top: 104,
                 child: SLPaperCard(
                   attach: SLAttach.tapeCorners,

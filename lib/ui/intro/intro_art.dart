@@ -3,7 +3,10 @@ import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
 
+import '../../core/art/art_paint.dart';
+import '../../core/ref_frame.dart';
 import '../../core/theme.dart';
+import '../common/wide_layout.dart';
 import '../sugarleaf/sugarleaf.dart';
 
 /// Phần vẽ dùng chung của cảnh mở đầu (`IntroScreen`) và intro ngắn (`ShortIntroScreen`): đường dẫn ảnh, ảnh có nền
@@ -114,8 +117,34 @@ abstract final class IntroLayout {
   static const maiBottom = 712.0;
 }
 
-/// Hệ số từ toạ độ khung 1280×720 sang điểm ảnh thật của màn (để giải mã ảnh đúng cỡ hiện).
-double introPixelScale(BuildContext context) => (View.of(context).physicalSize.width / 1280).clamp(0.5, 3.0);
+/// Hệ số từ toạ độ khung (rộng W = 1280–1600, xem `RefMetrics`) sang điểm ảnh thật của màn (để giải mã ảnh đúng cỡ
+/// hiện).
+double introPixelScale(BuildContext context) =>
+    (View.of(context).physicalSize.width / RefMetrics.of(context).width).clamp(0.5, 3.0);
+
+/// Rộng khung (đơn vị ref, cao 720) của vùng cảnh cỡ [size]: 1280 khi 16:9 hoặc hẹp hơn; khung rộng (máy 20:9) →
+/// 720 × rộng/cao.
+double introFrameWidth(Size size) =>
+    size.height > 0 && wideCenterRect(size).width < size.width ? size.width * 720 / size.height : 1280;
+
+/// Đặt lớp vẽ theo toạ độ khung 1280×720 ([child]: hạt, đèn, vật treo…) vào vùng 1280 giữa khung rộng [width] —
+/// khớp với ảnh nền [IntroImage] (ảnh ở vùng 16:9 giữa, hai bên soi gương). [width] 1280 → trả thẳng [child].
+Widget introStage(double width, Widget child) {
+  if (width <= 1280) return child;
+  return Stack(
+    clipBehavior: Clip.none,
+    children: [Positioned(left: (width - 1280) / 2, top: 0, bottom: 0, width: 1280, child: child)],
+  );
+}
+
+/// Ma trận máy quay: đưa điểm [focal] (toạ độ ảnh 1280×720) về giữa khung rộng [width], phóng [scale] (≥ 1); tiêu
+/// điểm bị kẹp trong vùng mở rộng (ảnh + phần soi gương hai bên) để mép không lộ ra. [width] 1280 → như khung cũ.
+Matrix4 introCamera(Offset focal, double scale, {double width = 1280}) {
+  final inset = (width - 1280) / 2;
+  final hw = width / 2 / scale, hh = 360 / scale;
+  final fx = (focal.dx + inset).clamp(hw, width - hw), fy = focal.dy.clamp(hh, 720 - hh);
+  return Matrix4.diagonal3Values(scale, scale, 1)..setTranslationRaw(width / 2 - fx * scale, 360 - fy * scale, 0);
+}
 
 /// Ảnh nền cảnh 1280×720 giải mã tối đa theo bề ngang thật của màn.
 ImageProvider introSceneImage(BuildContext context, String asset) => ResizeImage(
@@ -140,7 +169,21 @@ class IntroImage extends StatelessWidget {
   final BoxFit fit;
 
   @override
-  Widget build(BuildContext context) => Image(
+  Widget build(BuildContext context) {
+    if (fit != BoxFit.cover) return _image();
+    // Ảnh nền cảnh: vùng rộng hơn 16:9 → ảnh ở vùng 16:9 giữa, hai bên soi gương dải mép (không cắt mất cảnh).
+    return LayoutBuilder(
+      builder: (context, c) {
+        final size = c.biggest;
+        if (size.isFinite && wideCenterRect(size).width < size.width) {
+          return WideImageBackdrop(image: image, fallback: fallback);
+        }
+        return _image();
+      },
+    );
+  }
+
+  Widget _image() => Image(
         image: image,
         fit: fit,
         gaplessPlayback: true,

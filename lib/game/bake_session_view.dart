@@ -3,7 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import '../core/art/cake_art.dart';
-import '../core/constants.dart';
+import '../core/ref_frame.dart';
 import '../core/l10n_lookup.dart';
 import '../core/models/bake.dart';
 import '../core/models/ids.dart';
@@ -15,7 +15,8 @@ import 'bakery_game.dart';
 
 /// Màn làm bánh: 6 trạm (Flame) + lớp Flutter vẽ tay bộ SL* (thanh bước, vé đơn, gợi ý, nút Xong, thẻ hướng dẫn).
 ///
-/// Widget DUY NHẤT mà lib/ui import từ game. Chiếm trọn khung 1280×720. Không đọc/ghi `GameState`,
+/// Widget DUY NHẤT mà lib/ui import từ game. Chiếm trọn khung W×720 (`RefMetrics`, W = 1280–1600): nền bếp và
+/// thanh bước trải tới hai mép, sân chơi / vé đơn / gợi ý / nút Xong giữ trong vùng 1280 ở giữa. Không đọc/ghi `GameState`,
 /// không chấm điểm: chỉ trả số đo thô qua [onComplete] (đúng 1 lần, sau hoạt cảnh đóng hộp).
 class BakeSessionView extends StatefulWidget {
   const BakeSessionView({
@@ -50,7 +51,7 @@ class BakeSessionView extends StatefulWidget {
 }
 
 class _BakeSessionViewState extends State<BakeSessionView> {
-  /// Khoá của lớp nhận con trỏ (test dùng để đổi toạ độ khung 1280×720 → toạ độ màn hình).
+  /// Khoá của lớp nhận con trỏ (test dùng để đổi toạ độ khung W×720 → toạ độ màn hình; thế giới = khung − inset).
   static const inputKey = ValueKey('bake-session-input');
 
   late final BakeryGame _game;
@@ -102,12 +103,16 @@ class _BakeSessionViewState extends State<BakeSessionView> {
 
   bool _primary(PointerEvent e) => e.kind != PointerDeviceKind.mouse || (e.buttons & kPrimaryMouseButton) != 0;
 
+  /// Toạ độ khung W×720 → toạ độ thế giới 1280×720 (trừ độ lệch vùng giữa).
+  Offset _world(Offset p) => p.translate(-_game.inset, 0);
+
   @override
   Widget build(BuildContext context) {
+    final metrics = RefMetrics.of(context);
     return FittedBox(
       fit: BoxFit.contain,
       child: SizedBox.fromSize(
-        size: kRefSize,
+        size: metrics.size,
         child: ClipRect(
           child: Stack(
             children: [
@@ -116,17 +121,18 @@ class _BakeSessionViewState extends State<BakeSessionView> {
                   key: inputKey,
                   behavior: HitTestBehavior.opaque,
                   onPointerDown: (e) {
-                    if (_primary(e)) _game.pointerDown(e.pointer, e.localPosition);
+                    if (_primary(e)) _game.pointerDown(e.pointer, _world(e.localPosition));
                   },
-                  onPointerMove: (e) => _game.pointerMove(e.pointer, e.localPosition),
-                  onPointerUp: (e) => _game.pointerUp(e.pointer, e.localPosition),
+                  onPointerMove: (e) => _game.pointerMove(e.pointer, _world(e.localPosition)),
+                  onPointerUp: (e) => _game.pointerUp(e.pointer, _world(e.localPosition)),
                   onPointerCancel: (e) => _game.pointerCancel(e.pointer),
                   child: GameWidget<BakeryGame>(game: _game),
                 ),
               ),
               ListenableBuilder(
                 listenable: _game.hud,
-                builder: (context, _) => SLScope(child: _Overlay(order: widget.order, hud: _game.hud, game: _game)),
+                builder: (context, _) => SLScope(
+                    child: _Overlay(order: widget.order, hud: _game.hud, game: _game, inset: metrics.inset, safe: metrics.safe)),
               ),
             ],
           ),
@@ -137,73 +143,104 @@ class _BakeSessionViewState extends State<BakeSessionView> {
 }
 
 class _Overlay extends StatelessWidget {
-  const _Overlay({required this.order, required this.hud, required this.game});
+  const _Overlay({required this.order, required this.hud, required this.game, this.inset = 0, this.safe = EdgeInsets.zero});
 
   final Order order;
   final BakeHud hud;
   final BakeryGame game;
 
+  /// Độ lệch vùng nội dung 1280 trong khung rộng ((W − 1280) / 2; 0 ở máy 16:9).
+  final double inset;
+
+  /// Vùng tai thỏ (đơn vị ref) của khung rộng: chấm bước / chữ của thanh bước lùi vào.
+  final EdgeInsets safe;
+
   @override
   Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
     final station = hud.station;
     final tutorial = hud.tutorial;
     return Stack(
       children: [
-        // Dải giấy tràn qua mép trái/phải/trên khung: chỉ lộ mép dưới run tay.
-        Positioned(left: -14, top: -16, width: 1308, height: 88, child: IgnorePointer(child: _StepBar(station: station))),
-        Positioned(left: 960, top: 86, width: 300, height: 226, child: IgnorePointer(child: _OrderTicket(order: order))),
+        // Dải giấy tràn qua mép trái/phải/trên khung (cả khung rộng): chỉ lộ mép dưới run tay.
         Positioned(
-          left: 952,
-          top: 322,
-          width: 316,
-          height: 284,
-          child: IgnorePointer(child: _HintPanel(station: station)),
+          left: -14,
+          right: -14,
+          top: -16,
+          height: 88,
+          child: IgnorePointer(child: _StepBar(station: station, safe: safe)),
         ),
+        // Nội dung giữ trong vùng 1280 ở giữa khung.
         Positioned(
-          left: 170,
-          top: 136,
-          width: 600,
-          height: 90,
-          child: IgnorePointer(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              child: hud.toast == null
-                  ? const SizedBox.shrink()
-                  : Center(
-                      key: ValueKey(hud.toastSerial),
-                      child: _Toast(text: switch (hud.toast!) { GameToast.wrongMould => l.gameWrongMould }),
-                    ),
-            ),
-          ),
+          left: inset,
+          top: 0,
+          width: 1280,
+          height: 720,
+          child: Stack(children: _content(context)),
         ),
-        if (hud.doneVisible)
-          Positioned(
-            left: 1060,
-            top: 620,
-            width: 180,
-            height: 70,
-            child: SLButton(
-              label: l.commonDone,
-              icon: 'check',
-              color: SLColors.mint,
-              height: 70,
-              fontSize: 26,
-              seed: 0xD09E,
-              onPressed: hud.doneEnabled ? game.pressDone : null,
-            ),
-          ),
+        // Thẻ hướng dẫn: nền tối phủ cả khung, thẻ ở giữa (giữa khung = giữa vùng 1280).
         if (tutorial != null) Positioned.fill(child: _TutorialCard(station: tutorial, onGotIt: game.dismissTutorial)),
       ],
     );
+  }
+
+  /// Vé đơn, gợi ý, thông báo, nút Xong (toạ độ vùng 1280×720).
+  List<Widget> _content(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final station = hud.station;
+    return [
+      Positioned(left: 960, top: 86, width: 300, height: 226, child: IgnorePointer(child: _OrderTicket(order: order))),
+      Positioned(
+        left: 952,
+        top: 322,
+        width: 316,
+        height: 284,
+        child: IgnorePointer(child: _HintPanel(station: station)),
+      ),
+      Positioned(
+        left: 170,
+        top: 136,
+        width: 600,
+        height: 90,
+        child: IgnorePointer(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: hud.toast == null
+                ? const SizedBox.shrink()
+                : Center(
+                    key: ValueKey(hud.toastSerial),
+                    child: _Toast(text: switch (hud.toast!) { GameToast.wrongMould => l.gameWrongMould }),
+                  ),
+          ),
+        ),
+      ),
+      if (hud.doneVisible)
+        Positioned(
+          left: 1060,
+          top: 620,
+          width: 180,
+          height: 70,
+          child: SLButton(
+            label: l.commonDone,
+            icon: 'check',
+            color: SLColors.mint,
+            height: 70,
+            fontSize: 26,
+            seed: 0xD09E,
+            onPressed: hud.doneEnabled ? game.pressDone : null,
+          ),
+        ),
+    ];
   }
 }
 
 /// Thanh trên (HUD): dải giấy vẽ tay — 6 chấm bước (nhãn dán tròn) nối bằng vệt màu nước + tên trạm + "Bước x/6".
 class _StepBar extends StatelessWidget {
-  const _StepBar({required this.station});
+  const _StepBar({required this.station, this.safe = EdgeInsets.zero});
 
   final StationId station;
+
+  /// Tai thỏ (khung rộng): nội dung lùi vào, dải giấy vẫn chạm mép.
+  final EdgeInsets safe;
 
   @override
   Widget build(BuildContext context) {
@@ -214,8 +251,8 @@ class _StepBar extends StatelessWidget {
     return SLSurface(
       spec: const SLSurfaceSpec(shape: SLRoundRect(16), inkWidth: 2.6, seed: 0x57E9),
       lift: 4,
-      // Phần lộ ra trong khung: x 0..1280, y 0..72 (dải lệch −14, −16).
-      padding: const EdgeInsets.fromLTRB(14 + 24, 16, 14 + 24, 0),
+      // Phần lộ ra trong khung: x 0..W, y 0..72 (dải lệch −14, −16).
+      padding: EdgeInsets.fromLTRB(14 + 24 + safe.left, 16, 14 + 24 + safe.right, 0),
       child: Row(
         children: [
           for (final s in StationId.values) ...[

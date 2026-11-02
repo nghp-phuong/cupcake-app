@@ -140,11 +140,12 @@ void main() {
       expect(g.look.mainSlots(3), 3);
     });
 
-    test('case_stand: ô cộng thêm lên kệ; tủ gốc 4 ô + kệ → 4 + 1; tủ > 4 ô chưa mua kệ → ô dư lên kệ', () {
+    test('case_stand: ô cộng thêm lên kệ; tủ gốc 3 ô + kệ → 3 + 1; tủ > 3 ô (dù chưa mua kệ) → ô dư lên kệ', () {
+      expect(ShopLook.mainCaseMax, 3);
       expect(ShopLook.resolve(caseSlots: 4, owned: {'case_stand'}, caseSlotsBonus: 1).standSlots, 1);
-      expect(ShopLook.resolve(caseSlots: 5, owned: {'case_stand'}, caseSlotsBonus: 1).standSlots, 1);
-      expect(ShopLook.resolve(caseSlots: 4).standSlots, 0);
-      expect(ShopLook.resolve(caseSlots: 5).standSlots, 1);
+      expect(ShopLook.resolve(caseSlots: 5, owned: {'case_stand'}, caseSlotsBonus: 1).standSlots, 2);
+      expect(ShopLook.resolve(caseSlots: 3).standSlots, 0);
+      expect(ShopLook.resolve(caseSlots: 4).standSlots, 1);
       expect(ShopLook.resolve(caseSlots: 6, owned: {'case_stand'}, caseSlotsBonus: 1).standSlots, 2);
       expect(ShopLook.resolve(caseSlots: 9).standSlots, ShopLook.standMax);
       expect(ShopLook.resolve(caseSlots: 1, owned: {'case_stand'}, caseSlotsBonus: 1).standSlots, 0);
@@ -193,8 +194,8 @@ void main() {
         final g = _game(_level(caseSlots: base, startStock: 0), setup: const ShopSetup(caseSlotsBonus: 1, owned: {'case_stand'}));
         final s = g.session;
         expect(s.displayCase.slots, base + 1);
-        expect(g.look.standSlots, 1);
-        expect(g.look.mainSlots(base + 1), base);
+        expect(g.look.standSlots, base + 1 - ShopLook.mainCaseMax);
+        expect(g.look.mainSlots(base + 1), ShopLook.mainCaseMax);
         _fillCase(g);
         _paintOnce(g);
         final last = s.displayCase.items.last;
@@ -202,7 +203,7 @@ void main() {
         final at = g.shop.cellCenterOf(last.recipe!);
         expect(LevelLayout.standRect.contains(at), isTrue, reason: 'ô cuối (base $base) phải ở trên kệ tầng');
         expect(LevelLayout.caseRect.contains(g.shop.slotCakeCenter(0)), isTrue);
-        for (var i = 0; i < base; i++) {
+        for (var i = 0; i < ShopLook.mainCaseMax; i++) {
           expect(LevelLayout.caseGlass.contains(g.shop.slotCakeCenter(i)), isTrue);
         }
         final badge = g.shop.slotBadgeAt(base, 3);
@@ -297,21 +298,27 @@ void main() {
       }
     });
 
-    test('wideCase: ô 6 / 8 / 10 cái → 3 / 4 / 5 cái một tầng; hai hàng chặt vừa cột và khe kệ', () {
+    test('wideCase: ô 6 / 8 / 10 cái → 3 / 4 / 5 cái một hàng; hàng trước + hàng sau vừa cột, dưới nóc tủ', () {
       expect([for (final c in [1, 6, 7, 8, 9, 10, 14]) caseShelfCapacityFor(c)], [3, 3, 4, 4, 5, 5, 5]);
       for (var slots = 1; slots <= 6; slots++) {
         for (var i = 0; i < slots; i++) {
           final cell = caseCell(i, slots);
           final s = caseCakeSize(cell);
-          for (var k = 1; k <= caseShelfMax; k++) {
-            expect(caseShelfStack[k].length, k);
-            final w = s * caseShelfCakeScale(k);
-            for (final o in caseShelfStack[k]) {
-              expect(cell.center.dx + o.dx * s - w / 2, greaterThanOrEqualTo(cell.left - 0.5), reason: 'slots $slots k $k');
-              expect(cell.center.dx + o.dx * s + w / 2, lessThanOrEqualTo(cell.right + 0.5), reason: 'slots $slots k $k');
-              expect(LevelLayout.lowerShelfY - w + o.dy * s, greaterThanOrEqualTo(LevelLayout.upperShelfBottom - 1));
-              expect(LevelLayout.upperShelfY - w + o.dy * 0.4 * s, greaterThanOrEqualTo(LevelLayout.caseGlass.top - 4));
+          for (var per = caseShelfCapacity; per <= caseShelfMax; per++) {
+            for (final depth in [1.0, LevelLayout.caseBackScale]) {
+              final w = caseShelfCakeScale(per) * depth;
+              for (var k = 1; k <= per; k++) {
+                final xs = <double>{};
+                for (var q = 0; q < k; q++) {
+                  final dx = caseRowDx(q, k, w);
+                  xs.add(dx);
+                  expect(cell.center.dx + (dx - w / 2) * s, greaterThanOrEqualTo(cell.left - 0.5), reason: 'slots $slots per $per k $k');
+                  expect(cell.center.dx + (dx + w / 2) * s, lessThanOrEqualTo(cell.right + 0.5), reason: 'slots $slots per $per k $k');
+                }
+                expect(xs.length, k, reason: 'mỗi cái một chỗ riêng');
+              }
             }
+            expect(caseRowTop(cell, back: true, perShelf: per), greaterThanOrEqualTo(LevelLayout.caseGlass.top));
           }
           for (final n in [5, 8, 10]) {
             expect(LevelLayout.caseRect.contains(caseBadgeAt(cell, n, perShelf: 5)), isTrue);

@@ -242,7 +242,7 @@ class _IntroScreenState extends State<IntroScreen> with SingleTickerProviderStat
                 ),
               Positioned(
                 top: 20,
-                right: 24,
+                right: 24 + MediaQuery.paddingOf(context).right,
                 child: SLButton(
                   key: const ValueKey('intro-skip'),
                   label: l.storySkip,
@@ -263,13 +263,8 @@ class _IntroScreenState extends State<IntroScreen> with SingleTickerProviderStat
 
 // ==================================================================== Máy quay
 
-/// Ma trận đưa điểm [focal] (toạ độ ảnh 1280×720) về giữa khung, phóng [scale] (≥ 1); tiêu điểm bị kẹp để mép ảnh
-/// không lộ ra.
-Matrix4 _camera(Offset focal, double scale) {
-  final hw = 640 / scale, hh = 360 / scale;
-  final fx = focal.dx.clamp(hw, 1280 - hw), fy = focal.dy.clamp(hh, 720 - hh);
-  return Matrix4.diagonal3Values(scale, scale, 1)..setTranslationRaw(640 - fx * scale, 360 - fy * scale, 0);
-}
+/// Máy quay của cảnh trong khung rộng [width] (xem [introCamera]).
+Matrix4 _camera(Offset focal, double scale, double width) => introCamera(focal, scale, width: width);
 
 double _ease(double u) => Curves.easeInOut.transform(u.clamp(0.0, 1.0));
 
@@ -301,17 +296,27 @@ class _KitchenSceneState extends State<_KitchenScene> {
       image: introSceneImage(context, IntroAssets.kitchen),
       fallback: const IntroPaperBackdrop(icon: 'oven', seed: 0x1A72),
     );
+    final width = introFrameWidth(MediaQuery.sizeOf(context));
     // Không RepaintBoundary: tia phải chung lớp vẽ với ảnh để cộng sáng lên ảnh.
     final rays = CustomPaint(painter: _rays, size: Size.infinite);
     final layers = Stack(
       fit: StackFit.expand,
       children: [
         image,
-        rays,
-        if (!widget.reduce) ...[
-          RepaintBoundary(child: CustomPaint(painter: _steam, size: Size.infinite)),
-          RepaintBoundary(child: CustomPaint(painter: _dust, size: Size.infinite)),
-        ],
+        // Tia, hơi nước, bụi theo toạ độ ảnh 1280×720 (khung rộng: vùng 1280 giữa, khớp ảnh nền).
+        introStage(
+          width,
+          Stack(
+            fit: StackFit.expand,
+            children: [
+              rays,
+              if (!widget.reduce) ...[
+                RepaintBoundary(child: CustomPaint(painter: _steam, size: Size.infinite)),
+                RepaintBoundary(child: CustomPaint(painter: _dust, size: Size.infinite)),
+              ],
+            ],
+          ),
+        ),
       ],
     );
     if (widget.reduce) return layers;
@@ -321,7 +326,7 @@ class _KitchenSceneState extends State<_KitchenScene> {
       builder: (context, child) {
         final u = _ease(widget.time.value / 6);
         return Transform(
-          transform: _camera(Offset(660 - 60 * u, 370 - 10 * u), 1.0 + 0.08 * u),
+          transform: _camera(Offset(660 - 60 * u, 370 - 10 * u), 1.0 + 0.08 * u, width),
           child: child,
         );
       },
@@ -361,8 +366,13 @@ class _CaseSceneState extends State<_CaseScene> {
       image: introSceneImage(context, IntroAssets.shop),
       fallback: const IntroPaperBackdrop(icon: 'storefront', seed: 0x1A73),
     );
-    const glow = RepaintBoundary(child: CustomPaint(painter: IntroLampGlowPainter(), size: Size.infinite));
-    final sparkle = RepaintBoundary(child: CustomPaint(painter: _sparkle, size: Size.infinite));
+    // Đèn, lấp lánh theo toạ độ ảnh 1280×720 (khung rộng: vùng 1280 giữa, khớp ảnh nền).
+    final width = introFrameWidth(MediaQuery.sizeOf(context));
+    final glow = introStage(
+      width,
+      const RepaintBoundary(child: CustomPaint(painter: IntroLampGlowPainter(), size: Size.infinite)),
+    );
+    final sparkle = introStage(width, RepaintBoundary(child: CustomPaint(painter: _sparkle, size: Size.infinite)));
     if (widget.reduce) {
       return Stack(fit: StackFit.expand, children: [image, glow]);
     }
@@ -378,10 +388,10 @@ class _CaseSceneState extends State<_CaseScene> {
           fit: StackFit.expand,
           children: [
             Transform(
-              transform: _camera(focal, scale),
+              transform: _camera(focal, scale, width),
               child: Stack(fit: StackFit.expand, children: [image, sparkle]),
             ),
-            Transform(transform: _camera(glowFocal, scale), child: glow),
+            Transform(transform: _camera(glowFocal, scale, width), child: glow),
           ],
         );
       },
@@ -485,6 +495,8 @@ class _DoorScene extends StatelessWidget {
     final bellPivot = Alignment(IntroLayout.bellPivot.dx * 2 - 1, IntroLayout.bellPivot.dy * 2 - 1);
     final signLeft = IntroLayout.signHook.dx - IntroLayout.signPivot.dx * sign.width;
     final signTop = IntroLayout.signHook.dy - IntroLayout.signPivot.dy * sign.height;
+    // Khung rộng: ảnh cửa ở vùng 1280 giữa → chuông, bảng, Mai dời theo inset (toạ độ khung W).
+    final inset = (introFrameWidth(MediaQuery.sizeOf(context)) - 1280) / 2;
 
     return Stack(
       fit: StackFit.expand,
@@ -495,7 +507,7 @@ class _DoorScene extends StatelessWidget {
         ),
         // Chuông: lắc ±12° tắt dần quanh khoen treo + vòng sóng.
         Positioned(
-          left: IntroLayout.bellTopLeft.dx,
+          left: inset + IntroLayout.bellTopLeft.dx,
           top: IntroLayout.bellTopLeft.dy,
           width: bell.width,
           height: bell.height,
@@ -511,7 +523,7 @@ class _DoorScene extends StatelessWidget {
         ),
         if (!reduce)
           Positioned(
-            left: IntroLayout.bellTopLeft.dx + bell.width / 2 - 110,
+            left: inset + IntroLayout.bellTopLeft.dx + bell.width / 2 - 110,
             top: IntroLayout.bellTopLeft.dy + bell.height * 0.7 - 110,
             width: 220,
             height: 220,
@@ -519,7 +531,7 @@ class _DoorScene extends StatelessWidget {
           ),
         // Bảng treo: lật quanh trục dọc (scaleX 1 → 0 → 1), rồi đung đưa tắt dần quanh móc.
         Positioned(
-          left: signLeft,
+          left: inset + signLeft,
           top: signTop,
           width: sign.width,
           height: sign.height,
@@ -551,7 +563,7 @@ class _DoorScene extends StatelessWidget {
         // tới nơi → với tay đúng lúc bảng lật → chuông rung → quay ra cười + nhảy nhẹ (mờ chéo 200ms giữa các ảnh).
         // Giảm chuyển động: đứng sẵn trước cửa, chỉ đổi ảnh (mặt thường → với tay → cười).
         Positioned(
-          left: IntroLayout.maiDoorX - mai.width / 2,
+          left: inset + IntroLayout.maiDoorX - mai.width / 2,
           top: IntroLayout.maiBottom - mai.height,
           width: mai.width,
           height: mai.height,
@@ -579,8 +591,8 @@ class _DoorScene extends StatelessWidget {
               }
               final walk = beats.maiIn <= 0 ? 1.0 : (t / beats.maiIn).clamp(0.0, 1.0);
               final walking = walk < 1;
-              // Vị trí xuất phát: ngoài mép khung theo hướng đi.
-              final from = IntroAssets.maiWalksLeft ? 1280 + mai.width / 2 : -mai.width / 2;
+              // Vị trí xuất phát (toạ độ ảnh): ngoài mép khung W theo hướng đi (khung rộng: thêm inset mỗi bên).
+              final from = IntroAssets.maiWalksLeft ? 1280 + inset + mai.width / 2 : -inset - mai.width / 2;
               final dx = (from - IntroLayout.maiDoorX) * (1 - walk);
               var dy = 0.0;
               var tilt = 0.0;
@@ -657,7 +669,13 @@ class _LogoSceneState extends State<_LogoScene> {
                   child: logo,
                 ),
         ),
-        if (!widget.reduce) IgnorePointer(child: RepaintBoundary(child: CustomPaint(painter: _sparkle, size: Size.infinite))),
+        if (!widget.reduce)
+          IgnorePointer(
+            child: introStage(
+              introFrameWidth(MediaQuery.sizeOf(context)),
+              RepaintBoundary(child: CustomPaint(painter: _sparkle, size: Size.infinite)),
+            ),
+          ),
       ],
     );
   }

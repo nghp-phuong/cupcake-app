@@ -29,6 +29,8 @@ Future<void> main() async {
     yield LicenseEntryWithLineBreaks(const ['Fredoka', 'Baloo 2', 'Nunito'], license);
   });
   await SystemChrome.setPreferredOrientations([DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
+  // Game toàn màn: ẩn thanh trạng thái + điều hướng; vuốt mép màn hiện tạm rồi tự ẩn.
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
   final saves = PrefsSaveRepository();
   // Bản lưu, dữ liệu level, mở khoá và kiếm tiền nạp song song (đều bất đồng bộ). levels.json / unlocks.json /

@@ -17,6 +17,9 @@ enum LevelArtId {
   /// Hũ thuỷ tinh nắp bần, nơ hồng (267×320) — topping vẽ bên trong.
   toppingJar('topping_jar'),
 
+  /// Tủ kính bánh rỗng (792×363): nóc gỗ cong, kệ kính giữa, chân gỗ — vẽ thành tủ một tầng ở sân tiệm.
+  displayCase('display_case'),
+
   /// Kệ bánh gỗ hai tầng có giấy lót ren (264×360), đặt trên quầy cạnh tủ kính (mở rộng `case_stand`).
   caseStand('case_stand'),
 
@@ -42,7 +45,7 @@ enum LevelArtId {
   String get assetPath => 'assets/art/level/$file.webp';
 }
 
-/// Nạp ảnh [LevelArtId] một lần (bất đồng bộ, không chặn), giữ suốt phiên app (~1,7 MB đã giải mã cho 5 ảnh đầu + tay chỉ hướng dẫn; biểu tượng vật phẩm giải mã nhỏ).
+/// Nạp ảnh [LevelArtId] một lần (bất đồng bộ, không chặn), giữ suốt phiên app (~2,9 MB đã giải mã cho 6 ảnh đầu + tay chỉ hướng dẫn; biểu tượng vật phẩm giải mã nhỏ).
 /// Chưa nạp xong / thiếu file → [image] trả null, nơi vẽ dùng hình vẽ code dự phòng. Gọi [image] mỗi khung chỉ là
 /// tra mảng (không tạo đối tượng); lần đầu thấy thiếu thì tự xếp nạp.
 ///

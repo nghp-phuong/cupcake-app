@@ -5,16 +5,44 @@ import 'package:flutter/material.dart';
 import '../l10n/gen/app_localizations.dart';
 import 'constants.dart';
 
-/// Khung tham chiếu 1280×720: co giãn giữ tỉ lệ (letterbox màu kem). Bên trong, `MediaQuery`
-/// luôn báo size 1280×720, không padding/insets, không phóng chữ → mọi màn dùng toạ độ cố định.
+/// Khung tham chiếu cao 720, rộng W co giãn 1280–1600 theo tỉ lệ máy ([widthFor]); co giãn giữ tỉ lệ (letterbox màu
+/// kem). Bên trong, `MediaQuery` báo size W×720, không phóng chữ → mọi màn dùng toạ độ cố định; vùng nội dung 1280×720
+/// nằm giữa khung, lệch [RefMetrics.inset] (bọc [RefCenter] để màn cũ giữ toạ độ 1280×720).
 ///
-/// Khung luôn nằm trong vùng an toàn (`MediaQuery.viewPadding`: tai thỏ, thanh hệ thống); nền kem vẫn phủ cả màn.
-/// Máy có viền kem rộng hơn tai thỏ (19,5:9) giữ nguyên cỡ và vị trí; chỉ co/dời khi vùng an toàn thật sự hẹp hơn
-/// chỗ khung cần (máy 16:9 có tai thỏ) — xem [frameRect].
+/// - W = 1280 (16:9, 4:3, màn dọc, hoặc tai thỏ lấn vào vùng nội dung): giống hệt bản cũ — padding/insets bên trong
+///   bằng 0, khung nằm trong vùng an toàn (`MediaQuery.viewPadding`), nền kem phủ cả màn — xem [frameRect].
+/// - W > 1280 (máy dài): khung lấp cả màn, kể cả dưới tai thỏ (nền tràn kín); `MediaQuery.padding`/`viewPadding`
+///   bên trong = phần inset an toàn quy ra đơn vị ref ([safeInsetsFor]) để phần tử bám mép tự lùi vào.
 class RefFrame extends StatelessWidget {
   const RefFrame({super.key, required this.child});
 
   final Widget child;
+
+  /// Rộng khung (đơn vị ref) cho màn [screen] có vùng không an toàn [safe]: 720 × rộng/cao màn, kẹp 1280–1600. Tính
+  /// trên cả màn để nền tràn dưới tai thỏ. Trả 1280 (hành vi cũ, khung đặt trong vùng an toàn bằng [frameRect]) khi:
+  /// màn dọc, hoặc inset trái/phải quy ra ref lấn vào vùng nội dung 1280 ở giữa (> (W−1280)/2). Inset trên/dưới (thanh hệ
+  /// thống chưa kịp ẩn, cử chỉ điều hướng) không làm khung hẹp lại: chỉ đi vào `MediaQuery.padding` bên trong khung.
+  static double widthFor(Size screen, EdgeInsets safe) {
+    if (screen.width <= 0 || screen.height <= 0 || screen.width < screen.height) return kRefMinWidth;
+    final width = (kRefHeight * screen.width / screen.height).clamp(kRefMinWidth, kRefMaxWidth);
+    if (width <= kRefMinWidth) return kRefMinWidth;
+    final pad = safeInsetsFor(screen, safe, width);
+    final inset = (width - kRefMinWidth) / 2;
+    // Sai số dấu phẩy động: inset vừa khít mép vùng nội dung vẫn tính là không lấn.
+    if (pad.left > inset + 1e-6 || pad.right > inset + 1e-6) return kRefMinWidth;
+    return width;
+  }
+
+  /// Phần inset an toàn [safe] (dp) quy ra đơn vị ref bên trong khung rộng [width] đặt giữa màn [screen] (đã trừ phần
+  /// letterbox nằm ngoài khung, vd. máy 21:9 với khung 1600).
+  static EdgeInsets safeInsetsFor(Size screen, EdgeInsets safe, double width) {
+    final scale = math.min(screen.width / width, screen.height / kRefHeight);
+    if (scale <= 0) return EdgeInsets.zero;
+    final mx = (screen.width - width * scale) / 2, my = (screen.height - kRefHeight * scale) / 2;
+    double x(double v) => math.max(0.0, (v - mx) / scale);
+    double y(double v) => math.max(0.0, (v - my) / scale);
+    return EdgeInsets.fromLTRB(x(safe.left), y(safe.top), x(safe.right), y(safe.bottom));
+  }
 
   /// Vị trí khung trong màn [screen] có vùng không an toàn [safe]: cỡ = min(cỡ vừa cả màn, cỡ vừa vùng an toàn),
   /// đặt giữa màn rồi đẩy vào trong vùng an toàn (dời ít nhất có thể). Padding bằng 0 → giống hệt căn giữa thường.
@@ -51,6 +79,9 @@ class RefFrame extends StatelessWidget {
         builder: (context, constraints) {
           final w = constraints.maxWidth.isFinite ? constraints.maxWidth : outer.size.width;
           final h = constraints.maxHeight.isFinite ? constraints.maxHeight : outer.size.height;
+          final width = widthFor(Size(w, h), safe);
+          if (width > kRefMinWidth) return _wideFrame(outer, Size(w, h), safe, width);
+          // Từ đây: W = 1280, cây widget giữ nguyên như bản cũ.
           final portrait = w < h;
           final rect = frameRect(Size(w, h), safe);
           Widget frame = Center(
@@ -89,6 +120,113 @@ class RefFrame extends StatelessWidget {
             ],
           );
         },
+      ),
+    );
+  }
+
+  /// Khung W×720 (W > 1280) lấp màn, kể cả dưới tai thỏ; vùng an toàn chuyển vào `MediaQuery` bên trong.
+  Widget _wideFrame(MediaQueryData outer, Size screen, EdgeInsets safe, double width) {
+    final size = Size(width, kRefHeight);
+    final pad = safeInsetsFor(screen, safe, width);
+    final inner = outer.copyWith(
+      size: size,
+      padding: pad,
+      viewPadding: pad,
+      viewInsets: EdgeInsets.zero,
+      systemGestureInsets: EdgeInsets.zero,
+      textScaler: TextScaler.noScaling,
+    );
+    return Center(
+      child: FittedBox(
+        fit: BoxFit.contain,
+        child: SizedBox.fromSize(
+          size: size,
+          child: ClipRect(
+            child: RefScope(
+              metrics: RefMetrics(width: width, safe: pad),
+              child: MediaQuery(data: inner, child: child),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Số đo khung hiện tại (đơn vị ref): rộng [width] (1280–1600), cao 720; vùng nội dung 1280×720 lệch [inset] từ mép
+/// trái; [safe] = vùng không an toàn (tai thỏ) đã quy ra ref. Không có [RefScope] phía trên → khung chuẩn 1280×720.
+@immutable
+class RefMetrics {
+  const RefMetrics({this.width = kRefMinWidth, this.safe = EdgeInsets.zero});
+
+  /// Khung chuẩn 1280×720, không inset (máy 16:9, test widget lẻ).
+  static const standard = RefMetrics();
+
+  final double width;
+  final EdgeInsets safe;
+
+  /// dx của vùng nội dung 1280 ở giữa = (W − 1280) / 2.
+  double get inset => (width - kRefMinWidth) / 2;
+
+  /// Cỡ khung W×720.
+  Size get size => Size(width, kRefHeight);
+
+  /// Vùng nội dung 1280×720 ở giữa khung (toạ độ khung).
+  Rect get content => Rect.fromLTWH(inset, 0, kRefMinWidth, kRefHeight);
+
+  /// Cả khung W×720 (toạ độ khung).
+  Rect get full => Offset.zero & size;
+
+  bool get isWide => width > kRefMinWidth;
+
+  static RefMetrics of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<RefScope>()?.metrics ?? standard;
+
+  @override
+  bool operator ==(Object other) => other is RefMetrics && other.width == width && other.safe == safe;
+
+  @override
+  int get hashCode => Object.hash(width, safe);
+
+  @override
+  String toString() => 'RefMetrics(width: $width, safe: $safe)';
+}
+
+/// Truyền [RefMetrics] xuống cây (RefFrame đặt khi W > 1280; [RefCenter] đặt lại về chuẩn cho nội dung bên trong).
+class RefScope extends InheritedWidget {
+  const RefScope({super.key, required this.metrics, required super.child});
+
+  final RefMetrics metrics;
+
+  @override
+  bool updateShouldNotify(RefScope oldWidget) => metrics != oldWidget.metrics;
+}
+
+/// Đặt [child] vào vùng nội dung 1280×720 ở giữa khung: `MediaQuery.size` = 1280×720, padding bằng 0, cắt mép.
+/// Dùng cho màn/phần chưa co giãn theo W (nền vẽ ngoài, nội dung bên trong). Khung 1280 → trả thẳng [child].
+class RefCenter extends StatelessWidget {
+  const RefCenter({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final metrics = RefMetrics.of(context);
+    if (!metrics.isWide) return child;
+    final inner = MediaQuery.of(context).copyWith(
+      size: kRefSize,
+      padding: EdgeInsets.zero,
+      viewPadding: EdgeInsets.zero,
+    );
+    return Center(
+      child: SizedBox.fromSize(
+        size: kRefSize,
+        child: ClipRect(
+          child: RefScope(
+            metrics: RefMetrics.standard,
+            child: MediaQuery(data: inner, child: child),
+          ),
+        ),
       ),
     );
   }

@@ -343,6 +343,8 @@ class KitchenView {
   // Hình tĩnh của bếp thuộc riêng view (không qua cache LRU dùng chung): dựng một lần bằng `??=`, vòng vẽ không tạo
   // closure / khoá. Đổi chuỗi hoặc lượt chơi → [clearArt].
 
+  /// `game.inset` lúc dựng [_bgArt] (khung rộng → mặt bàn dài hơn; đổi cỡ thì dựng lại).
+  double _bgInset = 0;
   GameArt? _bgArt, _tileArt, _cardArt, _rowArt, _jarArt, _checkArt, _cancelArt, _arrowArt, _hintArrowArt, _doneArt;
   GameArt? _frostMeterArt, _markerArt;
 
@@ -439,7 +441,9 @@ class KitchenView {
   // ------------------------------------------------------------------ Vẽ
 
   void paint(Canvas canvas) {
-    canvas.drawPicture((_bgArt ??= buildKitchenBackdrop()).picture);
+    if (_bgArt != null && _bgInset != game.inset) _bgArt = _drop(_bgArt);
+    _bgInset = game.inset;
+    canvas.drawPicture((_bgArt ??= buildKitchenBackdrop(inset: _bgInset)).picture);
     _paintCards(canvas);
     for (var i = 0; i < 6; i++) {
       _paintTile(canvas, i);
