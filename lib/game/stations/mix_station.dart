@@ -536,7 +536,7 @@ class MixStation extends Station {
       });
       return GameArt(picture, Size(rx * 2, ry * 2), origin: Offset(m + rx, m + ry), parts: dots);
     });
-    drawPictureAt(canvas, ring.picture, center - ring.origin);
+    ring.draw(canvas, center - ring.origin);
     // Mũi tên chạy theo vòng: mũi tên nét bút vẽ tay (chĩa sang trái) xoay theo tiếp tuyến.
     final a = time * 2.2;
     final p = center + Offset(math.cos(a) * rx, math.sin(a) * ry);

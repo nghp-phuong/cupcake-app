@@ -150,7 +150,7 @@ class KitchenBackdrop extends Component {
     final art = dx > 0
         ? cachedArt(('columnSheet', dx), () => buildColumnSheetArt(inset: dx))
         : cachedArt('columnSheet', buildColumnSheetArt);
-    canvas.drawPicture(art.picture);
+    art.draw(canvas, Offset.zero);
   }
 
   /// Tờ giấy kem vẽ tay phủ cả khung (lúc chờ ảnh nền của trạm đầu). Dựng một lần (mỗi bề ngang khung).

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/painting.dart';
 
 import '../../ui/sugarleaf/paint/hand_drawn.dart';
@@ -13,8 +14,16 @@ import 'game_paint.dart';
 
 // Phong cách vẽ tay của bộ SL* (lib/ui/sugarleaf) cho phần "giao diện" vẽ trên canvas Flame: nhãn giấy, ô chọn
 // (đĩa), nút Giữ, thanh đo, dấu sai, mũi tên gợi ý. Mọi nét run tay (wobblePath / buildSurfaceArt) dựng MỘT lần
-// thành `ui.Picture` và giữ trong [gameArtCache]; mỗi khung hình chỉ drawPicture (+ vài lệnh vẽ đơn giản cho
+// thành `ui.Picture` và giữ trong [gameArtCache]; mỗi khung hình chỉ dán hình (+ vài lệnh vẽ đơn giản cho
 // phần động: phần đã đầy của thanh đo, vòng tiến độ). Không sinh Path run tay trong lúc vẽ khung.
+//
+// Dán hình = [GameArt.draw]: khi đã biết độ phân giải thật ([gameArtPixelRatio] > 0) hình được raster hoá MỘT lần
+// thành ảnh rồi chỉ drawImageRect — web (CanvasKit) không có raster cache nên drawPicture phát lại mọi nét run tay,
+// cắt theo viền, vân giấy mỗi khung (docs/v3/thermion-api-notes.md §31).
+
+/// Số điểm ảnh thật trên một đơn vị khung (`BakeryGame.pixelRatio`, `BakeSessionView` đặt theo màn). 0 = chưa biết
+/// (test thuần, trước lần dựng đầu) → vẽ thẳng Picture. Đổi giá trị → mỗi hình raster hoá lại ở lần vẽ kế tiếp.
+double gameArtPixelRatio = 0;
 
 /// Cache LRU riêng của game (không chung với cache của widget SL* → hình của trạm không bị widget đẩy ra).
 /// Khoảng 30 hình cho một phiên làm bánh (nhãn theo ngôn ngữ, đĩa, thanh đo theo món, nút Giữ 3 trạng thái).
@@ -23,7 +32,11 @@ final SLLru<Object, SLCachedArt> gameArtCache = SLLru<Object, SLCachedArt>(96);
 /// Hình đã dựng: [picture] (vẽ dưới phần động) và [overlay] (vẽ trên phần động, có thể null). Gốc toạ độ của
 /// hình là [origin] tính từ điểm đặt (hình có lề cho bóng / nét lố).
 class GameArt implements SLCachedArt {
-  GameArt(this.picture, this.size, {this.origin = Offset.zero, this.overlay, this.text, this.parts = const []});
+  GameArt(this.picture, this.size, {this.origin = Offset.zero, this.overlay, this.text, this.parts = const [], Rect? bounds})
+      : bounds = bounds ?? Offset.zero & Size(size.width + 2 * origin.dx, size.height + 2 * origin.dy);
+
+  /// Lề thêm mỗi phía của [bounds] khi raster hoá (bóng mờ, nét lố, run tay).
+  static const double rasterPad = 24;
 
   final ui.Picture picture;
   final ui.Picture? overlay;
@@ -38,15 +51,85 @@ class GameArt implements SLCachedArt {
   /// Hình con đã lồng vào [picture] (giữ sống tới khi hình bị đẩy khỏi cache).
   final List<SLCachedArt> parts;
 
+  /// Vùng chứa nét vẽ của [picture] / [overlay] (toạ độ của hình, chưa tính [rasterPad]). Mặc định [size] + lề
+  /// [origin] cả hai phía (hình có lề đều quanh vật; hình đặt theo tâm thì dư, không thiếu).
+  final Rect bounds;
+
+  _GameRaster? _under, _over;
+
+  /// Vẽ [picture] với gốc hình tại [at] (ảnh raster nếu đã biết độ phân giải).
+  void draw(Canvas canvas, Offset at) => _under = _paint(canvas, picture, _under, at);
+
+  /// Vẽ [overlay] (nếu có) với gốc hình tại [at].
+  void drawOverlay(Canvas canvas, Offset at) {
+    final o = overlay;
+    if (o != null) _over = _paint(canvas, o, _over, at);
+  }
+
+  /// Ảnh raster hiện có của [picture] (null khi chưa vẽ lần nào ở tỉ lệ > 0). Cho test.
+  @visibleForTesting
+  ui.Image? get rasterImage => _under?.image;
+
+  _GameRaster? _paint(Canvas canvas, ui.Picture p, _GameRaster? cached, Offset at) {
+    final ratio = gameArtPixelRatio;
+    if (ratio <= 0) {
+      drawPictureAt(canvas, p, at);
+      return cached;
+    }
+    var r = cached;
+    if (r == null || r.ratio != ratio) {
+      r?.image.dispose();
+      r = _GameRaster(p, bounds.inflate(rasterPad), ratio);
+    }
+    canvas.drawImageRect(r.image, r.src, r.dst.shift(at), _rasterPaint);
+    return r;
+  }
+
   @override
   void dispose() {
     picture.dispose();
     overlay?.dispose();
+    _under?.image.dispose();
+    _over?.image.dispose();
+    _under = _over = null;
     text?.dispose();
     for (final p in parts) {
       p.dispose();
     }
   }
+}
+
+final Paint _rasterPaint = Paint()
+  ..filterQuality = FilterQuality.medium
+  ..isAntiAlias = true;
+
+/// Ảnh của một Picture: vùng `rect` của hình (toạ độ hình) raster hoá ở [ratio] điểm ảnh / đơn vị.
+class _GameRaster {
+  factory _GameRaster(ui.Picture picture, Rect rect, double ratio) {
+    final w = math.max(1, (rect.width * ratio).ceil()), h = math.max(1, (rect.height * ratio).ceil());
+    final scene = recordArt((c) {
+      c.scale(ratio);
+      c.translate(-rect.left, -rect.top);
+      c.drawPicture(picture);
+    });
+    final image = scene.toImageSync(w, h);
+    scene.dispose();
+    return _GameRaster._(
+      image,
+      ratio,
+      Rect.fromLTWH(0, 0, w.toDouble(), h.toDouble()),
+      Rect.fromLTWH(rect.left, rect.top, w / ratio, h / ratio),
+    );
+  }
+
+  _GameRaster._(this.image, this.ratio, this.src, this.dst);
+
+  final ui.Image image;
+  final double ratio;
+  final Rect src;
+
+  /// Chỗ dán ảnh (toạ độ hình).
+  final Rect dst;
 }
 
 /// Lấy hình [key] trong cache, chưa có thì dựng bằng [build].
@@ -129,7 +212,7 @@ GameArt buildPaperTag(TextPainter text, {Color color = SLColors.paper, double pa
 void paintPlate(Canvas canvas, Offset c, double r, {double glow = 0}) {
   paintGlow(canvas, Rect.fromCircle(center: c, radius: r + 10), glow);
   final art = cachedArt(('plate', r), () => buildPlateArt(r));
-  drawPictureAt(canvas, art.picture, c - art.origin);
+  art.draw(canvas, c - art.origin);
 }
 
 const Color _porcelain = Color(0xFFFFFBF3);
@@ -242,7 +325,7 @@ void paintSketchMeter(
 }) {
   final art = cachedArt(('meter', key, rect.width, rect.height), () => buildMeterArt(rect.size, back: back, front: front, seed: SLRandom.hashString('$key')));
   final at = rect.topLeft - art.origin;
-  drawPictureAt(canvas, art.picture, at);
+  art.draw(canvas, at);
   final f = level.clamp(0.0, 1.0);
   if (f > 0) {
     final inner = rect.deflate(3);
@@ -257,8 +340,7 @@ void paintSketchMeter(
     canvas.restore();
     canvas.restore();
   }
-  final overlay = art.overlay;
-  if (overlay != null) drawPictureAt(canvas, overlay, at);
+  art.drawOverlay(canvas, at);
 }
 
 final Map<double, Path> _meterEdges = {};
@@ -292,7 +374,7 @@ void paintSketchMarker(Canvas canvas, Rect meter, double x) {
     });
     return GameArt(picture, Size(0, h), origin: const Offset(m, m));
   });
-  drawPictureAt(canvas, art.picture, Offset(x, meter.top) - art.origin);
+  art.draw(canvas, Offset(x, meter.top) - art.origin);
 }
 
 // ------------------------------------------------------------------ Nhãn dán tròn (nút, dấu)
@@ -332,7 +414,7 @@ void paintWrongMark(Canvas canvas, Offset center, {double radius = 16}) {
           c.drawPath(wobblePath(Path()..moveTo(o.dx + a.dx, o.dy + a.dy)..lineTo(o.dx + b.dx, o.dy + b.dy), seed: rnd.nextInt32(), amplitude: 0.6, step: 2), _inkPen(SLColors.ink, 3.4));
         }
       }));
-  drawPictureAt(canvas, art.picture, center - art.origin);
+  art.draw(canvas, center - art.origin);
 }
 
 /// Mũi tên gợi ý kéo (nét bút caramel run tay, chĩa sang trái) với mũi tại [tip].
@@ -351,7 +433,7 @@ void paintHintArrow(Canvas canvas, Offset tip) {
     });
     return GameArt(picture, const Size(64, 32), origin: const Offset(m, m + 16));
   });
-  drawPictureAt(canvas, art.picture, tip - art.origin);
+  art.draw(canvas, tip - art.origin);
 }
 
 // ------------------------------------------------------------------ Khay nướng (trạm khuôn)
@@ -577,7 +659,7 @@ GameArt buildColumnSheetArt({double alpha = 0.78, double inset = 0}) {
     c.restore();
     inkOutline(c, outline, width: 1.6, ink: SLColors.inkSoft.withValues(alpha: 0.55), seed: 0xC01C);
   });
-  return GameArt(picture, Size(right - left, bottom - top));
+  return GameArt(picture, Size(right - left, bottom - top), bounds: Rect.fromLTRB(left, top, right, bottom));
 }
 
 // ------------------------------------------------------------------ Chấm / vòng mực (gợi ý)
@@ -646,5 +728,5 @@ GameArt buildOvenRackArt(double width) {
 void paintOvenRack(Canvas canvas, double left, double right, double y) {
   final w = right - left;
   final art = cachedArt(('rack', w), () => buildOvenRackArt(w));
-  drawPictureAt(canvas, art.picture, Offset(left, y) - art.origin);
+  art.draw(canvas, Offset(left, y) - art.origin);
 }

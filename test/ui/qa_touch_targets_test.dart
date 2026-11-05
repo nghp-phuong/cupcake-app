@@ -1,137 +1,98 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sugarleaf_bakery/core/city/city_config.dart';
+import 'package:sugarleaf_bakery/core/city/city_wallet.dart';
+import 'package:sugarleaf_bakery/core/city/mai_look.dart';
 import 'package:sugarleaf_bakery/core/models/ids.dart';
-import 'package:sugarleaf_bakery/core/ref_frame.dart';
-import 'package:sugarleaf_bakery/core/routes.dart';
-import 'package:sugarleaf_bakery/ui/ui_routes.dart';
+import 'package:sugarleaf_bakery/l10n/gen/app_localizations.dart';
+import 'package:sugarleaf_bakery/ui/town/city_settings_sheet.dart';
+import 'package:sugarleaf_bakery/ui/town/restaurant_sheet.dart';
+import 'package:sugarleaf_bakery/ui/town/salon_sheet.dart';
+import 'package:sugarleaf_bakery/ui/town/town_map_sheet.dart';
 
-import 'qa_helpers.dart';
-import 'ui_test_helpers.dart';
+/// QA: vùng chạm (≥ 48 dp) của các bảng 2D nằm trên cảnh 3D của phố.
 
-/// QA: vùng chạm (≥ 48 dp sau khi khung 1280×720 đã co giãn) + tương phản chữ, tai thỏ.
+/// Cỡ màn hình ngang cần thử: vật lý, mật độ điểm ảnh (logic = vật lý / dpr).
+class _Viewport {
+  const _Viewport(this.name, this.physical, this.dpr);
 
-final _routes = <String, (int, String?, Object?)>{
-  'bản đồ': (12, null, null),
-  'kết quả': (3, AppRoutes.levelResult, LevelResultArgs(fakeLevelResult(3, won: true, stars: 2))),
-  'nâng cấp': (40, AppRoutes.upgrades, null),
-  'trang trí': (20, AppRoutes.decor, null),
-  'sổ công thức': (45, AppRoutes.recipes, null),
-  'cửa hàng': (5, AppRoutes.store, null),
-  'vé mùa': (8, UiRoutes.season, null),
-  'cài đặt': (1, AppRoutes.settings, null),
+  final String name;
+  final Size physical;
+  final double dpr;
+
+  @override
+  String toString() => name;
+}
+
+const _viewports = [
+  _Viewport('1280x720', Size(1280, 720), 1),
+  // 1080×2400 @2.625 → ngang ~914×411 dp (máy 20:9 tầm trung phổ biến): bảng co lại, nút dễ nhỏ hơn 48 dp.
+  _Viewport('2400x1080@2.625', Size(2400, 1080), 2.625),
+];
+
+final _district = CityConfig.alpha.district('bakery_street');
+
+/// Bảng → hàm dựng (con của `Stack` phủ màn, như lớp phủ cảnh 3D).
+final _sheets = <String, Widget Function()>{
+  'nhà hàng': () => RestaurantSheet(
+    wallet: CityWallet(coins: 1500),
+    onOrder: (_) {},
+    onClose: () {},
+  ),
+  'tiệm tóc': () => SalonSheet(
+    current: MaiLook.defaults,
+    coins: 1500,
+    onPreview: (_) {},
+    onConfirm: (_) {},
+    onCancel: () {},
+  ),
+  'cài đặt': () => CitySettingsSheet(
+    language: LanguagePref.system,
+    sound: true,
+    onLanguage: (_) {},
+    onSound: (_) {},
+    onReset: () async {},
+    onClose: () {},
+  ),
+  'bản đồ': () => TownMapSheet(
+    district: _district,
+    maiPos: ValueNotifier<Offset>(Offset.zero),
+    playerLevel: 5,
+    onClose: () {},
+  ),
 };
 
-Future<void> _open(WidgetTester tester, (int, String?, Object?) spec) async {
-  final state = qaState(LanguagePref.vi, cleared: spec.$1);
-  await pumpSugarApp(tester, state, services: testServices(state, levels: qaLevels));
-  if (spec.$2 != null) {
-    navigator(tester).pushNamed(spec.$2!, arguments: spec.$3);
-    await tester.pumpAndSettle();
-  }
+Future<void> _open(
+  WidgetTester tester,
+  Widget sheet,
+  _Viewport vp, {
+  String locale = 'vi',
+}) async {
+  tester.view.physicalSize = vp.physical;
+  tester.view.devicePixelRatio = vp.dpr;
+  addTearDown(tester.view.reset);
+  await tester.pumpWidget(
+    MaterialApp(
+      locale: Locale(locale),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(body: Stack(children: [sheet])),
+    ),
+  );
+  await tester.pumpAndSettle();
 }
 
 void main() {
-  setUp(() => qaNow = DateTime(2026, 10, 28, 10));
-
-  group('vùng chạm theo khung tham chiếu (1280×720, dpr 1)', () {
-    for (final e in _routes.entries) {
-      testWidgets('${e.key}: mọi nút ≥ 48×48', (tester) async {
-        final handle = tester.ensureSemantics();
-        await _open(tester, e.value);
-        await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
-        handle.dispose();
-        await tester.pump(const Duration(seconds: 4));
-      });
-    }
-  });
-
-  // Khung 1280×720 bị FittedBox co theo cỡ logic của máy: điện thoại ngang ~800–915 dp → hệ số 0,5–0,57; tablet
-  // 1024×768 dp → 0,8. Nút 54 px tham chiếu còn 27–43 dp → SLTapTarget nới vùng chạm (semantics + hit test) ≥ 48 dp
-  // mà không đổi hình nút (UI-01).
-  group('vùng chạm trên máy thật (khung co lại theo dp)', () {
-    // + máy 20:9 / 19,5:9 có tai thỏ (khung rộng W > 1280: hệ số co tính theo W).
-    for (final vp in [
-      ...qaRealDevices,
-      qaNotch20x9,
-      const QaViewport('2340x1080@2.75+notch', Size(2340, 1080), dpr: 2.75, notch: 48),
-    ]) {
-      testWidgets('$vp: mọi nút ≥ 48×48 dp trên mọi màn chính', (tester) async {
-        final failures = <String>[];
-        for (final e in _routes.entries) {
+  group('vùng chạm: mọi nút ≥ 48×48 dp', () {
+    for (final vp in _viewports) {
+      for (final e in _sheets.entries) {
+        testWidgets('${e.key} @ $vp (vi)', (tester) async {
           final handle = tester.ensureSemantics();
-          await _open(tester, e.value);
-          vp.apply(tester);
-          await tester.pumpAndSettle();
-          final result = await androidTapTargetGuideline.evaluate(tester);
+          await _open(tester, e.value(), vp);
+          await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
           handle.dispose();
-          if (!result.passed) failures.add('${e.key}: ${result.reason}');
-          await tester.pumpWidget(const SizedBox());
-          await tester.pump(const Duration(seconds: 4));
-        }
-        expect(failures, isEmpty);
-      });
-    }
-  });
-
-  group('tương phản chữ', () {
-    for (final e in _routes.entries) {
-      testWidgets('${e.key}: textContrastGuideline', (tester) async {
-        final handle = tester.ensureSemantics();
-        await _open(tester, e.value);
-        final result = await textContrastGuideline.evaluate(tester);
-        handle.dispose();
-        await tester.pump(const Duration(seconds: 4));
-        expect(result.passed, isTrue, reason: result.reason);
-      });
-    }
-  });
-
-  group('tai thỏ', () {
-    Future<List<String>> underNotch(WidgetTester tester, QaViewport vp) async {
-      final bad = <String>[];
-      for (final e in _routes.entries) {
-        await _open(tester, e.value);
-        vp.apply(tester);
-        await tester.pumpAndSettle();
-        final w = vp.logical.width;
-        // Khung W×720 sau co giãn (W = 1280–1600 theo tỉ lệ máy; phần ngoài khung bị ClipRect cắt, không chạm được).
-        final safe = EdgeInsets.symmetric(horizontal: vp.notch);
-        final width = RefFrame.widthFor(vp.logical, safe);
-        final frame = width > 1280
-            ? Rect.fromCenter(
-                center: vp.logical.center(Offset.zero),
-                width: width * math.min(w / width, vp.logical.height / 720),
-                height: 720 * math.min(w / width, vp.logical.height / 720),
-              )
-            : RefFrame.frameRect(vp.logical, safe);
-        for (final el in find.byWidgetPredicate((w) => w is GestureDetector && w.onTap != null).evaluate()) {
-          final box = el.renderObject;
-          if (box is! RenderBox || !box.hasSize || !box.attached) continue;
-          final r = MatrixUtils.transformRect(box.getTransformTo(null), Offset.zero & box.size).intersect(frame);
-          if (r.width <= 0 || r.height <= 0) continue;
-          if (r.left < vp.notch || r.right > w - vp.notch) {
-            bad.add('${e.key}: nút ở x=${r.left.round()}..${r.right.round()}');
-          }
-        }
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump(const Duration(seconds: 4));
+        });
       }
-      return bad;
     }
-
-    testWidgets('máy 19,5:9 (2340×1080 @2.75) tai thỏ 48 dp: khung rộng, nền tràn dưới tai thỏ, không nút nào nằm dưới', (tester) async {
-      expect(await underNotch(tester, const QaViewport('2340x1080@2.75', Size(2340, 1080), dpr: 2.75, notch: 48)),
-          isEmpty);
-    });
-
-    testWidgets('máy 20:9 (2400×1080 @2.625) tai thỏ: không nút nào nằm dưới', (tester) async {
-      expect(await underNotch(tester, qaNotch20x9), isEmpty);
-    });
-
-    testWidgets('máy 16:9 (1280×720) tai thỏ 48: không nút nào nằm dưới vùng tai thỏ', (tester) async {
-      expect(await underNotch(tester, const QaViewport('1280x720+notch48', Size(1280, 720), notch: 48)), isEmpty);
-    });
   });
 }

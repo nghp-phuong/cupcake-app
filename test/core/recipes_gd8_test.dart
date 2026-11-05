@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
@@ -8,12 +7,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sugarleaf_bakery/core/art/art_sprites.dart';
 import 'package:sugarleaf_bakery/core/art/cake_art.dart';
 import 'package:sugarleaf_bakery/core/catalog.dart';
-import 'package:sugarleaf_bakery/core/game_state.dart';
 import 'package:sugarleaf_bakery/core/l10n_lookup.dart';
 import 'package:sugarleaf_bakery/core/models/ids.dart';
 import 'package:sugarleaf_bakery/l10n/gen/app_localizations.dart';
-
-DateTime _clock() => DateTime(2026, 10, 30, 10);
 
 /// Bundle rỗng: không có ảnh nào → CakeArt vẽ hình code dự phòng.
 class _EmptyBundle extends AssetBundle {
@@ -344,31 +340,5 @@ void main() {
     expect(vi.recipeName(RecipeId.croissant), isNot('Croissant'));
     expect(vi.toppingName(ToppingId.powderedSugar), vi.toppingPowderedSugar);
     expect(vi.mouldName(MouldType.logPan), vi.mouldLogPan);
-  });
-
-  test('bản lưu cũ (10 món) đọc được, không đổi; món mới thuần thục 0; ghi → đọc lại khớp', () {
-    final old = {
-      'v': GameState.saveVersion,
-      'coins': 1234,
-      'mastery': {
-        'cupcakeVanilla': 3, 'cupcakeChocolate': 2, 'muffinBlueberry': 1, 'eggTart': 0, 'strawberryCake': 1, //
-        'macaron': 0, 'redVelvetCupcake': 0, 'matchaCake': 2, 'cheesecake': 0, 'birthdayCake': 1,
-      },
-    };
-    final s = GameState.fromJson(jsonDecode(jsonEncode(old)) as Map<String, dynamic>, clock: _clock);
-    expect(s.coins, 1234);
-    expect(s.recipeMastery(RecipeId.cupcakeVanilla), 3);
-    expect(s.recipeMastery(RecipeId.matchaCake), 2);
-    expect(s.recipeMastery(RecipeId.birthdayCake), 1);
-    for (final (id, _, _, _, _, _, _, _, _) in _gd8) {
-      expect(s.recipeMastery(id), 0, reason: id.name);
-    }
-    final json = s.toJson();
-    final mastery = json['mastery'] as Map<String, dynamic>;
-    for (final e in (old['mastery']! as Map<String, int>).entries) {
-      expect(mastery[e.key], e.value, reason: e.key);
-    }
-    final back = GameState.fromJson(jsonDecode(jsonEncode(json)) as Map<String, dynamic>, clock: _clock);
-    expect(back.toJson(), json);
   });
 }

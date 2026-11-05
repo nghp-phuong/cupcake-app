@@ -211,7 +211,7 @@ class FrostStation extends Station {
     for (var i = 0; i < tracker.guide.length; i++) {
       if (tracker.covered[i]) continue;
       final art = dots[i % kGuideDotVariants];
-      drawPictureAt(canvas, art.picture, tracker.guide[i] - art.origin);
+      art.draw(canvas, tracker.guide[i] - art.origin);
     }
     // Điểm kế tiếp nhấp nháy dẫn đường: vòng mực hồng phồng ra + chấm hồng.
     final n = tracker.nextIndex;
@@ -222,10 +222,10 @@ class FrostStation extends Station {
       canvas.save();
       canvas.translate(p.dx, p.dy);
       canvas.scale((9 + pulse * 6) / 12);
-      drawPictureAt(canvas, ring.picture, -ring.origin);
+      ring.draw(canvas, -ring.origin);
       canvas.restore();
       final dot = cachedArt('frostNext', () => buildInkDotArt(5.5, AppColors.strawberry, 7));
-      drawPictureAt(canvas, dot.picture, p - dot.origin);
+      dot.draw(canvas, p - dot.origin);
     }
     if (fade) canvas.restore();
   }

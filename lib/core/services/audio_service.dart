@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
-import '../game_state.dart';
+import '../city/city_settings.dart';
 
 abstract class AudioService {
   void tap();
@@ -11,12 +11,13 @@ abstract class AudioService {
 
 /// Alpha chưa có file âm thanh: phát tiếng click hệ thống khi bật âm thanh (web có thể im lặng).
 class FakeAudioService implements AudioService {
-  FakeAudioService(this.state);
+  FakeAudioService(this.settings);
 
-  final GameState state;
+  /// Bật / tắt âm thanh ([CitySettings.sound]).
+  final CitySettings settings;
 
   void _click() {
-    if (!state.soundOn) return;
+    if (!settings.sound) return;
     try {
       SystemSound.play(SystemSoundType.click).catchError((Object e) {
         debugPrint('FakeAudioService: $e');

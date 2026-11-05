@@ -48,11 +48,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get commonMax => 'Tối đa';
 
   @override
-  String commonUnlockAtLevel(int level) {
-    return 'Mở ở cấp $level';
-  }
-
-  @override
   String commonLevelShort(int level) {
     return 'Cấp $level';
   }
@@ -69,9 +64,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get commonNotEnoughCoins => 'Không đủ xu';
-
-  @override
-  String get commonNotEnoughGems => 'Không đủ kim cương';
 
   @override
   String get commonWatchAd => 'Xem quảng cáo';
@@ -125,9 +117,6 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get menuXpMax => 'Cấp tối đa';
-
-  @override
   String dayStartTitle(int day) {
     return 'Ngày $day';
   }
@@ -167,11 +156,11 @@ class AppLocalizationsVi extends AppLocalizations {
   String get dayRemakeLine => 'Không sao, mình đợi cái mới nhé!';
 
   @override
-  String get dayExitConfirmTitle => 'Tạm rời tiệm?';
+  String get dayExitConfirmTitle => 'Đóng ca sớm?';
 
   @override
   String get dayExitConfirmBody =>
-      'Xu đã kiếm vẫn được giữ, nhưng hôm nay sẽ không tính là hoàn thành.';
+      'Xu của các khách đã phục vụ vẫn giữ, nhưng không có thưởng hết ca.';
 
   @override
   String get dayRainy => 'Ngày mưa';
@@ -212,37 +201,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get mochiName => 'Mochi';
 
   @override
-  String get mochiArriveFirst =>
-      'Một chú mèo nhỏ ướt sũng đang trú mưa trước cửa tiệm…';
-
-  @override
-  String get mochiArriveAgain => 'Mochi lại ghé trú mưa!';
-
-  @override
-  String get mochiLook => 'Mochi nhìn bạn, đuôi khẽ ve vẩy.';
-
-  @override
   String get mochiPet => 'Vuốt ve';
-
-  @override
-  String get mochiRest => 'Để Mochi nghỉ';
-
-  @override
-  String get mochiPetThanks => 'Mochi rừ rừ vui vẻ!';
-
-  @override
-  String get mochiNap => 'Mochi cuộn tròn ngủ bên lò sưởi.';
-
-  @override
-  String mochiGift(int coins, int gems) {
-    String _temp0 = intl.Intl.pluralLogic(
-      gems,
-      locale: localeName,
-      other: 'Mochi tặng bạn $coins xu và $gems kim cương!',
-      zero: 'Mochi tặng bạn $coins xu!',
-    );
-    return '$_temp0';
-  }
 
   @override
   String orderLine1(String item) {
@@ -671,9 +630,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get charRosa => 'Bà Rosa';
 
   @override
-  String get storyChapter1Title => 'Chương 1: Tiệm bánh bên bờ biển';
-
-  @override
   String get storyTapToContinue => 'Chạm để tiếp tục';
 
   @override
@@ -803,10 +759,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get storyFinaleLine2 =>
       'Sổ của bà vẫn còn những trang trống. Cháu sẽ viết tiếp, từng trang một.';
-
-  @override
-  String get storyFinaleLine3 =>
-      'Hoàn thành chương 1. Câu chuyện sẽ còn tiếp tục!';
 
   @override
   String get storyCh1End1 => 'Những trang đầu của sổ bà lại đầy ắp rồi.';
@@ -998,7 +950,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String summaryDayBonusXp(int xp) {
-    return 'Thưởng cuối ngày +$xp XP';
+    return 'Thưởng hết ca +$xp XP';
   }
 
   @override
@@ -1012,7 +964,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String summaryLevelUp(int level) {
-    return 'Lên cấp! Tiệm cấp $level';
+    return 'Lên cấp! Mai đạt cấp $level';
   }
 
   @override
@@ -1041,20 +993,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get unlockMoreCustomers => 'Mỗi ngày có thêm khách';
 
   @override
-  String get upgradesTitle => 'Nâng cấp';
-
-  @override
-  String get upgradeOven => 'Lò nướng';
-
-  @override
-  String get upgradeOvenDesc => 'Vùng vàng khi nướng rộng hơn';
-
-  @override
-  String upgradeOvenPerfectZone(int percent) {
-    return 'Vùng hoàn hảo ±$percent%';
-  }
-
-  @override
   String get upgradeWhisk => 'Phới lồng';
 
   @override
@@ -1071,23 +1009,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get upgradeTongsDesc => 'Topping dễ đặt lên bánh hơn';
-
-  @override
-  String upgradeLevelOf(int current, int max) {
-    return 'Cấp $current/$max';
-  }
-
-  @override
-  String get upgradeBuy => 'Nâng cấp';
-
-  @override
-  String get upgradeMaxed => 'Đã nâng tối đa';
-
-  @override
-  String get upgradeDone => 'Đã nâng cấp!';
-
-  @override
-  String get decorTitle => 'Trang trí tiệm';
 
   @override
   String get decorSlotWallpaper => 'Giấy dán tường';
@@ -1136,81 +1057,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get decorPlantLemonTree => 'Cây chanh';
-
-  @override
-  String decorTipBonus(int percent) {
-    return '+$percent% tip';
-  }
-
-  @override
-  String decorTotalBonus(int percent) {
-    return 'Tổng thưởng tip: +$percent%';
-  }
-
-  @override
-  String get decorEquip => 'Đặt';
-
-  @override
-  String get decorEquipped => 'Đang dùng';
-
-  @override
-  String get recipesTitle => 'Sổ công thức';
-
-  @override
-  String recipesPrice(int amount) {
-    return 'Giá: $amount';
-  }
-
-  @override
-  String get recipesIngredients => 'Nguyên liệu';
-
-  @override
-  String get recipesMastery => 'Thành thạo';
-
-  @override
-  String get recipesMasteryHint =>
-      'Phục vụ 1 lần, đạt 4 sao rồi 5 sao để thành thạo';
-
-  @override
-  String recipesMasteryReward(int gems) {
-    return 'Thành thạo! +$gems kim cương';
-  }
-
-  @override
-  String recipesMissingPage(int level) {
-    return 'Trang còn thiếu. Mở ở cấp $level';
-  }
-
-  @override
-  String get recipeSecretsTitle => 'Bí quyết của bà';
-
-  @override
-  String recipeSecretsLocked(int level) {
-    return 'Mở sau màn $level';
-  }
-
-  @override
-  String recipeSecretsTier(int tier, int max) {
-    return 'Bí quyết $tier/$max';
-  }
-
-  @override
-  String recipeSecretsBonus(int pct) {
-    return '+$pct% giá';
-  }
-
-  @override
-  String get recipeSecretsBuy => 'Học bí quyết';
-
-  @override
-  String get recipeSecretsMaxed => 'Đã học hết bí quyết';
-
-  @override
-  String get recipeSecretsRecipeLocked => 'Tìm lại công thức này trước đã';
-
-  @override
-  String get recipeSecretsHint =>
-      'Mỗi bí quyết giúp món này bán được giá cao hơn.';
 
   @override
   String get questsTitle => 'Nhiệm vụ ngày';
@@ -1268,9 +1114,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get loginComeBack => 'Mai nhớ quay lại nhận tiếp nhé!';
 
   @override
-  String get storeTitle => 'Cửa hàng';
-
-  @override
   String get storeSimulatedNotice =>
       'Cửa hàng thử nghiệm: giao dịch là giả lập, không trừ tiền thật.';
 
@@ -1300,60 +1143,11 @@ class AppLocalizationsVi extends AppLocalizations {
   String get storeDecorSet => 'Bộ trang trí biển xanh';
 
   @override
-  String get storeDecorSetDesc => '3 món trang trí đặc biệt';
-
-  @override
   String get storeRemoveAds => 'Xoá quảng cáo';
 
   @override
   String get storeRemoveAdsDesc =>
       'Không còn quảng cáo giữa các ngày. Quảng cáo nhận thưởng vẫn tuỳ bạn.';
-
-  @override
-  String get storeTestMode => 'Chế độ thử';
-
-  @override
-  String storeGemsDesc(int gems) {
-    return '$gems kim cương';
-  }
-
-  @override
-  String storeStarterPackDescV2(int coins, int gems, int count) {
-    return '$coins xu + $gems kim cương + mỗi vật phẩm ×$count';
-  }
-
-  @override
-  String get storeStarterBadge => 'Ưu đãi nhất';
-
-  @override
-  String get storeRemoveAdsDescV2 =>
-      'Không còn quảng cáo giữa các màn. Quảng cáo nhận thưởng vẫn tuỳ bạn.';
-
-  @override
-  String get storeStaffOutfitsDesc =>
-      'Trang phục lễ hội cho Nora và Bảo. Chỉ đổi hình — bật/tắt ở tab Nhân viên.';
-
-  @override
-  String get storeSeasonPassDesc => 'Mở hàng thưởng cao cấp của mùa này.';
-
-  @override
-  String storeFreeGem(int gems) {
-    return 'Xem quảng cáo nhận $gems kim cương';
-  }
-
-  @override
-  String get storeOwned => 'Đã sở hữu';
-
-  @override
-  String get storeConfirmTitle => 'Mua giả lập';
-
-  @override
-  String storeConfirmBody(String item, String price) {
-    return 'Mua $item giá $price? Không trừ tiền thật.';
-  }
-
-  @override
-  String get storePurchaseSuccess => 'Cảm ơn bạn! Đã nhận vật phẩm.';
 
   @override
   String get adsLimitReached => 'Hôm nay đã hết lượt nhận thưởng';
@@ -1407,7 +1201,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get settingsResetConfirmBody =>
-      'Xu, cấp, đồ trang trí và tiến trình truyện sẽ bị xoá. Không thể hoàn tác.';
+      'Xu, cấp, kiểu tóc của Mai và các nơi đã ghé sẽ bị xoá. Giữ nguyên ngôn ngữ và âm thanh. Không thể hoàn tác.';
 
   @override
   String get settingsResetDone => 'Đã xoá dữ liệu game';
@@ -1419,496 +1213,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get settingsAlphaNote => 'Bản alpha. Cảm ơn bạn đã chơi thử!';
-
-  @override
-  String get settingsPurchases => 'Giao dịch';
-
-  @override
-  String get settingsRestore => 'Khôi phục giao dịch';
-
-  @override
-  String settingsRestoreDone(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Đã khôi phục $count giao dịch',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get settingsRestoreNone => 'Không có giao dịch nào để khôi phục';
-
-  @override
-  String get settingsRestoreFailed =>
-      'Chưa khôi phục được. Bạn thử lại sau nhé.';
-
-  @override
-  String get levelMenuButton => 'Màn chơi';
-
-  @override
-  String levelChapterLabel(int chapter) {
-    return 'Chương $chapter';
-  }
-
-  @override
-  String levelNumber(int level) {
-    return 'Màn $level';
-  }
-
-  @override
-  String get levelNewBadge => 'Mới';
-
-  @override
-  String get levelSpecialBadge => 'Đặc biệt';
-
-  @override
-  String get levelGoalLabel => 'Mục tiêu';
-
-  @override
-  String levelGoalCoins(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Kiếm $count xu',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String levelGoalCustomers(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Phục vụ $count khách',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String levelGoalSpecials(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Hoàn thành $count đơn đặc biệt (từ 3 sao)',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get levelTimeLabel => 'Thời gian';
-
-  @override
-  String get levelMenuLabel => 'Thực đơn hôm nay';
-
-  @override
-  String get levelStart => 'Bắt đầu';
-
-  @override
-  String get levelPause => 'Tạm dừng';
-
-  @override
-  String get levelRush => 'Giờ cao điểm!';
-
-  @override
-  String levelGoalProgress(int value, int target) {
-    return '$value/$target';
-  }
-
-  @override
-  String levelCombo(String mult) {
-    return 'Combo ×$mult';
-  }
-
-  @override
-  String get levelPauseTitle => 'Tạm nghỉ';
-
-  @override
-  String get levelPauseBody => 'Nghỉ tay chút nhé — khách sẽ đợi bạn.';
-
-  @override
-  String get levelQuit => 'Thoát';
-
-  @override
-  String get levelReplay => 'Chơi lại';
-
-  @override
-  String get levelTimeUp => 'Hết giờ!';
-
-  @override
-  String levelExtraTimeTitle(int seconds) {
-    return 'Thêm $seconds giây?';
-  }
-
-  @override
-  String get levelExtraTimeBody =>
-      'Sắp đạt rồi! Xem một quảng cáo ngắn để mở tiệm thêm chút nữa.';
-
-  @override
-  String levelExtraTimeWatch(int seconds) {
-    return 'Xem quảng cáo (+$seconds giây)';
-  }
-
-  @override
-  String get levelExtraTimeNo => 'Thôi';
-
-  @override
-  String get levelSpecialLater => 'Để sau';
-
-  @override
-  String get levelSpecialQuitTitle => 'Bỏ dở đơn này?';
-
-  @override
-  String get levelSpecialQuitBody =>
-      'Khách vẫn đợi — bạn có thể quay lại làm sau.';
-
-  @override
-  String get levelResultWinTitle => 'Qua màn rồi!';
-
-  @override
-  String get levelResultLoseTitle => 'Suýt nữa thôi — thử lại nhé!';
-
-  @override
-  String levelResultGoal(String progress) {
-    return 'Mục tiêu: $progress';
-  }
-
-  @override
-  String get levelResultCoins => 'Xu kiếm được';
-
-  @override
-  String get levelResultServed => 'Khách hài lòng';
-
-  @override
-  String get levelResultLost => 'Khách bỏ đi';
-
-  @override
-  String get levelResultSpecials => 'Đơn đặc biệt';
-
-  @override
-  String get levelResultBestCombo => 'Combo cao nhất';
-
-  @override
-  String get levelResultFiveStar => 'Bánh 5 sao';
-
-  @override
-  String get levelResultDoubleCoins => '×2 xu (xem quảng cáo)';
-
-  @override
-  String levelResultDoubled(int coins) {
-    return 'Đã nhân đôi xu! +$coins';
-  }
-
-  @override
-  String get levelNext => 'Màn tiếp';
-
-  @override
-  String get levelList => 'Danh sách';
-
-  @override
-  String get lvlCaseFull => 'Tủ đầy!';
-
-  @override
-  String get lvlRushHour => 'Giờ cao điểm!';
-
-  @override
-  String lvlCombo(int count) {
-    return 'Combo ×$count';
-  }
-
-  @override
-  String get lvlWaitOven => 'Chờ lò';
-
-  @override
-  String get lvlWaiting => 'Đang chờ…';
-
-  @override
-  String get lvlPickTreat => 'Chạm chọn món';
-
-  @override
-  String get lvlBurnt => 'Cháy rồi!';
-
-  @override
-  String get lvlTakeOut => 'Lấy ra!';
-
-  @override
-  String get lvlStirHint => 'Khuấy 1 vòng';
-
-  @override
-  String get lvlSwipeHint => 'Quẹt ngang';
-
-  @override
-  String get lvlBoosterTitle => 'Vật phẩm hỗ trợ';
-
-  @override
-  String get lvlBoosterAdFree => 'Xem quảng cáo: 1 miễn phí';
-
-  @override
-  String get lvlBoosterFree => 'Miễn phí';
-
-  @override
-  String get lvlBoosterPickFree => 'Chọn một vật phẩm — miễn phí một cái!';
-
-  @override
-  String get lvlBoosterIntro =>
-      'Mới! Vật phẩm hỗ trợ giúp màn chơi dễ hơn. Tặng bạn một cái để thử.';
-
-  @override
-  String lvlBoosterSelected(String name) {
-    return '$name, đã chọn';
-  }
-
-  @override
-  String get mapSeasonShort => 'Thẻ mùa';
-
-  @override
-  String get seasonTitle => 'Thẻ mùa';
-
-  @override
-  String seasonTimeLeft(String time) {
-    return 'Còn $time';
-  }
-
-  @override
-  String seasonDaysHours(int days, int hours) {
-    return '$days ngày $hours giờ';
-  }
-
-  @override
-  String seasonHoursMinutes(int hours, int minutes) {
-    return '$hours giờ $minutes phút';
-  }
-
-  @override
-  String seasonPoints(int points, int need) {
-    return '$points/$need điểm';
-  }
-
-  @override
-  String seasonPointsMax(int points) {
-    return '$points điểm · đã đạt mọi bậc';
-  }
-
-  @override
-  String seasonHowTo(int star, int win) {
-    return '+$star điểm mỗi sao mới, +$win điểm mỗi lần thắng';
-  }
-
-  @override
-  String seasonTierLabel(int tier) {
-    return 'Bậc $tier';
-  }
-
-  @override
-  String get seasonFreeRow => 'Miễn phí';
-
-  @override
-  String get seasonPremiumRow => 'Cao cấp';
-
-  @override
-  String get seasonClaimAll => 'Nhận tất cả';
-
-  @override
-  String seasonClaimedToast(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Đã nhận $count phần thưởng!',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String seasonBuyPremium(String price) {
-    return 'Mở cao cấp · $price';
-  }
-
-  @override
-  String get seasonPremiumActive => 'Đã mở cao cấp';
-
-  @override
-  String get seasonPremiumHint => 'Mở cao cấp để nhận';
-
-  @override
-  String get seasonEnded =>
-      'Mùa đã kết thúc. Thưởng chưa nhận đã được tự động cộng cho bạn.';
-
-  @override
-  String get seasonNone => 'Hiện chưa có mùa nào.';
-
-  @override
-  String get seasonRewardFrame => 'Khung chân dung';
-
-  @override
-  String seasonRewardBooster(String name, int count) {
-    return '$name ×$count';
-  }
-
-  @override
-  String levelSpecialCondition(
-    String who,
-    int served,
-    int target,
-    String time,
-  ) {
-    return '$who ghé nếu phục vụ $served/$target khách trước $time';
-  }
-
-  @override
-  String levelSpecialConditionNoTime(String who, int served, int target) {
-    return '$who ghé khi phục vụ $served/$target khách';
-  }
-
-  @override
-  String levelSpecialSkipped(String who) {
-    return '$who không ghé được rồi';
-  }
-
-  @override
-  String mapStarsTotal(int count) {
-    return '$count sao';
-  }
-
-  @override
-  String get mapQuestsShort => 'Nhiệm vụ';
-
-  @override
-  String get mapGiftShort => 'Quà';
-
-  @override
-  String get mapPrevChapter => 'Chương trước';
-
-  @override
-  String get mapNextChapter => 'Chương sau';
-
-  @override
-  String mapLevelLabel(int level, int stars) {
-    return 'Màn $level: $stars/3 sao';
-  }
-
-  @override
-  String mapLevelLockedLabel(int level) {
-    return 'Màn $level, chưa mở';
-  }
-
-  @override
-  String get mapLevelLocked => 'Qua màn trước để mở màn này nhé!';
-
-  @override
-  String mapChapterLockedTitle(int chapter) {
-    return 'Chương $chapter chưa mở';
-  }
-
-  @override
-  String mapChapterNeedStars(int need, int have) {
-    return 'Cần $need sao — bạn đang có $have';
-  }
-
-  @override
-  String mapChapterNeedFinish(int chapter) {
-    return 'Hãy hoàn thành chương $chapter trước';
-  }
-
-  @override
-  String get mapChapterReplayHint => 'Chơi lại các màn ít sao để gom thêm sao';
-
-  @override
-  String mapChapterUnlockedTitle(int chapter) {
-    return 'Chương $chapter đã mở!';
-  }
-
-  @override
-  String get mapChapterUnlockedBody =>
-      'Món mới và những vị khách mới đang chờ ở góc phố này.';
-
-  @override
-  String get mapChapterUnlockedGo => 'Đi thôi!';
-
-  @override
-  String get mapBackToMap => 'Bản đồ';
-
-  @override
-  String get mapLoadError =>
-      'Không tải được bản đồ màn chơi. Hãy mở lại trò chơi nhé.';
-
-  @override
-  String mapUnlockAfterLevel(int level) {
-    return 'Qua màn $level để mở';
-  }
-
-  @override
-  String mapRecipeFromLevel(int level) {
-    return 'Trang còn thiếu. Tới màn $level để tìm lại';
-  }
-
-  @override
-  String get mapRecipeLater => 'Trang còn thiếu. Sẽ tìm thấy ở chương sau';
-
-  @override
-  String get mapWelcomeTitle => 'Chào mừng bạn trở lại!';
-
-  @override
-  String mapWelcomeBody(int coins, int gems) {
-    return 'Tiệm bánh có diện mạo mới: giờ bạn chơi từng màn trên bản đồ thị trấn. Cảm ơn bạn đã gắn bó, tặng bạn $coins xu và $gems kim cương.';
-  }
-
-  @override
-  String get upgTabExpansion => 'Mở rộng tiệm';
-
-  @override
-  String get upgTabEquipment => 'Thiết bị';
-
-  @override
-  String get upgOwned => 'Đã có';
-
-  @override
-  String get upgComingSoon => 'Sắp có';
-
-  @override
-  String get upgExpansionDone => 'Đã thêm vào tiệm!';
-
-  @override
-  String upgTierOf(int current, int max) {
-    return 'Cấp $current/$max';
-  }
-
-  @override
-  String upgStatOvenSec(String seconds) {
-    return 'Nướng $seconds giây';
-  }
-
-  @override
-  String upgStatBatch(int count) {
-    return '$count bánh mỗi khay';
-  }
-
-  @override
-  String upgStatCaseSlot(int count) {
-    return '$count bánh mỗi ô tủ';
-  }
-
-  @override
-  String upgStatMixZone(int percent) {
-    return 'Vùng xanh $percent%';
-  }
-
-  @override
-  String upgStatStroke(int size) {
-    return 'Nét kem cỡ $size';
-  }
-
-  @override
-  String upgStatSnap(int size) {
-    return 'Tầm hút $size';
-  }
-
-  @override
-  String get upgStatSnapNone => 'Chưa hút topping';
-
-  @override
-  String upgStatNext(String stat) {
-    return 'Cấp sau: $stat';
-  }
 
   @override
   String get unlockNoticeTitle => 'Mở khoá mới!';
@@ -1932,119 +1236,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String unlockNoticeMore(int count) {
     return 'và $count mục khác';
-  }
-
-  @override
-  String levelShopCase(int count) {
-    return 'Tủ $count ô';
-  }
-
-  @override
-  String levelShopOvens(int count) {
-    return '$count lò';
-  }
-
-  @override
-  String levelShopTray(int count) {
-    return 'Khay $count bánh';
-  }
-
-  @override
-  String get upgTabStaff => 'Nhân viên';
-
-  @override
-  String get staffRoleCashier => 'Thu ngân';
-
-  @override
-  String get staffRoleBaker => 'Thợ bánh';
-
-  @override
-  String get staffRoleWaiter => 'Phục vụ';
-
-  @override
-  String get staffRoleManager => 'Quản lý';
-
-  @override
-  String get staffStatSpeed => 'Tốc độ';
-
-  @override
-  String get staffStatSkill => 'Tay nghề';
-
-  @override
-  String staffStatLevel(String stat, int level, int max) {
-    return '$stat cấp $level/$max';
-  }
-
-  @override
-  String get staffHire => 'Thuê';
-
-  @override
-  String get staffHired => 'Chào mừng vào tiệm!';
-
-  @override
-  String staffUpgradeStat(String stat) {
-    return 'Nâng $stat';
-  }
-
-  @override
-  String staffCashierSpeed(String seconds) {
-    return 'Bán mỗi $seconds giây';
-  }
-
-  @override
-  String staffCashierSkill(int percent) {
-    return 'Tip thêm $percent%';
-  }
-
-  @override
-  String staffBakerSpeed(String seconds) {
-    return 'Một mẻ mỗi $seconds giây';
-  }
-
-  @override
-  String staffBakerSkill(String stars) {
-    return 'Bánh khoảng $stars sao';
-  }
-
-  @override
-  String staffWaiterSpeed(String seconds) {
-    return 'Phục vụ mỗi $seconds giây';
-  }
-
-  @override
-  String staffWaiterSkill(int percent) {
-    return 'Khách chờ kiên nhẫn +$percent%';
-  }
-
-  @override
-  String staffManagerSpeed(int percent) {
-    return '$percent% xu một màn mỗi giờ';
-  }
-
-  @override
-  String staffManagerSkill(int hours) {
-    return 'Tính tối đa $hours giờ vắng';
-  }
-
-  @override
-  String staffRequires(String item) {
-    return 'Cần có $item trước';
-  }
-
-  @override
-  String get staffOutfitFestival => 'Trang phục lễ hội';
-
-  @override
-  String get offlineTitle => 'Khi bạn vắng nhà';
-
-  @override
-  String offlineBody(String name, String duration) {
-    return '$name đã trông tiệm giúp bạn $duration.';
-  }
-
-  @override
-  String offlineCapped(int hours) {
-    return 'Chỉ tính $hours giờ (giới hạn của quản lý).';
   }
 
   @override
@@ -2074,26 +1265,7 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String offlineEarned(int count) {
-    return 'Bạn nhận được $count xu';
-  }
-
-  @override
-  String get offlineClaim => 'Nhận';
-
-  @override
   String get offlineDouble => 'x2 (xem quảng cáo)';
-
-  @override
-  String get offlineDoubled => 'Đã nhân đôi xu!';
-
-  @override
-  String get levelReadyStaff => 'Phụ bạn màn này';
-
-  @override
-  String levelReadyStaffNames(String names) {
-    return '$names sẽ phụ bạn màn này';
-  }
 
   @override
   String get introLineKitchen => 'Một buổi sáng ở thị trấn ven biển…';
@@ -2108,98 +1280,712 @@ class AppLocalizationsVi extends AppLocalizations {
   String get introSignOpen => 'Mở cửa';
 
   @override
-  String get introTapToEnter => 'Chạm để vào tiệm';
-
-  @override
   String get introSemantics => 'Cảnh mở đầu';
-
-  @override
-  String get lvlTutServe => 'Khách muốn bánh này. Chạm khách để bán!';
-
-  @override
-  String get lvlTutBake => 'Chạm thẻ bánh để làm mẻ mới nhé!';
-
-  @override
-  String get lvlTutMould => 'Chọn đúng khuôn';
-
-  @override
-  String get lvlTutMix => 'Xoay tròn để trộn';
-
-  @override
-  String get lvlTutOven => 'Đợi kim tới vạch vàng rồi chạm';
-
-  @override
-  String get lvlTutFrost => 'Vẽ theo đường kem';
-
-  @override
-  String lvlTutTopping(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Chạm hũ đúng $count lần',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get lvlTutBox => 'Chọn hộp đúng';
-
-  @override
-  String get lvlTutCaseReady =>
-      'Bánh đã lên tủ. Cứ thế phục vụ thật nhiều khách nhé!';
-
-  @override
-  String get lvlTutCombo => 'Bán liên tục để nhân combo — tiền nhiều hơn!';
-
-  @override
-  String get lvlTutNewTreat => 'Mỗi khách muốn một món khác nhau.';
-
-  @override
-  String get lvlTutPatience =>
-      'Vòng màu là độ kiên nhẫn của khách. Nhanh tay để nhận tip!';
-
-  @override
-  String get lvlTutWalkout => 'Khách chờ lâu quá sẽ bỏ đi.';
-
-  @override
-  String get levelReadyCoinsHint => 'Màn này tính theo xu kiếm được';
-
-  @override
-  String get settingsGuide => 'Làm quen';
 
   @override
   String get settingsReplayIntro => 'Xem lại cảnh mở đầu';
 
   @override
-  String get settingsReplayTutorials => 'Hướng dẫn lại';
+  String get charNora => 'Nora';
 
   @override
-  String get settingsTutorialsReset => 'Hướng dẫn sẽ hiện lại ở Màn 1–3';
+  String get charBao => 'Bảo';
 
   @override
-  String get storePurchaseFailed => 'Giao dịch chưa thành công.';
+  String get charTheo => 'Theo';
 
   @override
-  String get storeSeasonNone => 'Hiện chưa có mùa mới. Quay lại sau nhé!';
+  String get npcSquirrel => 'Bạn Sóc';
 
   @override
-  String levelResultSeasonPoints(int points) {
-    return '+$points điểm mùa';
+  String get npcHamster => 'Bé Hamster';
+
+  @override
+  String get npcShiba => 'Cậu Shiba';
+
+  @override
+  String get npcBlackCat => 'Bạn Mèo Mun';
+
+  @override
+  String get npcWalrus => 'Bác Hải Mã';
+
+  @override
+  String get npcLion => 'Bác Sư Tử';
+
+  @override
+  String get talkHoaOwlL1 =>
+      'Người ta bảo cú thức đêm. Ông thì năm giờ sáng đã đứng trước cửa tiệm cháu rồi.';
+
+  @override
+  String get talkHoaOwlL2 => 'Ông ơi, tiệm mở lúc bảy giờ mà!';
+
+  @override
+  String get talkHoaOwlL3 =>
+      'Ông biết. Hai tiếng đó là để ngửi mùi bơ bay qua khe cửa.';
+
+  @override
+  String get talkHoaOwlC1 => 'Mai mốt cháu mở cửa sớm cho ông nhé!';
+
+  @override
+  String get talkHoaOwlR1 =>
+      'Đừng, đừng. Chờ đợi là một nửa cái ngon của tart trứng.';
+
+  @override
+  String get talkHoaOwlC2 =>
+      'Vậy cháu nướng thơm hơn nữa, ông ngồi nhà cũng ngửi thấy!';
+
+  @override
+  String get talkHoaOwlR2 => 'Thế thì ông hết cớ dậy sớm mất. Được, ông chịu.';
+
+  @override
+  String get talkHoaOwlL4 => 'Vậy mai, chiếc tart đầu lò là của ông ạ.';
+
+  @override
+  String get talkLinhSketchL1 =>
+      'Chị Mai đứng yên chút nha! Em đang ký họa chị đó.';
+
+  @override
+  String get talkLinhSketchL2 => 'Ơ, tóc chị đang dính đầy bột mà…';
+
+  @override
+  String get talkLinhSketchL3 => 'Xong rồi! Chị xem nè.';
+
+  @override
+  String get talkLinhSketchL4 =>
+      'Linh ơi… sao chị lại thành cái bánh bao đeo tạp dề?';
+
+  @override
+  String get talkLinhSketchL5 => 'Tại chị tròn tròn, mềm mềm, ấm ấm. Khen đó!';
+
+  @override
+  String get talkLinhSketchC1 => 'Vậy vẽ thêm cho chị cái nơ nhé!';
+
+  @override
+  String get talkLinhSketchR1 => 'Hai cái luôn! Bánh bao xinh nhất thị trấn!';
+
+  @override
+  String get talkLinhSketchC2 => 'Cho chị treo tranh cạnh quầy được không?';
+
+  @override
+  String get talkLinhSketchR2 =>
+      'Thật hả? Chị nhìn nè, tai em dựng hết cả lên rồi!';
+
+  @override
+  String get talkKenjiCloudL1 =>
+      'Hôm nay tôi thấy mình như một đám mây định mưa… rồi đổi ý.';
+
+  @override
+  String get talkKenjiCloudL2 => 'Một đám mây đổi ý… Để Mai nghĩ xem nào.';
+
+  @override
+  String get talkKenjiCloudC1 =>
+      'Bánh kem matcha: lúc đầu hơi đắng, rồi ngọt dần.';
+
+  @override
+  String get talkKenjiCloudR1 =>
+      'Đúng là đám mây đó. Tôi sẽ chụp nó trước khi ăn.';
+
+  @override
+  String get talkKenjiCloudC2 => 'Cupcake vani, trắng và bông như mây.';
+
+  @override
+  String get talkKenjiCloudR2 =>
+      'Hơi… theo nghĩa đen. Nhưng tôi thích sự thẳng thắn này.';
+
+  @override
+  String get talkKenjiCloudL3 =>
+      'Mỗi lần ghé đây, cuộn phim của tôi lại vơi đi một ít.';
+
+  @override
+  String get talkRosaSecretL1 =>
+      'Cháu biết không, sáu mươi năm nay bà chỉ ăn bánh bằng nĩa bạc.';
+
+  @override
+  String get talkRosaSecretL2 =>
+      'Dạ… nhưng chóp mũi bà đang dính một chấm kem ạ.';
+
+  @override
+  String get talkRosaSecretL3 => 'Hừm. Chắc là… gió thổi vào.';
+
+  @override
+  String get talkRosaSecretL4 => 'Trong tiệm làm gì có gió ạ?';
+
+  @override
+  String get talkRosaSecretC1 => '(Nháy mắt) Cháu không thấy gì đâu ạ.';
+
+  @override
+  String get talkRosaSecretR1 => 'Cô bé tinh ý. Đây, tip cho sự kín đáo.';
+
+  @override
+  String get talkRosaSecretC2 => 'Bà nếm thử đi, kem hôm nay ngon lắm!';
+
+  @override
+  String get talkRosaSecretR2 =>
+      '(Liếm thật nhanh) …Ngon thật. Đừng kể với ai nhé.';
+
+  @override
+  String get talkMochiBellyL1 => 'Meo.';
+
+  @override
+  String get talkMochiBellyL2 =>
+      'Hôm nay em lại ướt sũng à? Lò còn ấm đó, ra hong lông đi.';
+
+  @override
+  String get talkMochiBellyL3 => '(Mochi lăn ra, chìa cái bụng tròn mềm.)';
+
+  @override
+  String get talkMochiBellyL4 => 'Bẫy đấy, chị biết mà. Xoa bụng là bị cắn.';
+
+  @override
+  String get talkMochiBellyC1 => 'Xoa bụng';
+
+  @override
+  String get talkMochiBellyR1 =>
+      '(Mochi ôm chặt tay Mai bằng cả bốn chân… và rù rù.)';
+
+  @override
+  String get talkMochiBellyC2 => 'Lăn cuộn len cho em';
+
+  @override
+  String get talkMochiBellyR2 =>
+      '(Mochi lao theo cuộn len, trượt một vòng trên sàn gỗ.)';
+
+  @override
+  String get talkMochiBellyL5 => 'Đúng là đồ mèo con nghịch ngợm.';
+
+  @override
+  String get talkWalrusFishL1 =>
+      'Cháu đoán xem sáng nay bác câu được con cá to cỡ nào?';
+
+  @override
+  String get talkWalrusFishL2 => 'To cỡ nào ạ?';
+
+  @override
+  String get talkWalrusFishL3 => 'To bằng… cái lò nướng của cháu!';
+
+  @override
+  String get talkWalrusFishC1 =>
+      'Tuần trước bác bảo nó to bằng cái tủ lạnh mà.';
+
+  @override
+  String get talkWalrusFishR1 =>
+      'Thì… nó lớn lên chứ! Cá cũng ăn bánh của cháu mà.';
+
+  @override
+  String get talkWalrusFishC2 => 'Thế bác có mang nó về không ạ?';
+
+  @override
+  String get talkWalrusFishR2 =>
+      'Nó xin bác tha, hứa mai quay lại… còn to hơn.';
+
+  @override
+  String get talkWalrusFishL4 => 'Vậy mai cháu chuẩn bị cái lò to hơn ạ.';
+
+  @override
+  String get talkSquirrelNutL1 =>
+      'Chị ơi, em trả bằng hạt dẻ được không? Em có cả một kho!';
+
+  @override
+  String get talkSquirrelNutL2 => 'Ơ… tiệm chị chỉ nhận xu thôi em.';
+
+  @override
+  String get talkSquirrelNutL3 => 'Khoan, để em lục cái đuôi…';
+
+  @override
+  String get talkSquirrelNutL4 =>
+      'Đây rồi! Ba đồng xu, một cái cúc áo, và… một hạt dẻ dự phòng.';
+
+  @override
+  String get talkSquirrelNutC1 => 'Chị nhận xu thôi, hạt dẻ em giữ nhé.';
+
+  @override
+  String get talkSquirrelNutR1 =>
+      'Chị tốt ghê! Em sẽ chôn nó trước tiệm, mọc thành cây cho chị.';
+
+  @override
+  String get talkSquirrelNutC2 => 'Đưa chị hạt dẻ, chị làm bánh hạt dẻ cho em!';
+
+  @override
+  String get talkSquirrelNutR2 =>
+      'Thật á? Để em đi lấy thêm… ở chỗ nào đó em quên mất rồi.';
+
+  @override
+  String get talkHamsterCheeksL1 => 'Chị ơi, cho em… ưm-ưm-mm…';
+
+  @override
+  String get talkHamsterCheeksL2 =>
+      'Em ơi, hai má em đang nhét đầy bánh quy rồi kìa.';
+
+  @override
+  String get talkHamsterCheeksL3 =>
+      '(Nuốt ực) Đó là bánh để dành. Cái này là bánh để ăn!';
+
+  @override
+  String get talkHamsterCheeksC1 => 'Để chị gói cho em một hộp mang về nhé.';
+
+  @override
+  String get talkHamsterCheeksR1 => 'Hộp á! Vậy hôm nay má em được nghỉ rồi!';
+
+  @override
+  String get talkHamsterCheeksC2 => 'Thử nhét thêm một cái nữa xem nào?';
+
+  @override
+  String get talkHamsterCheeksR2 => 'Thử thì thử! …Ưm… vừa khít luôn.';
+
+  @override
+  String get smallTalkNora =>
+      'Hôm nay bạn dùng như mọi khi chứ? Mình nhớ rồi nha!';
+
+  @override
+  String get smallTalkBao => '…Bánh vừa ra lò. Còn ấm.';
+
+  @override
+  String get smallTalkTheo => 'Trà hôm nay pha bằng nụ cười đó, uống thử đi!';
+
+  @override
+  String get smallTalkMai1 => 'Hôm nay trời đẹp ghê, bạn ra biển chưa?';
+
+  @override
+  String get smallTalkMai2 => 'Mẻ bánh sau có thêm chút quế, ghé lại thử nha!';
+
+  @override
+  String get smallTalkReply1 => 'Cảm ơn nha, dễ thương quá!';
+
+  @override
+  String get smallTalkReply2 => 'Ngon tuyệt, mai mình lại ghé!';
+
+  @override
+  String get smallTalkReply3 => 'Tiệm này lúc nào cũng thơm ghê.';
+
+  @override
+  String get quarrelLastCakeL1 =>
+      'Chiếc cupcake dâu này của em! Em thấy nó trước!';
+
+  @override
+  String get quarrelLastCakeL2 => 'Nhưng em mơ về nó từ hôm qua cơ!';
+
+  @override
+  String get quarrelLastCakeL3 => 'Mơ thì không tính!';
+
+  @override
+  String get quarrelLastCakeL4 => 'Hai em ơi, từ từ nào, bánh sắp bẹp rồi kìa!';
+
+  @override
+  String get quarrelLastCakeA => 'Chia đôi chiếc bánh';
+
+  @override
+  String get quarrelLastCakeRA1 => 'Nửa cái… vừa khít một bên má!';
+
+  @override
+  String get quarrelLastCakeRA2 => 'Nửa của em nhiều kem hơn. Hihi.';
+
+  @override
+  String get quarrelLastCakeB => 'Oẳn tù tì, ai thắng được bánh';
+
+  @override
+  String get quarrelLastCakeRB1 => 'Oẳn tù tì… ra cái gì ra cái này!';
+
+  @override
+  String get quarrelLastCakeRB2 => 'Em thắng rồi!';
+
+  @override
+  String get quarrelLastCakeRB3 => 'Hừm… lần sau em ra búa.';
+
+  @override
+  String get quarrelLastCakeC => 'Mẻ cupcake mới sắp ra lò, mỗi em một cái!';
+
+  @override
+  String get quarrelLastCakeRC1 => 'Mỗi đứa một cái á?!';
+
+  @override
+  String get quarrelLastCakeRC2 => 'Chị đúng là thiên thần bánh ngọt!';
+
+  @override
+  String get quarrelFirstL1 =>
+      'Tôi đứng đây từ lúc mặt trời mọc! Tôi vào trước!';
+
+  @override
+  String get quarrelFirstL2 =>
+      'Còn tôi ngủ trước cửa từ tối qua. Mèo là phải thế.';
+
+  @override
+  String get quarrelFirstL3 => 'Ngủ thì không phải xếp hàng!';
+
+  @override
+  String get quarrelFirstL4 => 'Với mèo thì có.';
+
+  @override
+  String get quarrelFirstL5 => 'Hai bạn ơi, hít thở sâu nào!';
+
+  @override
+  String get quarrelFirstA => 'Mời cả hai cùng vào, cửa rộng mà!';
+
+  @override
+  String get quarrelFirstRA1 => '…Hơi chật.';
+
+  @override
+  String get quarrelFirstRA2 => 'Cậu hóp bụng vào.';
+
+  @override
+  String get quarrelFirstRA3 =>
+      '(Cả hai kẹt cứng ở cửa một giây… rồi cùng bật cười.)';
+
+  @override
+  String get quarrelFirstB => 'Xem dấu chân trên thảm cửa';
+
+  @override
+  String get quarrelFirstRB1 =>
+      'Dấu chân mèo ở dưới… dấu chân shiba đè lên trên.';
+
+  @override
+  String get quarrelFirstRB2 => 'Thì… tôi đứng lên dấu chân cậu ấy thật.';
+
+  @override
+  String get quarrelFirstRB3 => 'Cảm ơn. Cậu dễ thương lắm, đi sau tôi nhé.';
+
+  @override
+  String get quarrelFirstC => 'Ai kể chuyện cười hay hơn được vào trước';
+
+  @override
+  String get quarrelFirstRC1 =>
+      'Vì sao bánh mì lúc nào cũng buồn? Vì toàn bị… bơ!';
+
+  @override
+  String get quarrelFirstRC2 => '…Dở tệ. Mà tôi cười rồi. Cậu vào trước đi.';
+
+  @override
+  String get quarrelTartL1 =>
+      'Tart trứng là vua các loại bánh! Giòn, béo, vàng như mặt trời!';
+
+  @override
+  String get quarrelTartL2 => 'Vua à? Vua là tôi đây. Và vua chọn pie táo.';
+
+  @override
+  String get quarrelTartL3 => 'Ông thì được mỗi cái bờm to!';
+
+  @override
+  String get quarrelTartL4 => 'Còn ông thì được mỗi cái bụng tròn!';
+
+  @override
+  String get quarrelTartL5 => 'Hai bác ơi, cả phố đang nhìn kìa!';
+
+  @override
+  String get quarrelTartA => 'Mời hai bác bịt mắt nếm thử cả hai';
+
+  @override
+  String get quarrelTartRA1 => 'Cái này… ngon hơn. Là pie táo à?!';
+
+  @override
+  String get quarrelTartRA2 => 'Còn tôi chọn… tart trứng. Ôi không.';
+
+  @override
+  String get quarrelTartRA3 => 'Thôi, mua cả hai!';
+
+  @override
+  String get quarrelTartB => 'Bánh nào cũng ngon, hai bác bắt tay nhé!';
+
+  @override
+  String get quarrelTartRB1 => 'Đúng là câu trả lời của nhà ngoại giao.';
+
+  @override
+  String get quarrelTartRB2 => 'Nhạt như bột chưa nêm.';
+
+  @override
+  String get quarrelTartC => 'Gọi ông Hòa ra phân xử';
+
+  @override
+  String get quarrelTartCAlt => 'Bắt chước giọng ông Hòa';
+
+  @override
+  String get quarrelTartRC1 => 'Tart trứng. Bốn mươi năm rồi, không bàn cãi.';
+
+  @override
+  String get quarrelTartRC1Alt =>
+      'E hèm… Tart trứng. Bốn mươi năm rồi, không bàn cãi.';
+
+  @override
+  String get quarrelTartRC2 => 'Nghe chưa! Nghe chưa!';
+
+  @override
+  String get quarrelTartRC3 => 'Hừm. Hội người cao tuổi thiên vị.';
+
+  @override
+  String get quarrelBanner => 'Có chuyện ồn ào trước cửa tiệm!';
+
+  @override
+  String get quarrelLook => 'Xem';
+
+  @override
+  String get quarrelSendMai => 'Mai ra xem';
+
+  @override
+  String get quarrelIntervene => 'Can ngăn';
+
+  @override
+  String get quarrelTimeout => 'Hai vị khách phụng phịu bỏ đi mất rồi…';
+
+  @override
+  String get quarrelPeace => 'Trước cửa tiệm lại yên bình.';
+
+  @override
+  String get staffMenuControl => 'Điều khiển';
+
+  @override
+  String get staffMenuTalk => 'Nói chuyện với khách';
+
+  @override
+  String get actionPickUp => 'Nhặt';
+
+  @override
+  String get actionPutDown => 'Đặt xuống';
+
+  @override
+  String get actionPlaceOn => 'Đặt lên';
+
+  @override
+  String get actionGive => 'Mời bánh';
+
+  @override
+  String get actionThrow => 'Ném';
+
+  @override
+  String get actionTalk => 'Nói chuyện';
+
+  @override
+  String get actionWave => 'Vẫy chào';
+
+  @override
+  String get controlHint =>
+      'Kéo vòng tròn bên trái để đi, bấm nút bên phải để thao tác.';
+
+  @override
+  String get talkPickCustomer => 'Chọn khách để trò chuyện';
+
+  @override
+  String get talkNoCustomer => 'Chưa có vị khách nào rảnh để trò chuyện.';
+
+  @override
+  String get itemYarn => 'Cuộn len';
+
+  @override
+  String get itemCakeBox => 'Hộp bánh';
+
+  @override
+  String get itemFlour => 'Bao bột';
+
+  @override
+  String get reactOops => 'Ơ!';
+
+  @override
+  String get reactStop => 'Thôi mà!';
+
+  @override
+  String get reactThanks => 'Cảm ơn nha!';
+
+  @override
+  String get reactFull => 'Mình no rồi, cảm ơn nha!';
+
+  @override
+  String get reactNoThrowCake => 'Bánh phải mời tận tay chứ!';
+
+  @override
+  String get reactExcuseMe => 'Cho mình qua với!';
+
+  @override
+  String get reactPurr => 'Rừ rừ…';
+
+  @override
+  String interactGoodwill(int count) {
+    return '+$count thiện cảm';
   }
 
   @override
-  String levelResultBoosterGift(String name) {
-    return 'Quà: $name ×1';
+  String interactCoins(int count) {
+    return '+$count xu';
   }
 
   @override
-  String get levelPauseBoosterLost =>
-      'Vật phẩm đã dùng ở lượt này sẽ không được hoàn lại.';
+  String get townEnterShop => 'Vào tiệm';
 
   @override
-  String get levelPauseBoosterRefund =>
-      'Thoát hoặc chơi lại lúc này, vật phẩm sẽ được trả lại vào kho.';
+  String get townExitShop => 'Ra phố';
 
   @override
-  String get levelBoostersRefunded => 'Đã trả vật phẩm vào kho.';
+  String get townMap => 'Bản đồ';
+
+  @override
+  String get townOpenMap => 'Mở bản đồ';
+
+  @override
+  String get townYouAreHere => 'Bạn ở đây';
+
+  @override
+  String get townHomeShop => 'Tiệm của bà';
+
+  @override
+  String townBranchN(int n) {
+    return 'Chi nhánh $n';
+  }
+
+  @override
+  String get townLotForSale => 'Lô đất trống';
+
+  @override
+  String townLotLocked(int level) {
+    return 'Mở ở cấp $level';
+  }
+
+  @override
+  String get townLotUnlocked => 'Đã mở khoá · sắp mở bán';
+
+  @override
+  String townLotsUnlockedToast(int count) {
+    return 'Đã mở khoá $count lô mới!';
+  }
+
+  @override
+  String get townComingSoon => 'Sắp mở';
+
+  @override
+  String get townStreetName => 'Phố Tiệm Bánh';
+
+  @override
+  String get townOpening => 'Đang mở cửa…';
+
+  @override
+  String get citySeaMarketName => 'Phố Chợ Biển';
+
+  @override
+  String get cityRealtyName => 'Văn phòng địa ốc Bến Cảng';
+
+  @override
+  String get cityParkName => 'Công viên Hải Đăng';
+
+  @override
+  String get cityRestaurantName => 'Bếp Hải Đăng';
+
+  @override
+  String get citySalonName => 'Tiệm tóc Vỏ Sò';
+
+  @override
+  String get cityOrderFood => 'Gọi món';
+
+  @override
+  String get cityGetHaircut => 'Làm tóc';
+
+  @override
+  String cityPrice(int coins) {
+    return '$coins xu';
+  }
+
+  @override
+  String cityXpGain(int xp) {
+    return '+$xp XP';
+  }
+
+  @override
+  String cityMaiLevel(int n) {
+    return 'Cấp $n';
+  }
+
+  @override
+  String get cityLevelUp => 'Lên cấp!';
+
+  @override
+  String get cityNotEnoughCoins => 'Không đủ xu';
+
+  @override
+  String get cityAteToday => 'Hôm nay đã ăn món này – ít XP hơn';
+
+  @override
+  String get cityBuffFull => 'No bụng vui vẻ: +10% tip ca sau';
+
+  @override
+  String get cityConfirm => 'Xác nhận';
+
+  @override
+  String get cityCancel => 'Thôi';
+
+  @override
+  String get cityFirstVisit => 'Thưởng ghé lần đầu!';
+
+  @override
+  String get cityMenuTitle => 'Thực đơn hôm nay';
+
+  @override
+  String get citySalonTitle => 'Chọn kiểu mới';
+
+  @override
+  String get cityHairStyle => 'Kiểu tóc';
+
+  @override
+  String get cityHairColor => 'Màu tóc';
+
+  @override
+  String get cityEating => 'Đang thưởng thức…';
+
+  @override
+  String get citySaveReadOnly =>
+      'Bản lưu này đến từ phiên bản game mới hơn. Tiến trình phiên này sẽ không được lưu.';
+
+  @override
+  String get shiftOpen => 'Mở ca';
+
+  @override
+  String get shiftHintCounter => 'Tới quầy rồi bấm “Mở ca” để bắt đầu bán';
+
+  @override
+  String get shiftCustomerComing => 'Khách đang tới…';
+
+  @override
+  String get shiftSummaryTitle => 'Hết ca rồi!';
+
+  @override
+  String get shiftCloseEarly => 'Đóng ca sớm';
+
+  @override
+  String shiftClosedToast(int coins) {
+    return 'Đã đóng ca · giữ +$coins xu';
+  }
+
+  @override
+  String shiftBuffTip(int amount) {
+    return 'No bụng: +$amount tip';
+  }
+
+  @override
+  String get dishFishSoup => 'Canh cá ven biển';
+
+  @override
+  String get dishOmeletteRice => 'Cơm trứng cuộn';
+
+  @override
+  String get dishVeggieCurry => 'Cà ri rau củ';
+
+  @override
+  String get dishSeafoodNoodles => 'Mì hải sản';
+
+  @override
+  String get hairPonytail => 'Đuôi ngựa';
+
+  @override
+  String get hairBob => 'Tóc ngắn bob';
+
+  @override
+  String get hairBun => 'Búi tóc';
+
+  @override
+  String get hairTwinTails => 'Hai bím';
+
+  @override
+  String get hairColorChestnut => 'Nâu hạt dẻ';
+
+  @override
+  String get hairColorCaramel => 'Caramel';
+
+  @override
+  String get hairColorBlack => 'Đen';
+
+  @override
+  String get hairColorStrawberry => 'Hồng dâu';
 }

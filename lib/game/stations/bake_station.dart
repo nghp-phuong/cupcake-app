@@ -388,7 +388,7 @@ class BakeStation extends Station {
     const c = buttonCenter;
     const r = buttonRadius;
     final base = cachedArt(('holdBase', r), () => _buildHoldBase(r));
-    drawPictureAt(canvas, base.picture, c - base.origin);
+    base.draw(canvas, c - base.origin);
     final v = meter.released ? meter.release! : meter.value;
     final step = (v.clamp(0.0, 1.0) * _ringSteps).round();
     if (step > 0) {
@@ -408,7 +408,7 @@ class BakeStation extends Station {
     final label = game.labels.hold;
     final font = game.text.titleFontFamily;
     final face = cachedArt(('holdFace', r, state, label, font), () => _buildHoldFace(r, state, label));
-    drawPictureAt(canvas, face.picture, c.translate(0, _pressDepth * _press) - face.origin);
+    face.draw(canvas, c.translate(0, _pressDepth * _press) - face.origin);
   }
 
   /// Số bậc của vòng tiến độ (mỗi bậc một đoạn cắt sẵn, mắt không thấy bậc).

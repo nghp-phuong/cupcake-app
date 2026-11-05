@@ -6,7 +6,6 @@ import 'package:flutter/widgets.dart';
 import '../../core/app_scope.dart';
 import '../../core/routes.dart';
 import '../../l10n/gen/app_localizations.dart';
-import '../common/navigation.dart';
 import '../sugarleaf/sugarleaf.dart';
 import 'intro_art.dart';
 
@@ -15,9 +14,8 @@ import 'intro_art.dart';
 /// kính; (3) cửa tiệm — Mai đi bộ từ mép trái tới trước cửa (đổi khung bước chân), với tay lật bảng "Mở cửa",
 /// chuông lắc + tiếng chuông, Mai quay ra cười; (4) logo.
 ///
-/// Nút **Bỏ qua** luôn hiện. Xong / bỏ qua → `markIntroSeen`; nếu có màn bên dưới (mở lại từ Cài đặt) thì quay về,
-/// không thì vào thẳng màn đầu tiên (thẻ "Sẵn sàng" → hướng dẫn trong màn). Giảm chuyển động: cảnh ngắn hơn, không
-/// lia/phóng, không hạt.
+/// Nút **Bỏ qua** luôn hiện. Xong / bỏ qua → `markIntroSeen` rồi thay route bằng phố ([AppRoutes.town]). Giảm chuyển
+/// động: cảnh ngắn hơn, không lia/phóng, không hạt.
 ///
 /// Ảnh của cả 4 cảnh được nạp trước khi chạy (chờ tối đa [preloadWait]); thiếu ảnh → nền giấy + chữ.
 class IntroScreen extends StatefulWidget {
@@ -172,20 +170,8 @@ class _IntroScreenState extends State<IntroScreen> with SingleTickerProviderStat
     _done = true;
     _preloadTimer?.cancel();
     _c.stop();
-    final services = AppScope.read(context);
-    services.state.markIntroSeen();
-    final nav = Navigator.of(context);
-    // Mở lại từ Cài đặt → về Cài đặt. Lần đầu (màn khởi động) → vào thẳng màn đầu tiên.
-    if (nav.canPop()) {
-      nav.pop();
-      return;
-    }
-    final levels = services.levels.levels;
-    if (levels.isEmpty) {
-      goToMenu(context);
-    } else {
-      nav.pushReplacementNamed(AppRoutes.level, arguments: LevelArgs(levels.first.id));
-    }
+    AppScope.read(context).game.markIntroSeen();
+    Navigator.of(context).pushReplacementNamed(AppRoutes.town);
   }
 
   static const _logoWidth = 460.0;

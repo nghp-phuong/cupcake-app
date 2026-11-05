@@ -19,7 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.8.1
+  sdk: ^3.10.0
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -37,6 +37,10 @@ dependencies:
   flame: ^1.35.1
   shared_preferences: ^2.5.3
   google_fonts: ^6.3.2
+  # Cảnh tiệm 3D (V3): Filament qua Thermion, cần native assets (hooks). thermion_dart khai báo trực tiếp vì
+  # main_3d_probe.dart dùng FFIIndirectLight (IBL không cần file KTX); giữ cùng phiên bản với thermion_flutter.
+  thermion_flutter: ^0.5.0
+  thermion_dart: ^0.5.0
   intl: any
   flutter_localizations:
     sdk: flutter
@@ -83,13 +87,11 @@ flutter:
     - assets/art/scenes/
     - assets/art/shop/
     - assets/art/kitchen/
+    # Chỉ còn 3 ảnh của cảnh mở đầu (IntroAssets: biển mở cửa, chuông cửa, huy hiệu logo).
     - assets/art/level/
-    - assets/art/map/
     # Font OFL đóng gói sẵn (không tải lúc chạy). Tên file theo quy ước của google_fonts (<Family>-<Weight>.ttf)
     # để GoogleFonts.* (nếu có ai gọi) cũng tìm thấy trong AssetManifest; giấy phép: assets/fonts/OFL.txt.
     - assets/fonts/
-    # Dữ liệu level (LevelConfigLoader): levels.json.
-    - assets/config/
 
   # Họ font dùng trực tiếp qua TextStyle.fontFamily (AppTheme.titleFontFamily / bodyFontFamily): Flutter tự chọn
   # file theo fontWeight. Fredoka không có dấu tiếng Việt → tiêu đề vi dùng Baloo 2.

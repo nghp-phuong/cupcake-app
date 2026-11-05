@@ -3,31 +3,22 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../l10n/gen/app_localizations.dart';
+import '../city/city_game.dart';
 import '../constants.dart';
-import '../economy.dart';
-import '../game_state.dart';
 import '../models/ids.dart';
 
-/// Quảng cáo. Rewarded chỉ khi người chơi bấm (tối đa [Economy.maxRewardedPerDay]/ngày lịch, chung mọi chỗ);
-/// interstitial chỉ khi rời màn kết quả (GĐ6 §3), không bao giờ trong lúc chơi / thẻ Sẵn sàng / hướng dẫn / cảnh mở
-/// đầu. Việc trao thưởng do bên gọi làm.
+/// Quảng cáo của bản thành phố. Thưởng: chỉ khi người chơi bấm, tối đa [CityGame.maxRewardedPerDay] lần mỗi ngày lịch,
+/// chung mọi chỗ; việc trao thưởng do bên gọi làm. Interstitial: chỉ ở tổng kết ca, bên gọi kiểm
+/// [CityGame.interstitialDue] và ghi [CityGame.registerInterstitialShown].
 abstract class AdService {
-  /// rewardedToday < [Economy.maxRewardedPerDay].
+  /// Còn lượt xem hôm nay ([AdLedger.canShowRewarded]).
   bool canShowRewarded();
 
-  /// true = xem xong; TỰ ghi đếm vào GameState.
+  /// true = xem xong; TỰ ghi đếm vào sổ ([AdLedger.registerRewardedShown]).
   Future<bool> showRewarded(BuildContext context, AdPlacement placement);
 
-  /// Theo `GameState.shouldShowInterstitialAfterResult`.
-  bool shouldShowInterstitial({required bool watchedRewardedHere, required bool unlockedChapter});
-
-  /// Gọi khi rời màn kết quả (về bản đồ / màn tiếp / chơi lại), SAU `GameState.registerLevelPlayEnded`. Hiện nếu
-  /// [shouldShowInterstitial]; TỰ ghi `GameState.registerInterstitialShown`. Trả true nếu đã hiện.
-  Future<bool> showInterstitial(
-    BuildContext context, {
-    required bool watchedRewardedHere,
-    required bool unlockedChapter,
-  });
+  /// Hiện một interstitial (xong khi đóng). Không đếm vào sổ quảng cáo thưởng, không tự kiểm hạn.
+  Future<void> showInterstitial(BuildContext context);
 }
 
 /// Cách mở hộp thoại quảng cáo giả lập (không đóng được, tự đóng sau [duration]). Core chỉ có bản mặc định
@@ -43,44 +34,28 @@ Future<void> showSimulatedAdDialog(BuildContext context, Duration duration) => s
 
 /// Quảng cáo giả lập: hộp thoại không đóng được, đếm ngược rồi tự đóng.
 class FakeAdService implements AdService {
-  FakeAdService(this.state, {this.duration = const Duration(seconds: 2), this.presenter = showSimulatedAdDialog});
+  FakeAdService(this.ledger, {this.duration = const Duration(seconds: 2), this.presenter = showSimulatedAdDialog});
 
-  final GameState state;
+  /// Sổ đếm quảng cáo thưởng theo ngày (`CityGame`).
+  final AdLedger ledger;
   final Duration duration;
 
   /// Mở hộp thoại quảng cáo giả; chỉ đổi giao diện, việc đếm/giới hạn vẫn ở đây.
   final SimulatedAdPresenter presenter;
 
   @override
-  bool canShowRewarded() => state.rewardedToday < Economy.maxRewardedPerDay;
+  bool canShowRewarded() => ledger.canShowRewarded;
 
   @override
   Future<bool> showRewarded(BuildContext context, AdPlacement placement) async {
     if (!canShowRewarded()) return false;
-    await _showSimulated(context);
-    state.registerRewardedShown();
+    await presenter(context, duration);
+    ledger.registerRewardedShown();
     return true;
   }
 
   @override
-  bool shouldShowInterstitial({required bool watchedRewardedHere, required bool unlockedChapter}) =>
-      state.shouldShowInterstitialAfterResult(watchedRewardedHere: watchedRewardedHere, unlockedChapter: unlockedChapter);
-
-  @override
-  Future<bool> showInterstitial(
-    BuildContext context, {
-    required bool watchedRewardedHere,
-    required bool unlockedChapter,
-  }) async {
-    if (!shouldShowInterstitial(watchedRewardedHere: watchedRewardedHere, unlockedChapter: unlockedChapter)) {
-      return false;
-    }
-    await _showSimulated(context);
-    state.registerInterstitialShown();
-    return true;
-  }
-
-  Future<void> _showSimulated(BuildContext context) => presenter(context, duration);
+  Future<void> showInterstitial(BuildContext context) => presenter(context, duration);
 }
 
 /// Dựng phần nhìn của hộp thoại quảng cáo giả theo số giây còn lại.

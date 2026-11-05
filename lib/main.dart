@@ -1,23 +1,31 @@
+// Sugarleaf Bakery V3 — thành phố (docs/v3/city-gd2-spec.md §3): lần đầu chạy cảnh mở đầu 2D rồi vào phố 3D; các lần
+// sau vào thẳng phố. Save v3 (`sugarleaf_save_v3`), lần đầu nhập cài đặt từ save v2 (khoá v2 chỉ đọc).
+//
+// Chạy: flutter run -d chrome --cross-origin-isolation          (máy chủ tĩnh của bản web phải gửi COOP / COEP)
+//       flutter build web --release / flutter build apk --debug
+// Tham số URL (web) / route ban đầu (Android, `--es route '/?…'`), xem `CityDebugParams`:
+//   save=memory (không đụng save thật; có coins= / xp= / level= thì tự bật); intro=0|1; lang=vi|en (chỉ trong phiên);
+//   spawn=<x>,<z>; debug=1|0; log=1; mochi=1; đồ hoạ quality, scale, fps, shadows, smap, post, aa, blob, soft, ibl, tm,
+//   maxpx; ánh sáng sun / amb / fill / sky=<RRGGBB>, ambi=<n>; tex=producer (Android).
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:thermion_flutter/thermion_flutter.dart'
+    hide Material, Texture, View;
 
 import 'app.dart';
 import 'core/app_scope.dart';
-import 'core/art/art_sprites.dart';
-import 'core/art/customer_art.dart';
-import 'core/game_state.dart';
-import 'core/level/level_config_loader.dart';
+import 'core/debug_params.dart';
 import 'core/routes.dart';
-import 'core/save_repository.dart';
+import 'core/save/city_save_repository.dart';
+import 'core/save/city_save_store.dart';
 import 'core/services/ad_service.dart';
 import 'core/services/audio_service.dart';
-import 'core/services/iap_service.dart';
-import 'core/unlock/unlock_config_loader.dart';
-import 'ui/ui_routes.dart';
+import 'game/town3d/town3d_page.dart';
+import 'ui/city_routes.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,77 +34,69 @@ Future<void> main() async {
   GoogleFonts.config.allowRuntimeFetching = false;
   LicenseRegistry.addLicense(() async* {
     final license = await rootBundle.loadString('assets/fonts/OFL.txt');
-    yield LicenseEntryWithLineBreaks(const ['Fredoka', 'Baloo 2', 'Nunito'], license);
+    yield LicenseEntryWithLineBreaks(const [
+      'Fredoka',
+      'Baloo 2',
+      'Nunito',
+    ], license);
   });
-  await SystemChrome.setPreferredOrientations([DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.landscapeLeft,
+    DeviceOrientation.landscapeRight,
+  ]);
   // Game toàn màn: ẩn thanh trạng thái + điều hướng; vuốt mép màn hiện tạm rồi tự ẩn.
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
-  final saves = PrefsSaveRepository();
-  // Bản lưu, dữ liệu level, mở khoá và kiếm tiền nạp song song (đều bất đồng bộ). levels.json / unlocks.json /
-  // monetization.json lỗi → cấu hình rỗng / dự phòng, app vẫn chạy.
-  final (state, levels, unlocks, monetization) = await (
-    GameState.load(saves),
-    LevelConfigLoader.loadOrEmpty(rootBundle),
-    UnlockConfigLoader.loadOrEmpty(rootBundle),
-    MonetizationConfigLoader.loadOrEmpty(rootBundle),
-  ).wait;
-  // Quy tắc mở level/chương, món mở khoá theo levels.json; mở rộng tiệm + thiết bị theo unlocks.json (cấu hình rỗng
-  // vẫn chạy được).
-  state.attachLevelConfig(levels);
-  state.attachUnlockConfig(unlocks);
-  // Vật phẩm hỗ trợ, thẻ mùa (hết / đổi mùa → tự nhận thưởng chờ, `state.seasonAutoClaim`), gói IAP giả lập.
-  state.attachMonetizationConfig(monetization);
-  state.attachAutosave(saves);
-  // Thu nhập khi vắng nhà (quản lý): tính sau khi đã gắn config; UI đọc `state.pendingOffline`.
-  state.refreshOffline(DateTime.now());
-  // Đang ở foreground: ghi mốc hoạt động mỗi phút (app bị tắt lúc đang mở → thời gian đang chơi không tính là vắng).
-  state.startActiveHeartbeat();
+  final debug = CityDebugParams.fromPlatform();
+  if (debug.raw['tex'] case final tex?) {
+    ThermionFlutterPlugin.instance.setOptions(
+      ThermionFlutterOptions(
+        nativeOptions: NativeOptions(
+          androidTextureSource: tex == 'producer'
+              ? AndroidTextureSource.surfaceProducer
+              : AndroidTextureSource.surfaceTexture,
+        ),
+      ),
+    );
+  }
+
+  // Nạp save (bất đồng bộ; nhập từ v2 thì ghi v3 xong ở đây, trước runApp). Tham số xu / XP chỉ áp khi lưu trong bộ
+  // nhớ, không bao giờ vào save thật.
+  final CitySaveRepository repo = debug.memorySave
+      ? MemoryCitySaveRepository()
+      : PrefsCitySaveRepository();
+  final store = await CitySaveStore.load(repo);
+  final game = store.game;
+  debug.applyTo(game);
+  game.refreshDay();
+  store.attachAutosave();
 
   final services = AppServices(
-    state: state,
-    saves: saves,
-    ads: FakeAdService(state, presenter: showSLSimulatedAd),
-    iap: FakeIapService(state),
-    audio: FakeAudioService(state),
-    levels: levels,
-    unlocks: unlocks,
-    monetization: monetization,
+    game: game,
+    store: store,
+    ads: FakeAdService(game, presenter: showSLSimulatedAd),
+    audio: FakeAudioService(game.settings),
+    debug: debug,
   );
 
-  // Inactive/ẩn/tạm dừng: ghi mốc hoạt động (ẩn/tạm dừng thì lưu ngay — không chặn UI: flush chạy bất đồng bộ) và tắt
-  // nhịp ghi mốc. Quay lại: tính thu nhập khi vắng nhà (bản đồ hiện hộp "Khi bạn vắng nhà" khi
-  // `pendingOffline != null`) rồi bật lại nhịp.
-  // onHide/onShow chỉ chạy khi thật sự vào/ra nền (kéo thanh thông báo chỉ qua `inactive`, không tính là vắng).
+  // Ẩn / tạm dừng: lưu ngay (bất đồng bộ, không chặn UI). Quay lại: kiểm ngày lịch (sang ngày mới → bộ đếm ăn, quảng
+  // cáo thưởng đặt lại).
   AppLifecycleListener(
-    onInactive: state.markActive,
-    onHide: () {
-      state.stopActiveHeartbeat();
-      state.markActive();
-      unawaited(state.flush());
-    },
-    onPause: () {
-      state.markActive();
-      unawaited(state.flush());
-    },
-    onShow: () {
-      state.refreshOffline(DateTime.now());
-      state.startActiveHeartbeat();
-    },
+    onHide: () => unawaited(store.flush()),
+    onPause: () => unawaited(store.flush()),
+    onShow: game.refreshDay,
   );
 
-  runApp(SugarleafApp(
-    services: services,
-    onGenerateRoute: onGenerateUiRoute,
-    // Lần đầu: cảnh mở đầu → L1 (hướng dẫn); các lần sau: intro ngắn → bản đồ.
-    initialRoute: AppRoutes.initialFor(introSeen: state.introSeen),
-  ));
-
-  // Nạp sẵn ảnh dàn nhân vật cố định sau khi app đã chạy (bất đồng bộ, không chặn khung hình đầu).
-  unawaited(CustomerArt.preloadCast());
-  // Đồ hoạ dùng nhiều (nền menu, vật phẩm, bánh) rồi icon giao diện vẽ tay: nạp nối tiếp sau frame đầu;
-  // cảnh/trạm bếp nạp khi cần.
-  WidgetsBinding.instance.addPostFrameCallback(
-    (_) => unawaited(ArtSprites.preloadStartup().then((_) => ArtSprites.preloadIcons())),
+  runApp(
+    SugarleafApp(
+      services: services,
+      onGenerateRoute: cityRouteFactory(
+        town: (_) => Town3dPage(game: game, store: store, debug: debug),
+      ),
+      initialRoute: (debug.intro ?? !game.introSeen)
+          ? AppRoutes.intro
+          : AppRoutes.town,
+      forcedLocale: debug.locale,
+    ),
   );
 }

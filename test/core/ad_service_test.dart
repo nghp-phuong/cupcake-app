@@ -1,55 +1,51 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sugarleaf_bakery/core/economy.dart';
-import 'package:sugarleaf_bakery/core/game_state.dart';
-import 'package:sugarleaf_bakery/core/level/level_result.dart';
+import 'package:sugarleaf_bakery/core/city/city_game.dart';
 import 'package:sugarleaf_bakery/core/models/ids.dart';
 import 'package:sugarleaf_bakery/core/services/ad_service.dart';
 
 void main() {
-  testWidgets('presenter tiêm vào: được gọi đúng thời lượng, đếm/giới hạn vẫn ở FakeAdService', (tester) async {
+  testWidgets('presenter tiêm vào: được gọi đúng thời lượng, đếm/giới hạn theo sổ AdLedger', (tester) async {
     await tester.pumpWidget(const SizedBox());
     final context = tester.element(find.byType(SizedBox));
-    final s = GameState.newGame(clock: () => DateTime(2026, 10, 29, 9));
+    var now = DateTime(2026, 11, 4, 9);
+    final game = CityGame(clock: () => now)..refreshDay();
     final calls = <Duration>[];
     const duration = Duration(milliseconds: 1500);
-    final ads = FakeAdService(s, duration: duration, presenter: (_, d) async => calls.add(d));
+    final ads = FakeAdService(game, duration: duration, presenter: (_, d) async => calls.add(d));
 
-    for (var i = 0; i < Economy.maxRewardedPerDay; i++) {
-      expect(await ads.showRewarded(context, AdPlacement.freeGem), isTrue);
+    for (var i = 0; i < CityGame.maxRewardedPerDay; i++) {
+      expect(ads.canShowRewarded(), isTrue);
+      expect(await ads.showRewarded(context, AdPlacement.doubleCoins), isTrue);
     }
-    expect(s.rewardedToday, Economy.maxRewardedPerDay);
-    expect(await ads.showRewarded(context, AdPlacement.freeGem), isFalse); // hết lượt: không mở hộp thoại
-    expect(calls, List.filled(Economy.maxRewardedPerDay, duration));
+    expect(game.rewardedToday, CityGame.maxRewardedPerDay);
+    expect(ads.canShowRewarded(), isFalse);
+    expect(await ads.showRewarded(context, AdPlacement.doubleCoins), isFalse); // hết lượt: không mở hộp thoại
+    expect(calls, List.filled(CityGame.maxRewardedPerDay, duration));
 
-    // Chưa qua L5: không hiện, không mở hộp thoại.
-    expect(await ads.showInterstitial(context, watchedRewardedHere: false, unlockedChapter: false), isFalse);
-    expect(calls.length, Economy.maxRewardedPerDay);
-    for (var id = 1; id <= 5; id++) {
-      s.applyLevelResult(LevelResult(
-        levelId: id,
-        won: true,
-        stars: 1,
-        coins: 0,
-        served: 0,
-        lost: 0,
-        specialsDone: 0,
-        bestCombo: 0,
-        perfectBakes: 0,
-        recipeStars: const {},
-      ));
-    }
-    for (var i = 0; i < Economy.interstitialEveryPlays; i++) {
-      s.registerLevelPlayEnded();
-    }
-    expect(await ads.showInterstitial(context, watchedRewardedHere: true, unlockedChapter: false), isFalse);
-    expect(await ads.showInterstitial(context, watchedRewardedHere: false, unlockedChapter: false), isTrue);
-    expect(calls.length, Economy.maxRewardedPerDay + 1);
-    expect(s.playsSinceInterstitial, 0);
+    // Sang ngày mới: lượt xem đặt lại.
+    now = DateTime(2026, 11, 5, 9);
+    expect(ads.canShowRewarded(), isTrue);
+    expect(await ads.showRewarded(context, AdPlacement.doubleCoins), isTrue);
+    expect(game.rewardedToday, 1);
+  });
+
+  testWidgets('showInterstitial: dùng presenter, không cộng vào sổ quảng cáo thưởng', (tester) async {
+    await tester.pumpWidget(const SizedBox());
+    final context = tester.element(find.byType(SizedBox));
+    final game = CityGame()..refreshDay();
+    final calls = <Duration>[];
+    const duration = Duration(milliseconds: 900);
+    final ads = FakeAdService(game, duration: duration, presenter: (_, d) async => calls.add(d));
+    await ads.showInterstitial(context);
+    await ads.showInterstitial(context);
+    expect(calls, [duration, duration]);
+    expect(game.rewardedToday, 0);
+    expect(ads.canShowRewarded(), isTrue);
   });
 
   test('mặc định là hộp thoại của core', () {
-    final ads = FakeAdService(GameState.newGame());
+    final ads = FakeAdService(CityGame());
     expect(ads.presenter, same(showSimulatedAdDialog));
   });
 }

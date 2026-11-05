@@ -13,6 +13,8 @@ abstract final class Catalog {
   // ---------------------------------------------------------------- Món
 
   /// 18 món, đúng thứ tự `RecipeId`: 10 món alpha (`unlockLevel` ≈ cấp tiệm/màn chương 1–2) + 8 món GĐ8 (màn 21–47).
+  /// `unlockLevel` là thang màn v2 (các trạm dùng để chọn khuôn / topping mồi), không đổi; cấp Mai mở món xem
+  /// `RecipeUnlocks` (lib/core/city/recipe_unlocks.dart).
   static const List<Recipe> recipes = [
     Recipe(
       id: RecipeId.cupcakeVanilla,
@@ -274,6 +276,7 @@ abstract final class Catalog {
   // ---------------------------------------------------------------- Topping
 
   /// Cấp tiệm mở từng topping. Topping chỉ được gọi khi đã mở.
+  /// Thang màn v2 như `Recipe.unlockLevel`, không đổi; cấp Mai mở topping xem `RecipeUnlocks.toppingLevel`.
   static const Map<ToppingId, int> toppingUnlockLevel = {
     ToppingId.sprinkles: 1,
     ToppingId.strawberry: 1,

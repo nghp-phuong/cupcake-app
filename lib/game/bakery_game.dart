@@ -17,6 +17,7 @@ import '../core/models/recipe.dart';
 import 'components/backdrop.dart';
 import 'components/effects.dart';
 import 'components/game_paint.dart';
+import 'components/hand_paint.dart';
 import 'logic/bake_meter.dart';
 import 'logic/bake_record.dart';
 import 'logic/station_setup.dart';
@@ -164,6 +165,11 @@ class BakeryGame extends FlameGame {
 
   @override
   Color backgroundColor() => AppColors.cream;
+
+  /// Số điểm ảnh thật trên một đơn vị khung (DPR × hệ số co của khung lên màn; `BakeSessionView` đặt mỗi lần dựng).
+  /// Hình vẽ tay dựng sẵn ([GameArt]) raster hoá ở độ phân giải này; 0 = chưa biết → vẽ Picture.
+  double get pixelRatio => gameArtPixelRatio;
+  set pixelRatio(double v) => gameArtPixelRatio = v.isFinite && v > 0 ? v : 0;
 
   // ------------------------------------------------------------------ Khung rộng
 
@@ -350,6 +356,7 @@ class BakeryGame extends FlameGame {
   @override
   void onRemove() {
     text.clear();
+    clearCakeCache();
     super.onRemove();
   }
 }

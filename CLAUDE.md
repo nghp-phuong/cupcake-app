@@ -5,7 +5,13 @@ Tên app, tên nhân vật, hình ảnh đều là thiết kế nguyên bản �
 Good Coffee, Great Coffee / Good Pizza, Great Pizza của TapBlaze), không ghi "Ghibli" trong app hay store.
 
 ## Công nghệ
-- Flutter 3.32 (`C:\Users\Admin\Documents\flutter_windows_3.32.8-stable\flutter\bin\flutter`) + Flame cho các trạm làm bánh.
+- **V3 (nhánh `v3`, worktree này): Flutter 3.47.9 / Dart 3.13.7** ở `D:\flutter_sdk\flutter_3.47\flutter\bin\flutter` — dùng
+  đường dẫn đầy đủ này cho mọi lệnh flutter/dart. (v2 ở `D:\flutter_app\cupcake app` vẫn dùng Flutter 3.32
+  `C:\Users\Admin\Documents\flutter_windows_3.32.8-stable\flutter\bin\flutter`.) Flame cho các trạm làm bánh.
+- Cảnh tiệm 3D: `thermion_flutter` / `thermion_dart` 0.5.0 (Filament), cần native assets (Flutter 3.47 bật sẵn).
+  Android: APK có đủ armeabi-v7a/arm64/x86_64 (bản phát hành nên `--target-platform android-arm64`); web cần header COOP/COEP
+  (`flutter run -d chrome --cross-origin-isolation`). API + cạm bẫy: `docs/v3/thermion-api-notes.md`; bản thử:
+  `lib/main_3d_probe.dart`. `flutter test` trên Windows cần Visual Studio C++ (MSVC) — xem ghi chú API mục 9.
 - **Chỉ chạy ngang màn hình (landscape)**: khóa hướng trong `main.dart` (SystemChrome) và `AndroidManifest.xml`
   (`android:screenOrientation="sensorLandscape"`). Thiết kế theo khung tham chiếu 1280×720, co giãn theo tỉ lệ.
 - Đích build: Android (APK) và web (để xem nhanh khi chưa có máy thật).

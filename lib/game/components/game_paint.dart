@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/painting.dart';
 
 import '../../core/art/art_sprites.dart';
@@ -186,7 +187,7 @@ class CanvasText {
         final p = layout(text, size: size, color: color, weight: weight, maxWidth: maxWidth, maxLines: maxLines);
         return buildPaperTag(p, color: backing, seed: SLRandom.hashString(text));
       });
-      drawPictureAt(canvas, art.picture, center - Offset(art.size.width / 2, art.size.height / 2));
+      art.draw(canvas, center - Offset(art.size.width / 2, art.size.height / 2));
       return;
     }
     final key = '$text|$size|${color.toARGB32()}|${weight.value}|$maxWidth|$maxLines';
@@ -282,7 +283,7 @@ void paintServingPlate(Canvas canvas, Rect oval) {
   final image = ArtSprites.servingPlate.image;
   if (image == null) {
     final art = cachedArt(('servingPlate', oval.width, oval.height), () => buildServingPlateArt(oval.size));
-    drawPictureAt(canvas, art.picture, oval.topLeft - art.origin);
+    art.draw(canvas, oval.topLeft - art.origin);
     return;
   }
   final kx = oval.width / _plateArtRim.width;
@@ -381,7 +382,7 @@ void paintBakingTray(Canvas canvas, Rect r, {double glow = 0}) {
     canvas.drawRRect(RRect.fromRectAndRadius(r.inflate(10), const Radius.circular(34)), _trayGlowPaint);
   }
   final art = cachedArt(('bakingTray', r.width, r.height), () => buildBakingTrayArt(r.size));
-  drawPictureAt(canvas, art.picture, r.topLeft - art.origin);
+  art.draw(canvas, r.topLeft - art.origin);
 }
 
 /// Tô trộn sứ nhìn từ trên xuống: vành ngoài [rim] có dây lá bạc hà vẽ tay, lòng tô [inner].
@@ -606,7 +607,7 @@ Rect seatedCakeRect(MouldType m, double cx, double surfaceY, double size, {doubl
 
 /// Bánh + topping đặt theo vị trí người chơi (vị trí lưu dạng toạ độ chuẩn hoá trên elip mặt bánh).
 void paintCakeWithToppings(Canvas canvas, Rect rect, CakeVisual v, List<PlacedTopping> placed, {double bounceTime = 0.32}) {
-  CakeArt.paint(canvas, rect, v.copyWith(toppings: const {}));
+  _paintCakeCached(canvas, rect, v.copyWith(toppings: const {}));
   final top = CakeArt.topSurface(rect, v.mould, recipe: v.recipe);
   final size = toppingSize(top);
   final sorted = [...placed]..sort((a, b) => a.unit.dy.compareTo(b.unit.dy));
@@ -615,6 +616,67 @@ void paintCakeWithToppings(Canvas canvas, Rect rect, CakeVisual v, List<PlacedTo
     final k = t.age < bounceTime ? 1 + 0.3 * math.sin(t.age / bounceTime * math.pi) : 1.0;
     paintToppingAt(canvas, p, t.topping, size * k);
   }
+}
+
+// ------------------------------------------------------------------ Bánh dựng sẵn (trạm topping, hộp)
+// CakeArt vẽ lớp kem bằng nét màu nước mỗi lần gọi → trên web (CanvasKit, không raster cache) chiếm 6–13 ms mỗi khung
+// ở trạm topping / hộp dù bánh đứng yên (docs/v3/thermion-api-notes.md §31). Bánh ở hai trạm này không đổi trong
+// trạm → ghi một lần thành [GameArt] (raster hoá như hình vẽ tay) và chỉ dán ảnh. Một ô duy nhất (mỗi khung chỉ vẽ một
+// bánh); cỡ đổi liên tục (hoạt cảnh co giãn) thì vẽ thẳng, chỉ dựng ảnh khi cỡ đứng yên từ khung trước.
+
+_CakeSlot? _cakeSlot;
+Object? _cakeLastKey;
+int _cakeArtRevision = 0;
+bool _cakeArtListening = false;
+
+class _CakeSlot {
+  _CakeSlot(this.key, this.art);
+
+  final Object key;
+  final GameArt art;
+}
+
+/// Bánh đang dựng sẵn (null = chưa có). Cho test.
+@visibleForTesting
+GameArt? get cakeCacheArt => _cakeSlot?.art;
+
+/// Bỏ bánh dựng sẵn (hết phiên làm bánh: `BakeryGame.onRemove`).
+void clearCakeCache() {
+  _cakeSlot?.art.dispose();
+  _cakeSlot = null;
+  _cakeLastKey = null;
+}
+
+void _paintCakeCached(Canvas canvas, Rect rect, CakeVisual v) {
+  if ((rect.width - rect.height).abs() > 0.01 || rect.width < 1) {
+    CakeArt.paint(canvas, rect, v);
+    return;
+  }
+  if (!_cakeArtListening) {
+    // Ảnh đế nướng / kem nạp xong → bánh dựng lại.
+    _cakeArtListening = true;
+    ArtSprites.changes.addListener(() => _cakeArtRevision++);
+  }
+  final side = rect.width.roundToDouble();
+  final key = (v.mould, v.batter, v.batterFill, v.baked, v.frosting, v.frostCoverage, v.recipe, side, _cakeArtRevision);
+  final stable = key == _cakeLastKey;
+  _cakeLastKey = key;
+  var slot = _cakeSlot;
+  if (slot == null || slot.key != key) {
+    if (!stable) {
+      CakeArt.paint(canvas, rect, v);
+      return;
+    }
+    slot?.art.dispose();
+    final r = Offset.zero & Size.square(side);
+    // Lề 20 % mỗi phía: kem xoắn / nến nhô khỏi khung vuông của bánh.
+    slot = _cakeSlot = _CakeSlot(key, GameArt(recordArt((c) => CakeArt.paint(c, r, v)), r.size, bounds: r.inflate(side * 0.2)));
+  }
+  canvas.save();
+  canvas.translate(rect.left, rect.top);
+  canvas.scale(rect.width / side);
+  slot.art.draw(canvas, Offset.zero);
+  canvas.restore();
 }
 
 /// Cỡ topping theo mặt bánh (cùng tỉ lệ ở mọi kích thước bánh). Mặt bánh cao (tart, bánh tròn nhìn

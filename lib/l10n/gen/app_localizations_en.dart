@@ -48,11 +48,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonMax => 'Max';
 
   @override
-  String commonUnlockAtLevel(int level) {
-    return 'Unlocks at level $level';
-  }
-
-  @override
   String commonLevelShort(int level) {
     return 'Lv. $level';
   }
@@ -81,9 +76,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get commonNotEnoughCoins => 'Not enough coins';
-
-  @override
-  String get commonNotEnoughGems => 'Not enough gems';
 
   @override
   String get commonWatchAd => 'Watch ad';
@@ -137,9 +129,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get menuXpMax => 'Max level';
-
-  @override
   String dayStartTitle(int day) {
     return 'Day $day';
   }
@@ -179,11 +168,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dayRemakeLine => 'No rush, I\'ll wait for a fresh one!';
 
   @override
-  String get dayExitConfirmTitle => 'Leave for now?';
+  String get dayExitConfirmTitle => 'Close the shop early?';
 
   @override
   String get dayExitConfirmBody =>
-      'Coins earned so far are kept, but today won\'t count as completed.';
+      'You keep the coins from customers already served, but there\'s no shift bonus.';
 
   @override
   String get dayRainy => 'Rainy day';
@@ -224,38 +213,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mochiName => 'Mochi';
 
   @override
-  String get mochiArriveFirst =>
-      'A little soaked cat is sheltering from the rain at your door…';
-
-  @override
-  String get mochiArriveAgain => 'Mochi is back, sheltering from the rain!';
-
-  @override
-  String get mochiLook => 'Mochi looks up at you, tail swishing softly.';
-
-  @override
   String get mochiPet => 'Pet';
-
-  @override
-  String get mochiRest => 'Let Mochi rest';
-
-  @override
-  String get mochiPetThanks => 'Mochi purrs happily!';
-
-  @override
-  String get mochiNap => 'Mochi curls up for a nap by the stove.';
-
-  @override
-  String mochiGift(int coins, int gems) {
-    String _temp0 = intl.Intl.pluralLogic(
-      gems,
-      locale: localeName,
-      other: 'Mochi left you $coins coins and $gems gems!',
-      one: 'Mochi left you $coins coins and 1 gem!',
-      zero: 'Mochi left you $coins coins!',
-    );
-    return '$_temp0';
-  }
 
   @override
   String orderLine1(String item) {
@@ -689,9 +647,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get charRosa => 'Mrs. Rosa';
 
   @override
-  String get storyChapter1Title => 'Chapter 1: The Seaside Bakery';
-
-  @override
   String get storyTapToContinue => 'Tap to continue';
 
   @override
@@ -820,10 +775,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get storyFinaleLine2 =>
       'Grandma\'s book still has empty pages. I\'ll fill them, one by one.';
-
-  @override
-  String get storyFinaleLine3 =>
-      'Chapter 1 complete. More stories are coming soon!';
 
   @override
   String get storyCh1End1 =>
@@ -1016,7 +967,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String summaryDayBonusXp(int xp) {
-    return 'Day bonus +$xp XP';
+    return 'Shift bonus +$xp XP';
   }
 
   @override
@@ -1030,7 +981,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String summaryLevelUp(int level) {
-    return 'Level up! Bakery level $level';
+    return 'Level up! Mai is now level $level';
   }
 
   @override
@@ -1059,20 +1010,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get unlockMoreCustomers => 'More customers each day';
 
   @override
-  String get upgradesTitle => 'Upgrades';
-
-  @override
-  String get upgradeOven => 'Oven';
-
-  @override
-  String get upgradeOvenDesc => 'A wider golden zone when baking';
-
-  @override
-  String upgradeOvenPerfectZone(int percent) {
-    return 'Perfect zone ±$percent%';
-  }
-
-  @override
   String get upgradeWhisk => 'Whisk';
 
   @override
@@ -1089,23 +1026,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get upgradeTongsDesc => 'Toppings land on the cake more easily';
-
-  @override
-  String upgradeLevelOf(int current, int max) {
-    return 'Level $current/$max';
-  }
-
-  @override
-  String get upgradeBuy => 'Upgrade';
-
-  @override
-  String get upgradeMaxed => 'Fully upgraded';
-
-  @override
-  String get upgradeDone => 'Upgraded!';
-
-  @override
-  String get decorTitle => 'Decorate the bakery';
 
   @override
   String get decorSlotWallpaper => 'Wallpaper';
@@ -1154,80 +1074,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get decorPlantLemonTree => 'Lemon tree';
-
-  @override
-  String decorTipBonus(int percent) {
-    return '+$percent% tips';
-  }
-
-  @override
-  String decorTotalBonus(int percent) {
-    return 'Total tip bonus: +$percent%';
-  }
-
-  @override
-  String get decorEquip => 'Place';
-
-  @override
-  String get decorEquipped => 'Placed';
-
-  @override
-  String get recipesTitle => 'Recipe book';
-
-  @override
-  String recipesPrice(int amount) {
-    return 'Price: $amount';
-  }
-
-  @override
-  String get recipesIngredients => 'Ingredients';
-
-  @override
-  String get recipesMastery => 'Mastery';
-
-  @override
-  String get recipesMasteryHint =>
-      'Serve it once, get 4 stars, then 5 stars to master it';
-
-  @override
-  String recipesMasteryReward(int gems) {
-    return 'Mastered! +$gems gems';
-  }
-
-  @override
-  String recipesMissingPage(int level) {
-    return 'Missing page. Unlocks at level $level';
-  }
-
-  @override
-  String get recipeSecretsTitle => 'Grandma\'s secrets';
-
-  @override
-  String recipeSecretsLocked(int level) {
-    return 'Unlocks after level $level';
-  }
-
-  @override
-  String recipeSecretsTier(int tier, int max) {
-    return 'Secret $tier/$max';
-  }
-
-  @override
-  String recipeSecretsBonus(int pct) {
-    return '+$pct% price';
-  }
-
-  @override
-  String get recipeSecretsBuy => 'Learn';
-
-  @override
-  String get recipeSecretsMaxed => 'All secrets learned';
-
-  @override
-  String get recipeSecretsRecipeLocked => 'Find this recipe first';
-
-  @override
-  String get recipeSecretsHint => 'Each secret makes this treat sell for more.';
 
   @override
   String get questsTitle => 'Daily quests';
@@ -1285,9 +1131,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loginComeBack => 'Come back tomorrow for more!';
 
   @override
-  String get storeTitle => 'Store';
-
-  @override
   String get storeSimulatedNotice =>
       'Test store: purchases are simulated and no money is charged.';
 
@@ -1317,61 +1160,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storeDecorSet => 'Seaside decor set';
 
   @override
-  String get storeDecorSetDesc => '3 special decorations';
-
-  @override
   String get storeRemoveAds => 'Remove ads';
 
   @override
   String get storeRemoveAdsDesc =>
       'No more ads between days. Reward ads stay optional.';
-
-  @override
-  String get storeTestMode => 'Test mode';
-
-  @override
-  String storeGemsDesc(int gems) {
-    return '$gems gems';
-  }
-
-  @override
-  String storeStarterPackDescV2(int coins, int gems, int count) {
-    return '$coins coins + $gems gems + every booster ×$count';
-  }
-
-  @override
-  String get storeStarterBadge => 'Best deal';
-
-  @override
-  String get storeRemoveAdsDescV2 =>
-      'No more ads between levels. Reward ads stay optional.';
-
-  @override
-  String get storeStaffOutfitsDesc =>
-      'Festival looks for Nora and Bao. Looks only — switch it in Staff.';
-
-  @override
-  String get storeSeasonPassDesc =>
-      'Unlock the premium rewards of this season.';
-
-  @override
-  String storeFreeGem(int gems) {
-    return 'Watch an ad for $gems gem';
-  }
-
-  @override
-  String get storeOwned => 'Owned';
-
-  @override
-  String get storeConfirmTitle => 'Simulated purchase';
-
-  @override
-  String storeConfirmBody(String item, String price) {
-    return 'Buy $item for $price? No real money will be charged.';
-  }
-
-  @override
-  String get storePurchaseSuccess => 'Thank you! Your items have been added.';
 
   @override
   String get adsLimitReached => 'No more ad rewards today';
@@ -1426,7 +1219,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsResetConfirmBody =>
-      'Coins, levels, decorations and story progress will be erased. This can\'t be undone.';
+      'Coins, level, Mai\'s hairstyle and the places you\'ve visited will be erased. Language and sound are kept. This can\'t be undone.';
 
   @override
   String get settingsResetDone => 'Game data reset';
@@ -1438,520 +1231,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsAlphaNote => 'Alpha build. Thanks for playing!';
-
-  @override
-  String get settingsPurchases => 'Purchases';
-
-  @override
-  String get settingsRestore => 'Restore purchases';
-
-  @override
-  String settingsRestoreDone(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Restored $count purchases',
-      one: 'Restored 1 purchase',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get settingsRestoreNone => 'Nothing to restore';
-
-  @override
-  String get settingsRestoreFailed =>
-      'Couldn\'t restore right now. Please try again later.';
-
-  @override
-  String get levelMenuButton => 'Levels';
-
-  @override
-  String levelChapterLabel(int chapter) {
-    return 'Chapter $chapter';
-  }
-
-  @override
-  String levelNumber(int level) {
-    return 'Level $level';
-  }
-
-  @override
-  String get levelNewBadge => 'New';
-
-  @override
-  String get levelSpecialBadge => 'Special';
-
-  @override
-  String get levelGoalLabel => 'Goal';
-
-  @override
-  String levelGoalCoins(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Earn $count coins',
-      one: 'Earn 1 coin',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String levelGoalCustomers(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Serve $count customers',
-      one: 'Serve 1 customer',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String levelGoalSpecials(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Finish $count special orders (3 stars or more)',
-      one: 'Finish 1 special order (3 stars or more)',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get levelTimeLabel => 'Time';
-
-  @override
-  String get levelMenuLabel => 'On the menu';
-
-  @override
-  String get levelStart => 'Start';
-
-  @override
-  String get levelPause => 'Pause';
-
-  @override
-  String get levelRush => 'Rush hour!';
-
-  @override
-  String levelGoalProgress(int value, int target) {
-    return '$value/$target';
-  }
-
-  @override
-  String levelCombo(String mult) {
-    return 'Combo ×$mult';
-  }
-
-  @override
-  String get levelPauseTitle => 'Paused';
-
-  @override
-  String get levelPauseBody => 'Take a breather — your customers will wait.';
-
-  @override
-  String get levelQuit => 'Quit';
-
-  @override
-  String get levelReplay => 'Play again';
-
-  @override
-  String get levelTimeUp => 'Time\'s up!';
-
-  @override
-  String levelExtraTimeTitle(int seconds) {
-    return '+$seconds seconds?';
-  }
-
-  @override
-  String get levelExtraTimeBody =>
-      'So close! Watch a short ad to keep the shop open a little longer.';
-
-  @override
-  String levelExtraTimeWatch(int seconds) {
-    return 'Watch ad (+${seconds}s)';
-  }
-
-  @override
-  String get levelExtraTimeNo => 'No thanks';
-
-  @override
-  String get levelSpecialLater => 'Later';
-
-  @override
-  String get levelSpecialQuitTitle => 'Leave this order?';
-
-  @override
-  String get levelSpecialQuitBody =>
-      'The customer will keep waiting — you can come back to it.';
-
-  @override
-  String get levelResultWinTitle => 'Level complete!';
-
-  @override
-  String get levelResultLoseTitle => 'So close — let\'s try again!';
-
-  @override
-  String levelResultGoal(String progress) {
-    return 'Goal: $progress';
-  }
-
-  @override
-  String get levelResultCoins => 'Coins earned';
-
-  @override
-  String get levelResultServed => 'Happy customers';
-
-  @override
-  String get levelResultLost => 'Customers who left';
-
-  @override
-  String get levelResultSpecials => 'Special orders';
-
-  @override
-  String get levelResultBestCombo => 'Best combo';
-
-  @override
-  String get levelResultFiveStar => '5-star treats';
-
-  @override
-  String get levelResultDoubleCoins => '×2 coins (watch ad)';
-
-  @override
-  String levelResultDoubled(int coins) {
-    return 'Coins doubled! +$coins';
-  }
-
-  @override
-  String get levelNext => 'Next level';
-
-  @override
-  String get levelList => 'Level list';
-
-  @override
-  String get lvlCaseFull => 'Case full!';
-
-  @override
-  String get lvlRushHour => 'Rush hour!';
-
-  @override
-  String lvlCombo(int count) {
-    return 'Combo ×$count';
-  }
-
-  @override
-  String get lvlWaitOven => 'Waiting for oven';
-
-  @override
-  String get lvlWaiting => 'Waiting…';
-
-  @override
-  String get lvlPickTreat => 'Tap a treat';
-
-  @override
-  String get lvlBurnt => 'Burnt!';
-
-  @override
-  String get lvlTakeOut => 'Take out!';
-
-  @override
-  String get lvlStirHint => 'Stir 1 turn';
-
-  @override
-  String get lvlSwipeHint => 'Swipe across';
-
-  @override
-  String get lvlBoosterTitle => 'Boosters';
-
-  @override
-  String get lvlBoosterAdFree => 'Watch ad: 1 free';
-
-  @override
-  String get lvlBoosterFree => 'Free';
-
-  @override
-  String get lvlBoosterPickFree => 'Pick a booster — one is free!';
-
-  @override
-  String get lvlBoosterIntro =>
-      'New! Boosters make a level easier. Here\'s one to try for free.';
-
-  @override
-  String lvlBoosterSelected(String name) {
-    return '$name, selected';
-  }
-
-  @override
-  String get mapSeasonShort => 'Season';
-
-  @override
-  String get seasonTitle => 'Season pass';
-
-  @override
-  String seasonTimeLeft(String time) {
-    return 'Ends in $time';
-  }
-
-  @override
-  String seasonDaysHours(int days, int hours) {
-    return '${days}d ${hours}h';
-  }
-
-  @override
-  String seasonHoursMinutes(int hours, int minutes) {
-    return '${hours}h ${minutes}m';
-  }
-
-  @override
-  String seasonPoints(int points, int need) {
-    return '$points/$need points';
-  }
-
-  @override
-  String seasonPointsMax(int points) {
-    return '$points points · all tiers reached';
-  }
-
-  @override
-  String seasonHowTo(int star, int win) {
-    return '+$star points for each new star, +$win for each win';
-  }
-
-  @override
-  String seasonTierLabel(int tier) {
-    return 'Tier $tier';
-  }
-
-  @override
-  String get seasonFreeRow => 'Free';
-
-  @override
-  String get seasonPremiumRow => 'Premium';
-
-  @override
-  String get seasonClaimAll => 'Claim all';
-
-  @override
-  String seasonClaimedToast(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count rewards claimed!',
-      one: 'Reward claimed!',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String seasonBuyPremium(String price) {
-    return 'Unlock premium · $price';
-  }
-
-  @override
-  String get seasonPremiumActive => 'Premium unlocked';
-
-  @override
-  String get seasonPremiumHint => 'Unlock premium to claim';
-
-  @override
-  String get seasonEnded =>
-      'The season has ended. Your unclaimed rewards were added automatically.';
-
-  @override
-  String get seasonNone => 'No season is running right now.';
-
-  @override
-  String get seasonRewardFrame => 'Portrait frame';
-
-  @override
-  String seasonRewardBooster(String name, int count) {
-    return '$name ×$count';
-  }
-
-  @override
-  String levelSpecialCondition(
-    String who,
-    int served,
-    int target,
-    String time,
-  ) {
-    return '$who drops by if you serve $served/$target by $time';
-  }
-
-  @override
-  String levelSpecialConditionNoTime(String who, int served, int target) {
-    return '$who drops by after $served/$target served';
-  }
-
-  @override
-  String levelSpecialSkipped(String who) {
-    return '$who couldn\'t make it this time';
-  }
-
-  @override
-  String mapStarsTotal(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count stars',
-      one: '1 star',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get mapQuestsShort => 'Quests';
-
-  @override
-  String get mapGiftShort => 'Gift';
-
-  @override
-  String get mapPrevChapter => 'Previous chapter';
-
-  @override
-  String get mapNextChapter => 'Next chapter';
-
-  @override
-  String mapLevelLabel(int level, int stars) {
-    return 'Level $level: $stars of 3 stars';
-  }
-
-  @override
-  String mapLevelLockedLabel(int level) {
-    return 'Level $level, locked';
-  }
-
-  @override
-  String get mapLevelLocked => 'Finish the previous level to unlock this one!';
-
-  @override
-  String mapChapterLockedTitle(int chapter) {
-    return 'Chapter $chapter is locked';
-  }
-
-  @override
-  String mapChapterNeedStars(int need, int have) {
-    return 'Need $need stars — you have $have';
-  }
-
-  @override
-  String mapChapterNeedFinish(int chapter) {
-    return 'Finish chapter $chapter first';
-  }
-
-  @override
-  String get mapChapterReplayHint =>
-      'Replay levels with fewer stars to collect more';
-
-  @override
-  String mapChapterUnlockedTitle(int chapter) {
-    return 'Chapter $chapter unlocked!';
-  }
-
-  @override
-  String get mapChapterUnlockedBody =>
-      'New recipes and new faces are waiting in this part of town.';
-
-  @override
-  String get mapChapterUnlockedGo => 'Let\'s go!';
-
-  @override
-  String get mapBackToMap => 'Map';
-
-  @override
-  String get mapLoadError =>
-      'The level map couldn\'t load. Please restart the game.';
-
-  @override
-  String mapUnlockAfterLevel(int level) {
-    return 'Clear level $level to unlock';
-  }
-
-  @override
-  String mapRecipeFromLevel(int level) {
-    return 'Missing page. Reach level $level to find it';
-  }
-
-  @override
-  String get mapRecipeLater => 'Missing page. Coming in a later chapter';
-
-  @override
-  String get mapWelcomeTitle => 'Welcome back!';
-
-  @override
-  String mapWelcomeBody(int coins, int gems) {
-    return 'The bakery has a new look: play level by level on the town map. As a thank-you, here are $coins coins and $gems gems.';
-  }
-
-  @override
-  String get upgTabExpansion => 'Expand the bakery';
-
-  @override
-  String get upgTabEquipment => 'Equipment';
-
-  @override
-  String get upgOwned => 'Owned';
-
-  @override
-  String get upgComingSoon => 'Coming soon';
-
-  @override
-  String get upgExpansionDone => 'Added to your bakery!';
-
-  @override
-  String upgTierOf(int current, int max) {
-    return 'Tier $current/$max';
-  }
-
-  @override
-  String upgStatOvenSec(String seconds) {
-    return 'Bakes in ${seconds}s';
-  }
-
-  @override
-  String upgStatBatch(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count cakes per tray',
-      one: '1 cake per tray',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String upgStatCaseSlot(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count cakes per case slot',
-      one: '1 cake per case slot',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String upgStatMixZone(int percent) {
-    return 'Green zone $percent%';
-  }
-
-  @override
-  String upgStatStroke(int size) {
-    return 'Frosting stroke $size';
-  }
-
-  @override
-  String upgStatSnap(int size) {
-    return 'Snap range $size';
-  }
-
-  @override
-  String get upgStatSnapNone => 'No snapping';
-
-  @override
-  String upgStatNext(String stat) {
-    return 'Next: $stat';
-  }
 
   @override
   String get unlockNoticeTitle => 'New unlock!';
@@ -1987,137 +1266,6 @@ class AppLocalizationsEn extends AppLocalizations {
       one: '+1 more',
     );
     return '$_temp0';
-  }
-
-  @override
-  String levelShopCase(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count case slots',
-      one: '1 case slot',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String levelShopOvens(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count ovens',
-      one: '1 oven',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String levelShopTray(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Tray of $count',
-      one: 'Tray of 1',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get upgTabStaff => 'Staff';
-
-  @override
-  String get staffRoleCashier => 'Cashier';
-
-  @override
-  String get staffRoleBaker => 'Baker';
-
-  @override
-  String get staffRoleWaiter => 'Server';
-
-  @override
-  String get staffRoleManager => 'Manager';
-
-  @override
-  String get staffStatSpeed => 'Speed';
-
-  @override
-  String get staffStatSkill => 'Skill';
-
-  @override
-  String staffStatLevel(String stat, int level, int max) {
-    return '$stat level $level of $max';
-  }
-
-  @override
-  String get staffHire => 'Hire';
-
-  @override
-  String get staffHired => 'Welcome to the team!';
-
-  @override
-  String staffUpgradeStat(String stat) {
-    return 'Upgrade $stat';
-  }
-
-  @override
-  String staffCashierSpeed(String seconds) {
-    return 'Sells every ${seconds}s';
-  }
-
-  @override
-  String staffCashierSkill(int percent) {
-    return '+$percent% tips';
-  }
-
-  @override
-  String staffBakerSpeed(String seconds) {
-    return 'A batch every ${seconds}s';
-  }
-
-  @override
-  String staffBakerSkill(String stars) {
-    return 'Cakes around $stars stars';
-  }
-
-  @override
-  String staffWaiterSpeed(String seconds) {
-    return 'Serves every ${seconds}s';
-  }
-
-  @override
-  String staffWaiterSkill(int percent) {
-    return 'Waiting guests +$percent% patience';
-  }
-
-  @override
-  String staffManagerSpeed(int percent) {
-    return '$percent% of a level\'s coins per hour';
-  }
-
-  @override
-  String staffManagerSkill(int hours) {
-    return 'Counts up to $hours hours away';
-  }
-
-  @override
-  String staffRequires(String item) {
-    return 'Needs $item first';
-  }
-
-  @override
-  String get staffOutfitFestival => 'Festival outfit';
-
-  @override
-  String get offlineTitle => 'While you were away';
-
-  @override
-  String offlineBody(String name, String duration) {
-    return '$name looked after the bakery for $duration.';
-  }
-
-  @override
-  String offlineCapped(int hours) {
-    return 'Counted $hours hours (the manager\'s limit).';
   }
 
   @override
@@ -2159,32 +1307,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String offlineEarned(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'You earned $count coins',
-      one: 'You earned 1 coin',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get offlineClaim => 'Collect';
-
-  @override
   String get offlineDouble => 'x2 (watch ad)';
-
-  @override
-  String get offlineDoubled => 'Coins doubled!';
-
-  @override
-  String get levelReadyStaff => 'Helping this level';
-
-  @override
-  String levelReadyStaffNames(String names) {
-    return '$names will help this level';
-  }
 
   @override
   String get introLineKitchen => 'One morning in a little seaside town…';
@@ -2200,102 +1323,733 @@ class AppLocalizationsEn extends AppLocalizations {
   String get introSignOpen => 'Open';
 
   @override
-  String get introTapToEnter => 'Tap to enter the bakery';
-
-  @override
   String get introSemantics => 'Opening scene';
-
-  @override
-  String get lvlTutServe => 'This customer wants this treat. Tap them to sell!';
-
-  @override
-  String get lvlTutBake => 'Tap a treat card to bake a fresh batch!';
-
-  @override
-  String get lvlTutMould => 'Pick the right mould';
-
-  @override
-  String get lvlTutMix => 'Stir in circles to mix';
-
-  @override
-  String get lvlTutOven => 'Wait for the needle to hit the gold mark, then tap';
-
-  @override
-  String get lvlTutFrost => 'Trace the frosting line';
-
-  @override
-  String lvlTutTopping(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Tap the right jar $count times',
-      one: 'Tap the right jar once',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get lvlTutBox => 'Pick the right box';
-
-  @override
-  String get lvlTutCaseReady =>
-      'Your treats are in the case. Now serve lots of customers!';
-
-  @override
-  String get lvlTutCombo =>
-      'Sell back to back to grow your combo — more coins!';
-
-  @override
-  String get lvlTutNewTreat => 'Each customer wants something different.';
-
-  @override
-  String get lvlTutPatience =>
-      'The colored ring is their patience. Serve fast for tips!';
-
-  @override
-  String get lvlTutWalkout => 'Customers who wait too long will leave.';
-
-  @override
-  String get levelReadyCoinsHint => 'This level counts the coins you earn';
-
-  @override
-  String get settingsGuide => 'Getting started';
 
   @override
   String get settingsReplayIntro => 'Replay opening';
 
   @override
-  String get settingsReplayTutorials => 'Replay tutorials';
+  String get charNora => 'Nora';
 
   @override
-  String get settingsTutorialsReset =>
-      'Tutorials will show again in Levels 1–3';
+  String get charBao => 'Bao';
 
   @override
-  String get storePurchaseFailed => 'The purchase didn\'t go through.';
+  String get charTheo => 'Theo';
 
   @override
-  String get storeSeasonNone =>
-      'No season is running right now. Check back soon!';
+  String get npcSquirrel => 'Squirrel';
 
   @override
-  String levelResultSeasonPoints(int points) {
-    return '+$points season points';
+  String get npcHamster => 'Hamster';
+
+  @override
+  String get npcShiba => 'Shiba';
+
+  @override
+  String get npcBlackCat => 'Black Cat';
+
+  @override
+  String get npcWalrus => 'Mr. Walrus';
+
+  @override
+  String get npcLion => 'Mr. Lion';
+
+  @override
+  String get talkHoaOwlL1 =>
+      'They say owls are night birds. Yet here I am at your door by five every morning.';
+
+  @override
+  String get talkHoaOwlL2 => 'But Mr. Hoa, we open at seven!';
+
+  @override
+  String get talkHoaOwlL3 =>
+      'I know. Those two hours are for smelling the butter through the door.';
+
+  @override
+  String get talkHoaOwlC1 => 'I\'ll open early for you, then!';
+
+  @override
+  String get talkHoaOwlR1 =>
+      'No, no. Waiting is half the flavour of an egg tart.';
+
+  @override
+  String get talkHoaOwlC2 =>
+      'Then I\'ll bake so well you can smell it from home!';
+
+  @override
+  String get talkHoaOwlR2 =>
+      'Then I\'d lose my excuse to wake up early. Very well, deal.';
+
+  @override
+  String get talkHoaOwlL4 =>
+      'Then tomorrow, the first tart out of the oven is yours.';
+
+  @override
+  String get talkLinhSketchL1 => 'Mai, hold still! I\'m sketching you.';
+
+  @override
+  String get talkLinhSketchL2 => 'But I\'ve got flour all over my hair…';
+
+  @override
+  String get talkLinhSketchL3 => 'Done! Take a look.';
+
+  @override
+  String get talkLinhSketchL4 =>
+      'Linh… why am I a steamed bun wearing an apron?';
+
+  @override
+  String get talkLinhSketchL5 =>
+      'Because you\'re round, soft and warm. It\'s a compliment!';
+
+  @override
+  String get talkLinhSketchC1 => 'Then give me a bow!';
+
+  @override
+  String get talkLinhSketchR1 => 'Two bows! The cutest bun in town!';
+
+  @override
+  String get talkLinhSketchC2 => 'Can I hang it by the counter?';
+
+  @override
+  String get talkLinhSketchR2 => 'Really? Look, my ears just shot straight up!';
+
+  @override
+  String get talkKenjiCloudL1 =>
+      'Today I feel like a cloud that meant to rain… then changed its mind.';
+
+  @override
+  String get talkKenjiCloudL2 => 'A cloud that changed its mind… Let me think.';
+
+  @override
+  String get talkKenjiCloudC1 =>
+      'Matcha cake: a little bitter at first, then sweeter.';
+
+  @override
+  String get talkKenjiCloudR1 =>
+      'That\'s exactly the cloud. I\'ll photograph it before I eat.';
+
+  @override
+  String get talkKenjiCloudC2 =>
+      'A vanilla cupcake, white and fluffy like a cloud.';
+
+  @override
+  String get talkKenjiCloudR2 => 'A bit… literal. But I like your honesty.';
+
+  @override
+  String get talkKenjiCloudL3 =>
+      'Every visit here, my film roll gets a little shorter.';
+
+  @override
+  String get talkRosaSecretL1 =>
+      'Do you know, dear, for sixty years I have eaten cake only with a silver fork.';
+
+  @override
+  String get talkRosaSecretL2 =>
+      'Yes… but there\'s a dab of cream on the tip of your nose.';
+
+  @override
+  String get talkRosaSecretL3 => 'Hmm. The wind must have blown it there.';
+
+  @override
+  String get talkRosaSecretL4 => 'There\'s no wind indoors, though?';
+
+  @override
+  String get talkRosaSecretC1 => '(Wink) I didn\'t see a thing.';
+
+  @override
+  String get talkRosaSecretR1 =>
+      'Clever girl. Here\'s a tip for your discretion.';
+
+  @override
+  String get talkRosaSecretC2 =>
+      'Go on, have a taste, today\'s cream is lovely!';
+
+  @override
+  String get talkRosaSecretR2 =>
+      '(A very quick lick) …It is lovely. Tell no one.';
+
+  @override
+  String get talkMochiBellyL1 => 'Mrrp.';
+
+  @override
+  String get talkMochiBellyL2 =>
+      'Soaked again? The oven\'s still warm, go dry off.';
+
+  @override
+  String get talkMochiBellyL3 => '(Mochi flops over and shows a fluffy belly.)';
+
+  @override
+  String get talkMochiBellyL4 =>
+      'It\'s a trap. I know it. Belly rubs mean bites.';
+
+  @override
+  String get talkMochiBellyC1 => 'Rub the belly';
+
+  @override
+  String get talkMochiBellyR1 =>
+      '(Mochi hugs Mai\'s hand with all four paws… and purrs.)';
+
+  @override
+  String get talkMochiBellyC2 => 'Roll the yarn ball';
+
+  @override
+  String get talkMochiBellyR2 =>
+      '(Mochi chases the yarn and skids a full circle across the floor.)';
+
+  @override
+  String get talkMochiBellyL5 => 'You little rascal.';
+
+  @override
+  String get talkWalrusFishL1 =>
+      'Guess how big the fish I caught this morning was?';
+
+  @override
+  String get talkWalrusFishL2 => 'How big?';
+
+  @override
+  String get talkWalrusFishL3 => 'As big as… your oven!';
+
+  @override
+  String get talkWalrusFishC1 =>
+      'Last week you said it was as big as the fridge.';
+
+  @override
+  String get talkWalrusFishR1 =>
+      'Well… it\'s been growing! Even the fish eat your pastries.';
+
+  @override
+  String get talkWalrusFishC2 => 'Did you bring it home?';
+
+  @override
+  String get talkWalrusFishR2 =>
+      'It begged to be let go. Promised to come back tomorrow… even bigger.';
+
+  @override
+  String get talkWalrusFishL4 => 'Then I\'d better get a bigger oven ready.';
+
+  @override
+  String get talkSquirrelNutL1 =>
+      'Can I pay in chestnuts? I\'ve got a whole stash!';
+
+  @override
+  String get talkSquirrelNutL2 => 'Oh… we only take coins here.';
+
+  @override
+  String get talkSquirrelNutL3 => 'Wait, let me check my tail…';
+
+  @override
+  String get talkSquirrelNutL4 =>
+      'Here! Three coins, a button, and… one emergency chestnut.';
+
+  @override
+  String get talkSquirrelNutC1 =>
+      'I\'ll take the coins, you keep the chestnut.';
+
+  @override
+  String get talkSquirrelNutR1 =>
+      'You\'re the best! I\'ll bury it outside so a tree grows for you.';
+
+  @override
+  String get talkSquirrelNutC2 =>
+      'Give me the chestnut, I\'ll bake you something with it!';
+
+  @override
+  String get talkSquirrelNutR2 =>
+      'Really? I\'ll fetch more… from wherever I buried them. I forgot where.';
+
+  @override
+  String get talkHamsterCheeksL1 => 'Could I have… mmf-mm-mmf…';
+
+  @override
+  String get talkHamsterCheeksL2 =>
+      'Sweetie, your cheeks are already full of cookies.';
+
+  @override
+  String get talkHamsterCheeksL3 =>
+      '(Gulp) Those are for later. This one is for now!';
+
+  @override
+  String get talkHamsterCheeksC1 => 'Let me box some up for you to take home.';
+
+  @override
+  String get talkHamsterCheeksR1 => 'A box! My cheeks get the day off!';
+
+  @override
+  String get talkHamsterCheeksC2 => 'Think you can fit one more?';
+
+  @override
+  String get talkHamsterCheeksR2 => 'Challenge accepted! …Mmf… perfect fit.';
+
+  @override
+  String get smallTalkNora => 'Your usual today? I remember!';
+
+  @override
+  String get smallTalkBao => '…Fresh out of the oven. Still warm.';
+
+  @override
+  String get smallTalkTheo =>
+      'Today\'s tea is brewed with a smile, give it a try!';
+
+  @override
+  String get smallTalkMai1 => 'Lovely day! Been down to the beach yet?';
+
+  @override
+  String get smallTalkMai2 =>
+      'The next batch has a pinch of cinnamon, come back and try it!';
+
+  @override
+  String get smallTalkReply1 => 'Aw, thank you!';
+
+  @override
+  String get smallTalkReply2 => 'Lovely, I\'ll be back tomorrow!';
+
+  @override
+  String get smallTalkReply3 => 'This place always smells so good.';
+
+  @override
+  String get quarrelLastCakeL1 =>
+      'This strawberry cupcake is mine! I saw it first!';
+
+  @override
+  String get quarrelLastCakeL2 =>
+      'But I\'ve been dreaming about it since yesterday!';
+
+  @override
+  String get quarrelLastCakeL3 => 'Dreaming doesn\'t count!';
+
+  @override
+  String get quarrelLastCakeL4 =>
+      'Easy, you two, the cupcake\'s getting squished!';
+
+  @override
+  String get quarrelLastCakeA => 'Split it in half';
+
+  @override
+  String get quarrelLastCakeRA1 => 'Half… fits perfectly in one cheek!';
+
+  @override
+  String get quarrelLastCakeRA2 => 'My half has more frosting. Hehe.';
+
+  @override
+  String get quarrelLastCakeB => 'Rock-paper-scissors for it';
+
+  @override
+  String get quarrelLastCakeRB1 => 'Rock, paper, scissors… shoot!';
+
+  @override
+  String get quarrelLastCakeRB2 => 'I win!';
+
+  @override
+  String get quarrelLastCakeRB3 => 'Hmph… next time I\'m going rock.';
+
+  @override
+  String get quarrelLastCakeC => 'A fresh batch is almost out, one each!';
+
+  @override
+  String get quarrelLastCakeRC1 => 'One EACH?!';
+
+  @override
+  String get quarrelLastCakeRC2 => 'You\'re a pastry angel!';
+
+  @override
+  String get quarrelFirstL1 => 'I\'ve been here since sunrise! I go first!';
+
+  @override
+  String get quarrelFirstL2 =>
+      'I napped on this doorstep all night. That\'s what cats do.';
+
+  @override
+  String get quarrelFirstL3 => 'Napping isn\'t queueing!';
+
+  @override
+  String get quarrelFirstL4 => 'For cats, it is.';
+
+  @override
+  String get quarrelFirstL5 => 'Okay, okay, deep breaths!';
+
+  @override
+  String get quarrelFirstA => 'Come in together, the door\'s wide enough!';
+
+  @override
+  String get quarrelFirstRA1 => '…It\'s a bit tight.';
+
+  @override
+  String get quarrelFirstRA2 => 'Suck in your tummy.';
+
+  @override
+  String get quarrelFirstRA3 =>
+      '(They\'re stuck in the doorway for a second… then both burst out laughing.)';
+
+  @override
+  String get quarrelFirstB => 'Check the paw prints on the doormat';
+
+  @override
+  String get quarrelFirstRB1 => 'Cat prints underneath… shiba prints on top.';
+
+  @override
+  String get quarrelFirstRB2 => 'Well… I did stand on their paw prints.';
+
+  @override
+  String get quarrelFirstRB3 => 'Thank you. You\'re adorable. After me.';
+
+  @override
+  String get quarrelFirstC => 'Best joke goes first';
+
+  @override
+  String get quarrelFirstRC1 =>
+      'Why did the croissant see a doctor? It was feeling flaky!';
+
+  @override
+  String get quarrelFirstRC2 => '…That was awful. I laughed. You go first.';
+
+  @override
+  String get quarrelTartL1 =>
+      'Egg tarts are the king of pastries! Crisp, rich, golden as the sun!';
+
+  @override
+  String get quarrelTartL2 =>
+      'King? I\'m the king around here. And the king picks apple pie.';
+
+  @override
+  String get quarrelTartL3 => 'All you\'ve got is a big mane!';
+
+  @override
+  String get quarrelTartL4 => 'And all you\'ve got is a round belly!';
+
+  @override
+  String get quarrelTartL5 => 'Gentlemen, the whole street is watching!';
+
+  @override
+  String get quarrelTartA => 'Blind taste test, try both!';
+
+  @override
+  String get quarrelTartRA1 => 'This one\'s… better. It\'s the apple pie?!';
+
+  @override
+  String get quarrelTartRA2 => 'And I picked… the egg tart. Oh no.';
+
+  @override
+  String get quarrelTartRA3 => 'Fine, we\'ll buy both!';
+
+  @override
+  String get quarrelTartB => 'Every pastry is delicious, shake hands!';
+
+  @override
+  String get quarrelTartRB1 => 'Spoken like a diplomat.';
+
+  @override
+  String get quarrelTartRB2 => 'Bland as unseasoned dough.';
+
+  @override
+  String get quarrelTartC => 'Ask Mr. Hoa to settle it';
+
+  @override
+  String get quarrelTartCAlt => 'Do your best Mr. Hoa impression';
+
+  @override
+  String get quarrelTartRC1 => 'Egg tart. Forty years. Not up for debate.';
+
+  @override
+  String get quarrelTartRC1Alt =>
+      '(Deep voice) Ahem… Egg tart. Forty years. Not up for debate.';
+
+  @override
+  String get quarrelTartRC2 => 'Hear that? Hear that!';
+
+  @override
+  String get quarrelTartRC3 => 'Hmph. The seniors\' club is biased.';
+
+  @override
+  String get quarrelBanner => 'There\'s a commotion outside!';
+
+  @override
+  String get quarrelLook => 'Look';
+
+  @override
+  String get quarrelSendMai => 'Send Mai';
+
+  @override
+  String get quarrelIntervene => 'Step in';
+
+  @override
+  String get quarrelTimeout => 'The two customers stomped off in a huff…';
+
+  @override
+  String get quarrelPeace => 'Peace returns to the street.';
+
+  @override
+  String get staffMenuControl => 'Control';
+
+  @override
+  String get staffMenuTalk => 'Talk to a customer';
+
+  @override
+  String get actionPickUp => 'Pick up';
+
+  @override
+  String get actionPutDown => 'Put down';
+
+  @override
+  String get actionPlaceOn => 'Place';
+
+  @override
+  String get actionGive => 'Offer';
+
+  @override
+  String get actionThrow => 'Throw';
+
+  @override
+  String get actionTalk => 'Talk';
+
+  @override
+  String get actionWave => 'Wave';
+
+  @override
+  String get controlHint =>
+      'Drag the left circle to walk, tap the right buttons to act.';
+
+  @override
+  String get talkPickCustomer => 'Pick a customer to chat with';
+
+  @override
+  String get talkNoCustomer => 'No customers are free to chat right now.';
+
+  @override
+  String get itemYarn => 'Yarn ball';
+
+  @override
+  String get itemCakeBox => 'Cake box';
+
+  @override
+  String get itemFlour => 'Flour sack';
+
+  @override
+  String get reactOops => 'Oops!';
+
+  @override
+  String get reactStop => 'Hey, quit it!';
+
+  @override
+  String get reactThanks => 'Thank you!';
+
+  @override
+  String get reactFull => 'I\'m full, but thank you!';
+
+  @override
+  String get reactNoThrowCake => 'Cake is handed, not thrown!';
+
+  @override
+  String get reactExcuseMe => 'Excuse me!';
+
+  @override
+  String get reactPurr => 'Purr…';
+
+  @override
+  String interactGoodwill(int count) {
+    return '+$count goodwill';
   }
 
   @override
-  String levelResultBoosterGift(String name) {
-    return 'Gift: $name ×1';
+  String interactCoins(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '+$count coins',
+      one: '+1 coin',
+    );
+    return '$_temp0';
   }
 
   @override
-  String get levelPauseBoosterLost =>
-      'Boosters used in this run won\'t be refunded.';
+  String get townEnterShop => 'Enter';
 
   @override
-  String get levelPauseBoosterRefund =>
-      'Quit or replay now and your boosters go back to your bag.';
+  String get townExitShop => 'Go outside';
 
   @override
-  String get levelBoostersRefunded => 'Boosters returned to your bag.';
+  String get townMap => 'Map';
+
+  @override
+  String get townOpenMap => 'Open map';
+
+  @override
+  String get townYouAreHere => 'You are here';
+
+  @override
+  String get townHomeShop => 'Grandma\'s bakery';
+
+  @override
+  String townBranchN(int n) {
+    return 'Branch $n';
+  }
+
+  @override
+  String get townLotForSale => 'Empty lot';
+
+  @override
+  String townLotLocked(int level) {
+    return 'Unlocks at level $level';
+  }
+
+  @override
+  String get townLotUnlocked => 'Unlocked · on sale soon';
+
+  @override
+  String townLotsUnlockedToast(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count new lots unlocked!',
+      one: 'New lot unlocked!',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get townComingSoon => 'Coming soon';
+
+  @override
+  String get townStreetName => 'Bakery Street';
+
+  @override
+  String get townOpening => 'Opening the door…';
+
+  @override
+  String get citySeaMarketName => 'Seaside Market';
+
+  @override
+  String get cityRealtyName => 'Harbor Realty';
+
+  @override
+  String get cityParkName => 'Lighthouse Park';
+
+  @override
+  String get cityRestaurantName => 'Lighthouse Kitchen';
+
+  @override
+  String get citySalonName => 'Seashell Salon';
+
+  @override
+  String get cityOrderFood => 'Order';
+
+  @override
+  String get cityGetHaircut => 'Style hair';
+
+  @override
+  String cityPrice(int coins) {
+    return '$coins coins';
+  }
+
+  @override
+  String cityXpGain(int xp) {
+    return '+$xp XP';
+  }
+
+  @override
+  String cityMaiLevel(int n) {
+    return 'Level $n';
+  }
+
+  @override
+  String get cityLevelUp => 'Level up!';
+
+  @override
+  String get cityNotEnoughCoins => 'Not enough coins';
+
+  @override
+  String get cityAteToday => 'Already eaten today – less XP';
+
+  @override
+  String get cityBuffFull => 'Full & happy: +10% tips next shift';
+
+  @override
+  String get cityConfirm => 'Confirm';
+
+  @override
+  String get cityCancel => 'Cancel';
+
+  @override
+  String get cityFirstVisit => 'First visit bonus!';
+
+  @override
+  String get cityMenuTitle => 'Today\'s menu';
+
+  @override
+  String get citySalonTitle => 'Choose a new look';
+
+  @override
+  String get cityHairStyle => 'Hairstyle';
+
+  @override
+  String get cityHairColor => 'Hair color';
+
+  @override
+  String get cityEating => 'Enjoying the meal…';
+
+  @override
+  String get citySaveReadOnly =>
+      'This save is from a newer game version. Progress this session won\'t be saved.';
+
+  @override
+  String get shiftOpen => 'Open shop';
+
+  @override
+  String get shiftHintCounter =>
+      'Go to the counter and tap “Open shop” to start selling';
+
+  @override
+  String get shiftCustomerComing => 'A customer is on the way…';
+
+  @override
+  String get shiftSummaryTitle => 'Shift complete!';
+
+  @override
+  String get shiftCloseEarly => 'Close early';
+
+  @override
+  String shiftClosedToast(int coins) {
+    return 'Shop closed · +$coins coins kept';
+  }
+
+  @override
+  String shiftBuffTip(int amount) {
+    return 'Full & happy: +$amount tips';
+  }
+
+  @override
+  String get dishFishSoup => 'Seaside fish soup';
+
+  @override
+  String get dishOmeletteRice => 'Omelette rice';
+
+  @override
+  String get dishVeggieCurry => 'Veggie curry';
+
+  @override
+  String get dishSeafoodNoodles => 'Seafood noodles';
+
+  @override
+  String get hairPonytail => 'Ponytail';
+
+  @override
+  String get hairBob => 'Bob';
+
+  @override
+  String get hairBun => 'Bun';
+
+  @override
+  String get hairTwinTails => 'Twin tails';
+
+  @override
+  String get hairColorChestnut => 'Chestnut';
+
+  @override
+  String get hairColorCaramel => 'Caramel';
+
+  @override
+  String get hairColorBlack => 'Black';
+
+  @override
+  String get hairColorStrawberry => 'Strawberry';
 }

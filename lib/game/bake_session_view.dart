@@ -1,7 +1,11 @@
+import 'dart:async';
+import 'dart:math' as math;
+
 import 'package:flame/game.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
+import '../core/art/art_sprites.dart';
 import '../core/art/cake_art.dart';
 import '../core/ref_frame.dart';
 import '../core/l10n_lookup.dart';
@@ -50,7 +54,7 @@ class BakeSessionView extends StatefulWidget {
   State<BakeSessionView> createState() => _BakeSessionViewState();
 }
 
-class _BakeSessionViewState extends State<BakeSessionView> {
+class _BakeSessionViewState extends State<BakeSessionView> with WidgetsBindingObserver {
   /// Khoá của lớp nhận con trỏ (test dùng để đổi toạ độ khung W×720 → toạ độ màn hình; thế giới = khung − inset).
   static const inputKey = ValueKey('bake-session-input');
 
@@ -68,6 +72,14 @@ class _BakeSessionViewState extends State<BakeSessionView> {
       ovenLevel: widget.ovenLevel,
     );
     _game.hud.addListener(_onHud);
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  /// Cỡ màn đổi (xoay, đổi cửa sổ): dựng lại để tính lại độ phân giải raster ([_pixelRatio]) — khung `RefFrame` giữ
+  /// nguyên cỡ W×720 nên không có phụ thuộc nào khác báo việc này.
+  @override
+  void didChangeMetrics() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -96,6 +108,7 @@ class _BakeSessionViewState extends State<BakeSessionView> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _game.hud.removeListener(_onHud);
     _game.hud.dispose();
     super.dispose();
@@ -106,9 +119,19 @@ class _BakeSessionViewState extends State<BakeSessionView> {
   /// Toạ độ khung W×720 → toạ độ thế giới 1280×720 (trừ độ lệch vùng giữa).
   Offset _world(Offset p) => p.translate(-_game.inset, 0);
 
+  /// Số điểm ảnh thật trên một đơn vị khung W×720 (DPR × hệ số co của khung lên màn). Khung `RefFrame` lấp màn
+  /// theo chiều nhỏ hơn → tính từ cỡ màn vật lý; có vùng tai thỏ thì khung nhỏ hơn chút → ảnh dư điểm, không mờ.
+  static double _pixelRatio(BuildContext context, Size frame) {
+    final screen = View.of(context).physicalSize;
+    final r = math.min(screen.width / frame.width, screen.height / frame.height);
+    return r.isFinite && r > 0 ? r : MediaQuery.devicePixelRatioOf(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     final metrics = RefMetrics.of(context);
+    final ratio = _pixelRatio(context, metrics.size);
+    _game.pixelRatio = ratio;
     return FittedBox(
       fit: BoxFit.contain,
       child: SizedBox.fromSize(
@@ -126,13 +149,15 @@ class _BakeSessionViewState extends State<BakeSessionView> {
                   onPointerMove: (e) => _game.pointerMove(e.pointer, _world(e.localPosition)),
                   onPointerUp: (e) => _game.pointerUp(e.pointer, _world(e.localPosition)),
                   onPointerCancel: (e) => _game.pointerCancel(e.pointer),
-                  child: GameWidget<BakeryGame>(game: _game),
+                  // Game không dùng phím: không giữ focus (mặc định autofocus nuốt mọi phím → Esc không tới lớp ca).
+                  child: GameWidget<BakeryGame>(game: _game, autofocus: false),
                 ),
               ),
               ListenableBuilder(
                 listenable: _game.hud,
                 builder: (context, _) => SLScope(
-                    child: _Overlay(order: widget.order, hud: _game.hud, game: _game, inset: metrics.inset, safe: metrics.safe)),
+                    child: _Overlay(
+                        order: widget.order, hud: _game.hud, game: _game, inset: metrics.inset, safe: metrics.safe, pixelRatio: ratio)),
               ),
             ],
           ),
@@ -143,7 +168,14 @@ class _BakeSessionViewState extends State<BakeSessionView> {
 }
 
 class _Overlay extends StatelessWidget {
-  const _Overlay({required this.order, required this.hud, required this.game, this.inset = 0, this.safe = EdgeInsets.zero});
+  const _Overlay({
+    required this.order,
+    required this.hud,
+    required this.game,
+    this.inset = 0,
+    this.safe = EdgeInsets.zero,
+    this.pixelRatio = 1,
+  });
 
   final Order order;
   final BakeHud hud;
@@ -155,6 +187,9 @@ class _Overlay extends StatelessWidget {
   /// Vùng tai thỏ (đơn vị ref) của khung rộng: chấm bước / chữ của thanh bước lùi vào.
   final EdgeInsets safe;
 
+  /// Điểm ảnh thật / đơn vị khung: độ phân giải của ảnh chụp các mảng tĩnh ([_Snap]).
+  final double pixelRatio;
+
   @override
   Widget build(BuildContext context) {
     final station = hud.station;
@@ -162,11 +197,13 @@ class _Overlay extends StatelessWidget {
     return Stack(
       children: [
         // Dải giấy tràn qua mép trái/phải/trên khung (cả khung rộng): chỉ lộ mép dưới run tay.
-        Positioned(
+        _Snap.positioned(
           left: -14,
           right: -14,
           top: -16,
           height: 88,
+          token: station,
+          pixelRatio: pixelRatio,
           child: IgnorePointer(child: _StepBar(station: station, safe: safe)),
         ),
         // Nội dung giữ trong vùng 1280 ở giữa khung.
@@ -188,12 +225,22 @@ class _Overlay extends StatelessWidget {
     final l = AppLocalizations.of(context);
     final station = hud.station;
     return [
-      Positioned(left: 960, top: 86, width: 300, height: 226, child: IgnorePointer(child: _OrderTicket(order: order))),
-      Positioned(
+      _Snap.positioned(
+        left: 960,
+        top: 86,
+        width: 300,
+        height: 226,
+        token: order,
+        pixelRatio: pixelRatio,
+        child: IgnorePointer(child: _OrderTicket(order: order)),
+      ),
+      _Snap.positioned(
         left: 952,
         top: 322,
         width: 316,
         height: 284,
+        token: station,
+        pixelRatio: pixelRatio,
         child: IgnorePointer(child: _HintPanel(station: station)),
       ),
       Positioned(
@@ -230,6 +277,121 @@ class _Overlay extends StatelessWidget {
           ),
         ),
     ];
+  }
+}
+
+/// Mảng tĩnh của lớp phủ (thanh bước, vé đơn, giấy gợi ý): chụp MỘT lần thành ảnh ([SnapshotWidget]) ở độ phân giải
+/// thật của màn ([pixelRatio]), mỗi khung chỉ dán ảnh.
+///
+/// Lý do: trên web (CanvasKit) không có raster cache — game Flame vẽ mỗi khung nên cả cây lớp được rasterize lại từ
+/// đầu, và nét run tay / vân giấy / cắt theo viền của bộ SL* chiếm ~2/3 thời gian khung dù không đổi gì
+/// (docs/v3/thermion-api-notes.md §31).
+///
+/// Ảnh chụp KHÔNG tự biết con vẽ lại (bộ SL* có `RepaintBoundary` riêng; AnimatedSwitcher / AnimatedScale chỉ cập
+/// nhật layer) → khi [token] đổi, con chạy trực tiếp trong [settle] (dài hơn hoạt cảnh 250 ms) rồi mới chụp; ảnh vẽ
+/// tay vừa nạp (`ArtSprites.changes`) hoặc font hệ thống đổi → chụp lại khi đã yên [settle] (đầu phiên ảnh bếp nạp
+/// dồn dập: chụp lại theo từng ảnh tốn như vẽ trực tiếp).
+class _Snap extends StatefulWidget {
+  const _Snap({required this.token, required this.pixelRatio, required this.child});
+
+  /// Lề thêm mỗi phía của ảnh chụp (bóng, nét lố, vé nghiêng nằm trọn trong ảnh).
+  static const double margin = 12;
+
+  /// Thời gian con chạy trực tiếp sau khi [token] đổi.
+  static const Duration settle = Duration(milliseconds: 400);
+
+  /// `Positioned` như cũ nhưng nới [margin] mỗi phía; con vẫn nhận đúng cỡ cũ (Padding bù lại).
+  static Widget positioned({
+    double? left,
+    double? top,
+    double? right,
+    double? width,
+    double? height,
+    required Object? token,
+    required double pixelRatio,
+    required Widget child,
+  }) {
+    const m = margin;
+    return Positioned(
+      left: left == null ? null : left - m,
+      top: top == null ? null : top - m,
+      right: right == null ? null : right - m,
+      width: width == null ? null : width + 2 * m,
+      height: height == null ? null : height + 2 * m,
+      child: _Snap(
+        token: token,
+        pixelRatio: pixelRatio,
+        child: Padding(padding: const EdgeInsets.all(m), child: child),
+      ),
+    );
+  }
+
+  /// Đổi giá trị này (vd. trạm) → chạy trực tiếp [settle] rồi chụp lại.
+  final Object? token;
+
+  /// Điểm ảnh thật / đơn vị khung.
+  final double pixelRatio;
+  final Widget child;
+
+  @override
+  State<_Snap> createState() => _SnapState();
+}
+
+class _SnapState extends State<_Snap> {
+  final SnapshotController _controller = SnapshotController();
+  Timer? _settle;
+  Timer? _refreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    ArtSprites.changes.addListener(_refresh);
+    PaintingBinding.instance.systemFonts.addListener(_refresh);
+    _goLive();
+  }
+
+  @override
+  void didUpdateWidget(_Snap oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.token != widget.token) _goLive();
+  }
+
+  void _goLive() {
+    _controller.allowSnapshotting = false;
+    _settle?.cancel();
+    _settle = Timer(_Snap.settle, () => _controller.allowSnapshotting = true);
+  }
+
+  void _refresh() {
+    // Đang chạy trực tiếp → lần chụp tới đã có ảnh mới.
+    if (!_controller.allowSnapshotting) return;
+    _refreshTimer?.cancel();
+    _refreshTimer = Timer(_Snap.settle, _controller.clear);
+  }
+
+  @override
+  void dispose() {
+    _settle?.cancel();
+    _refreshTimer?.cancel();
+    ArtSprites.changes.removeListener(_refresh);
+    PaintingBinding.instance.systemFonts.removeListener(_refresh);
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // SnapshotWidget chụp theo devicePixelRatio của MediaQuery → đặt bằng độ phân giải thật của khung; con vẫn thấy
+    // MediaQuery gốc.
+    final media = MediaQuery.of(context);
+    return MediaQuery(
+      data: media.copyWith(devicePixelRatio: widget.pixelRatio),
+      child: SnapshotWidget(
+        controller: _controller,
+        mode: SnapshotMode.permissive,
+        child: MediaQuery(data: media, child: widget.child),
+      ),
+    );
   }
 }
 

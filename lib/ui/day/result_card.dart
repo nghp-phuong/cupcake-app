@@ -39,6 +39,7 @@ CakeVisual madeCakeVisual(Order order, BakeOutcome outcome) {
 
 /// Thẻ kết quả 720×440 — tờ giấy vẽ tay dán băng dính ([SLPaperCard]): khách trong khung tròn màu nước (mood
 /// theo sao), bánh đã làm, 1–5 sao, khen/chê theo trạm, tiền/tip/XP, nút làm lại (quảng cáo) + khách tiếp theo.
+/// [showPortrait] = false: bỏ khung chân dung (cảnh 3D đã có khách), bánh to hơn ở giữa cột trái.
 class ResultCard extends StatelessWidget {
   const ResultCard({
     super.key,
@@ -50,6 +51,7 @@ class ResultCard extends StatelessWidget {
     required this.onNext,
     required this.onRemake,
     this.busy = false,
+    this.showPortrait = true,
   });
 
   final Order order;
@@ -60,6 +62,7 @@ class ResultCard extends StatelessWidget {
   final VoidCallback onNext;
   final VoidCallback onRemake;
   final bool busy;
+  final bool showPortrait;
 
   @override
   Widget build(BuildContext context) {
@@ -84,8 +87,10 @@ class ResultCard extends StatelessWidget {
               width: 220,
               child: Column(
                 children: [
-                  _Portrait(customer: customer, stars: result.stars, happy: happy),
-                  const SizedBox(height: 6),
+                  if (showPortrait) ...[
+                    _Portrait(customer: customer, stars: result.stars, happy: happy),
+                    const SizedBox(height: 6),
+                  ],
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -101,7 +106,8 @@ class ResultCard extends StatelessWidget {
                     ],
                   ),
                   const Spacer(),
-                  CakeImage(visual: madeCakeVisual(order, outcome), size: 130),
+                  CakeImage(visual: madeCakeVisual(order, outcome), size: showPortrait ? 130 : 200),
+                  if (!showPortrait) const Spacer(),
                 ],
               ),
             ),

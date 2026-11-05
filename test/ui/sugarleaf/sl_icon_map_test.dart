@@ -4,13 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sugarleaf_bakery/ui/sugarleaf/sugarleaf.dart';
 
-/// Tên mọi `Icons.xxx` trong các file Dart dưới [paths] (file hoặc thư mục).
+/// Tên mọi `Icons.xxx` trong các file Dart dưới [paths] (file hoặc thư mục), bỏ qua lớp phủ của cảnh 3D (`ui/town`,
+/// `ui/shop3d`: dùng thẳng Material Icons, không qua bộ icon SL).
 Set<String> _materialIconsUsed(List<String> paths) {
   final re = RegExp(r'Icons\.([a-z][a-zA-Z0-9_]*)');
   final names = <String>{};
   for (final path in paths) {
     final files = FileSystemEntity.isDirectorySync(path)
-        ? Directory(path).listSync(recursive: true).whereType<File>().where((f) => f.path.endsWith('.dart'))
+        ? Directory(path).listSync(recursive: true).whereType<File>().where(
+            (f) => f.path.endsWith('.dart') && !RegExp(r'ui[/\\](town|shop3d)[/\\]').hasMatch(f.path),
+          )
         : [File(path)];
     for (final f in files) {
       names.addAll(re.allMatches(f.readAsStringSync()).map((m) => m.group(1)!));

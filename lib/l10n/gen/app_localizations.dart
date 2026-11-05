@@ -176,12 +176,6 @@ abstract class AppLocalizations {
   /// **'Max'**
   String get commonMax;
 
-  /// No description provided for @commonUnlockAtLevel.
-  ///
-  /// In en, this message translates to:
-  /// **'Unlocks at level {level}'**
-  String commonUnlockAtLevel(int level);
-
   /// No description provided for @commonLevelShort.
   ///
   /// In en, this message translates to:
@@ -205,12 +199,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not enough coins'**
   String get commonNotEnoughCoins;
-
-  /// No description provided for @commonNotEnoughGems.
-  ///
-  /// In en, this message translates to:
-  /// **'Not enough gems'**
-  String get commonNotEnoughGems;
 
   /// No description provided for @commonWatchAd.
   ///
@@ -302,12 +290,6 @@ abstract class AppLocalizations {
   /// **'{current}/{target} XP'**
   String menuXpProgress(int current, int target);
 
-  /// No description provided for @menuXpMax.
-  ///
-  /// In en, this message translates to:
-  /// **'Max level'**
-  String get menuXpMax;
-
   /// No description provided for @dayStartTitle.
   ///
   /// In en, this message translates to:
@@ -377,13 +359,13 @@ abstract class AppLocalizations {
   /// No description provided for @dayExitConfirmTitle.
   ///
   /// In en, this message translates to:
-  /// **'Leave for now?'**
+  /// **'Close the shop early?'**
   String get dayExitConfirmTitle;
 
   /// No description provided for @dayExitConfirmBody.
   ///
   /// In en, this message translates to:
-  /// **'Coins earned so far are kept, but today won\'t count as completed.'**
+  /// **'You keep the coins from customers already served, but there\'s no shift bonus.'**
   String get dayExitConfirmBody;
 
   /// Short label on the day intro ribbon when the weather is rainy
@@ -446,53 +428,11 @@ abstract class AppLocalizations {
   /// **'Mochi'**
   String get mochiName;
 
-  /// Speech bubble the first time Mochi arrives (sad face). Keep under 70 characters.
-  ///
-  /// In en, this message translates to:
-  /// **'A little soaked cat is sheltering from the rain at your door…'**
-  String get mochiArriveFirst;
-
-  /// Speech bubble when Mochi arrives on later rainy days
-  ///
-  /// In en, this message translates to:
-  /// **'Mochi is back, sheltering from the rain!'**
-  String get mochiArriveAgain;
-
-  /// Speech bubble after the player taps Mochi once (neutral face)
-  ///
-  /// In en, this message translates to:
-  /// **'Mochi looks up at you, tail swishing softly.'**
-  String get mochiLook;
-
   /// Button: pet Mochi. Keep under 12 characters.
   ///
   /// In en, this message translates to:
   /// **'Pet'**
   String get mochiPet;
-
-  /// Button: let Mochi rest without petting. Keep under 16 characters.
-  ///
-  /// In en, this message translates to:
-  /// **'Let Mochi rest'**
-  String get mochiRest;
-
-  /// Speech bubble after petting Mochi (joy face)
-  ///
-  /// In en, this message translates to:
-  /// **'Mochi purrs happily!'**
-  String get mochiPetThanks;
-
-  /// Speech bubble after choosing to let Mochi rest (smile face)
-  ///
-  /// In en, this message translates to:
-  /// **'Mochi curls up for a nap by the stove.'**
-  String get mochiNap;
-
-  /// Gift toast after petting Mochi. Only mentions coins when gems is 0.
-  ///
-  /// In en, this message translates to:
-  /// **'{gems, plural, =0{Mochi left you {coins} coins!} =1{Mochi left you {coins} coins and 1 gem!} other{Mochi left you {coins} coins and {gems} gems!}}'**
-  String mochiGift(int coins, int gems);
 
   /// No description provided for @orderLine1.
   ///
@@ -1286,12 +1226,6 @@ abstract class AppLocalizations {
   /// **'Mrs. Rosa'**
   String get charRosa;
 
-  /// No description provided for @storyChapter1Title.
-  ///
-  /// In en, this message translates to:
-  /// **'Chapter 1: The Seaside Bakery'**
-  String get storyChapter1Title;
-
   /// No description provided for @storyTapToContinue.
   ///
   /// In en, this message translates to:
@@ -1507,12 +1441,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Grandma\'s book still has empty pages. I\'ll fill them, one by one.'**
   String get storyFinaleLine2;
-
-  /// No description provided for @storyFinaleLine3.
-  ///
-  /// In en, this message translates to:
-  /// **'Chapter 1 complete. More stories are coming soon!'**
-  String get storyFinaleLine3;
 
   /// No description provided for @storyCh1End1.
   ///
@@ -1817,7 +1745,7 @@ abstract class AppLocalizations {
   /// No description provided for @summaryDayBonusXp.
   ///
   /// In en, this message translates to:
-  /// **'Day bonus +{xp} XP'**
+  /// **'Shift bonus +{xp} XP'**
   String summaryDayBonusXp(int xp);
 
   /// Line in the day summary shown only on rainy days
@@ -1841,7 +1769,7 @@ abstract class AppLocalizations {
   /// No description provided for @summaryLevelUp.
   ///
   /// In en, this message translates to:
-  /// **'Level up! Bakery level {level}'**
+  /// **'Level up! Mai is now level {level}'**
   String summaryLevelUp(int level);
 
   /// No description provided for @summaryNewUnlocks.
@@ -1886,30 +1814,6 @@ abstract class AppLocalizations {
   /// **'More customers each day'**
   String get unlockMoreCustomers;
 
-  /// No description provided for @upgradesTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Upgrades'**
-  String get upgradesTitle;
-
-  /// No description provided for @upgradeOven.
-  ///
-  /// In en, this message translates to:
-  /// **'Oven'**
-  String get upgradeOven;
-
-  /// No description provided for @upgradeOvenDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'A wider golden zone when baking'**
-  String get upgradeOvenDesc;
-
-  /// No description provided for @upgradeOvenPerfectZone.
-  ///
-  /// In en, this message translates to:
-  /// **'Perfect zone ±{percent}%'**
-  String upgradeOvenPerfectZone(int percent);
-
   /// No description provided for @upgradeWhisk.
   ///
   /// In en, this message translates to:
@@ -1945,36 +1849,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Toppings land on the cake more easily'**
   String get upgradeTongsDesc;
-
-  /// No description provided for @upgradeLevelOf.
-  ///
-  /// In en, this message translates to:
-  /// **'Level {current}/{max}'**
-  String upgradeLevelOf(int current, int max);
-
-  /// No description provided for @upgradeBuy.
-  ///
-  /// In en, this message translates to:
-  /// **'Upgrade'**
-  String get upgradeBuy;
-
-  /// No description provided for @upgradeMaxed.
-  ///
-  /// In en, this message translates to:
-  /// **'Fully upgraded'**
-  String get upgradeMaxed;
-
-  /// No description provided for @upgradeDone.
-  ///
-  /// In en, this message translates to:
-  /// **'Upgraded!'**
-  String get upgradeDone;
-
-  /// No description provided for @decorTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Decorate the bakery'**
-  String get decorTitle;
 
   /// No description provided for @decorSlotWallpaper.
   ///
@@ -2072,120 +1946,6 @@ abstract class AppLocalizations {
   /// **'Lemon tree'**
   String get decorPlantLemonTree;
 
-  /// No description provided for @decorTipBonus.
-  ///
-  /// In en, this message translates to:
-  /// **'+{percent}% tips'**
-  String decorTipBonus(int percent);
-
-  /// No description provided for @decorTotalBonus.
-  ///
-  /// In en, this message translates to:
-  /// **'Total tip bonus: +{percent}%'**
-  String decorTotalBonus(int percent);
-
-  /// No description provided for @decorEquip.
-  ///
-  /// In en, this message translates to:
-  /// **'Place'**
-  String get decorEquip;
-
-  /// No description provided for @decorEquipped.
-  ///
-  /// In en, this message translates to:
-  /// **'Placed'**
-  String get decorEquipped;
-
-  /// No description provided for @recipesTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Recipe book'**
-  String get recipesTitle;
-
-  /// No description provided for @recipesPrice.
-  ///
-  /// In en, this message translates to:
-  /// **'Price: {amount}'**
-  String recipesPrice(int amount);
-
-  /// No description provided for @recipesIngredients.
-  ///
-  /// In en, this message translates to:
-  /// **'Ingredients'**
-  String get recipesIngredients;
-
-  /// No description provided for @recipesMastery.
-  ///
-  /// In en, this message translates to:
-  /// **'Mastery'**
-  String get recipesMastery;
-
-  /// No description provided for @recipesMasteryHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Serve it once, get 4 stars, then 5 stars to master it'**
-  String get recipesMasteryHint;
-
-  /// No description provided for @recipesMasteryReward.
-  ///
-  /// In en, this message translates to:
-  /// **'Mastered! +{gems} gems'**
-  String recipesMasteryReward(int gems);
-
-  /// No description provided for @recipesMissingPage.
-  ///
-  /// In en, this message translates to:
-  /// **'Missing page. Unlocks at level {level}'**
-  String recipesMissingPage(int level);
-
-  /// No description provided for @recipeSecretsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Grandma\'s secrets'**
-  String get recipeSecretsTitle;
-
-  /// No description provided for @recipeSecretsLocked.
-  ///
-  /// In en, this message translates to:
-  /// **'Unlocks after level {level}'**
-  String recipeSecretsLocked(int level);
-
-  /// No description provided for @recipeSecretsTier.
-  ///
-  /// In en, this message translates to:
-  /// **'Secret {tier}/{max}'**
-  String recipeSecretsTier(int tier, int max);
-
-  /// No description provided for @recipeSecretsBonus.
-  ///
-  /// In en, this message translates to:
-  /// **'+{pct}% price'**
-  String recipeSecretsBonus(int pct);
-
-  /// No description provided for @recipeSecretsBuy.
-  ///
-  /// In en, this message translates to:
-  /// **'Learn'**
-  String get recipeSecretsBuy;
-
-  /// No description provided for @recipeSecretsMaxed.
-  ///
-  /// In en, this message translates to:
-  /// **'All secrets learned'**
-  String get recipeSecretsMaxed;
-
-  /// No description provided for @recipeSecretsRecipeLocked.
-  ///
-  /// In en, this message translates to:
-  /// **'Find this recipe first'**
-  String get recipeSecretsRecipeLocked;
-
-  /// No description provided for @recipeSecretsHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Each secret makes this treat sell for more.'**
-  String get recipeSecretsHint;
-
   /// No description provided for @questsTitle.
   ///
   /// In en, this message translates to:
@@ -2264,12 +2024,6 @@ abstract class AppLocalizations {
   /// **'Come back tomorrow for more!'**
   String get loginComeBack;
 
-  /// No description provided for @storeTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Store'**
-  String get storeTitle;
-
   /// No description provided for @storeSimulatedNotice.
   ///
   /// In en, this message translates to:
@@ -2318,12 +2072,6 @@ abstract class AppLocalizations {
   /// **'Seaside decor set'**
   String get storeDecorSet;
 
-  /// No description provided for @storeDecorSetDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'3 special decorations'**
-  String get storeDecorSetDesc;
-
   /// No description provided for @storeRemoveAds.
   ///
   /// In en, this message translates to:
@@ -2335,78 +2083,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No more ads between days. Reward ads stay optional.'**
   String get storeRemoveAdsDesc;
-
-  /// Store: prominent stamp in the top corner next to the test notice banner.
-  ///
-  /// In en, this message translates to:
-  /// **'Test mode'**
-  String get storeTestMode;
-
-  /// Store: description of gem pack S/M/L.
-  ///
-  /// In en, this message translates to:
-  /// **'{gems} gems'**
-  String storeGemsDesc(int gems);
-
-  /// Store: description of the V2 starter pack.
-  ///
-  /// In en, this message translates to:
-  /// **'{coins} coins + {gems} gems + every booster ×{count}'**
-  String storeStarterPackDescV2(int coins, int gems, int count);
-
-  /// Store: highlight badge on the starter pack card. Keep short.
-  ///
-  /// In en, this message translates to:
-  /// **'Best deal'**
-  String get storeStarterBadge;
-
-  /// Store: description of the Remove ads pack (V2).
-  ///
-  /// In en, this message translates to:
-  /// **'No more ads between levels. Reward ads stay optional.'**
-  String get storeRemoveAdsDescV2;
-
-  /// Store: description of the staff outfits pack.
-  ///
-  /// In en, this message translates to:
-  /// **'Festival looks for Nora and Bao. Looks only — switch it in Staff.'**
-  String get storeStaffOutfitsDesc;
-
-  /// Store: description of the season pass pack.
-  ///
-  /// In en, this message translates to:
-  /// **'Unlock the premium rewards of this season.'**
-  String get storeSeasonPassDesc;
-
-  /// No description provided for @storeFreeGem.
-  ///
-  /// In en, this message translates to:
-  /// **'Watch an ad for {gems} gem'**
-  String storeFreeGem(int gems);
-
-  /// No description provided for @storeOwned.
-  ///
-  /// In en, this message translates to:
-  /// **'Owned'**
-  String get storeOwned;
-
-  /// No description provided for @storeConfirmTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Simulated purchase'**
-  String get storeConfirmTitle;
-
-  /// No description provided for @storeConfirmBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Buy {item} for {price}? No real money will be charged.'**
-  String storeConfirmBody(String item, String price);
-
-  /// No description provided for @storePurchaseSuccess.
-  ///
-  /// In en, this message translates to:
-  /// **'Thank you! Your items have been added.'**
-  String get storePurchaseSuccess;
 
   /// No description provided for @adsLimitReached.
   ///
@@ -2507,7 +2183,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsResetConfirmBody.
   ///
   /// In en, this message translates to:
-  /// **'Coins, levels, decorations and story progress will be erased. This can\'t be undone.'**
+  /// **'Coins, level, Mai\'s hairstyle and the places you\'ve visited will be erased. Language and sound are kept. This can\'t be undone.'**
   String get settingsResetConfirmBody;
 
   /// No description provided for @settingsResetDone.
@@ -2527,732 +2203,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Alpha build. Thanks for playing!'**
   String get settingsAlphaNote;
-
-  /// Settings: label of the purchases row.
-  ///
-  /// In en, this message translates to:
-  /// **'Purchases'**
-  String get settingsPurchases;
-
-  /// Settings: button that restores purchases.
-  ///
-  /// In en, this message translates to:
-  /// **'Restore purchases'**
-  String get settingsRestore;
-
-  /// Settings: success toast after restoring (count >= 1).
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{Restored 1 purchase} other{Restored {count} purchases}}'**
-  String settingsRestoreDone(int count);
-
-  /// Settings: toast when there is nothing to restore.
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing to restore'**
-  String get settingsRestoreNone;
-
-  /// Settings: toast when restoring fails.
-  ///
-  /// In en, this message translates to:
-  /// **'Couldn\'t restore right now. Please try again later.'**
-  String get settingsRestoreFailed;
-
-  /// No description provided for @levelMenuButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Levels'**
-  String get levelMenuButton;
-
-  /// Chapter label under the chapter name banner in the level list
-  ///
-  /// In en, this message translates to:
-  /// **'Chapter {chapter}'**
-  String levelChapterLabel(int chapter);
-
-  /// Level number banner on the Ready card, pause, result, and screen-reader label of a level tile
-  ///
-  /// In en, this message translates to:
-  /// **'Level {level}'**
-  String levelNumber(int level);
-
-  /// No description provided for @levelNewBadge.
-  ///
-  /// In en, this message translates to:
-  /// **'New'**
-  String get levelNewBadge;
-
-  /// No description provided for @levelSpecialBadge.
-  ///
-  /// In en, this message translates to:
-  /// **'Special'**
-  String get levelSpecialBadge;
-
-  /// No description provided for @levelGoalLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Goal'**
-  String get levelGoalLabel;
-
-  /// Coin goal (1-star threshold) on the Ready card
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{Earn 1 coin} other{Earn {count} coins}}'**
-  String levelGoalCoins(int count);
-
-  /// Customer goal on the Ready card
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{Serve 1 customer} other{Serve {count} customers}}'**
-  String levelGoalCustomers(int count);
-
-  /// Special order goal; only orders rated 3 stars or higher count
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{Finish 1 special order (3 stars or more)} other{Finish {count} special orders (3 stars or more)}}'**
-  String levelGoalSpecials(int count);
-
-  /// No description provided for @levelTimeLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Time'**
-  String get levelTimeLabel;
-
-  /// No description provided for @levelMenuLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'On the menu'**
-  String get levelMenuLabel;
-
-  /// No description provided for @levelStart.
-  ///
-  /// In en, this message translates to:
-  /// **'Start'**
-  String get levelStart;
-
-  /// No description provided for @levelPause.
-  ///
-  /// In en, this message translates to:
-  /// **'Pause'**
-  String get levelPause;
-
-  /// No description provided for @levelRush.
-  ///
-  /// In en, this message translates to:
-  /// **'Rush hour!'**
-  String get levelRush;
-
-  /// Text on the HUD goal bar and the goal line of the result screen
-  ///
-  /// In en, this message translates to:
-  /// **'{value}/{target}'**
-  String levelGoalProgress(int value, int target);
-
-  /// HUD combo label; mult is an already formatted multiplier such as 1.3
-  ///
-  /// In en, this message translates to:
-  /// **'Combo ×{mult}'**
-  String levelCombo(String mult);
-
-  /// No description provided for @levelPauseTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Paused'**
-  String get levelPauseTitle;
-
-  /// No description provided for @levelPauseBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Take a breather — your customers will wait.'**
-  String get levelPauseBody;
-
-  /// No description provided for @levelQuit.
-  ///
-  /// In en, this message translates to:
-  /// **'Quit'**
-  String get levelQuit;
-
-  /// No description provided for @levelReplay.
-  ///
-  /// In en, this message translates to:
-  /// **'Play again'**
-  String get levelReplay;
-
-  /// No description provided for @levelTimeUp.
-  ///
-  /// In en, this message translates to:
-  /// **'Time\'s up!'**
-  String get levelTimeUp;
-
-  /// Title of the extra time dialog
-  ///
-  /// In en, this message translates to:
-  /// **'+{seconds} seconds?'**
-  String levelExtraTimeTitle(int seconds);
-
-  /// No description provided for @levelExtraTimeBody.
-  ///
-  /// In en, this message translates to:
-  /// **'So close! Watch a short ad to keep the shop open a little longer.'**
-  String get levelExtraTimeBody;
-
-  /// Accept button of the extra time dialog
-  ///
-  /// In en, this message translates to:
-  /// **'Watch ad (+{seconds}s)'**
-  String levelExtraTimeWatch(int seconds);
-
-  /// No description provided for @levelExtraTimeNo.
-  ///
-  /// In en, this message translates to:
-  /// **'No thanks'**
-  String get levelExtraTimeNo;
-
-  /// No description provided for @levelSpecialLater.
-  ///
-  /// In en, this message translates to:
-  /// **'Later'**
-  String get levelSpecialLater;
-
-  /// No description provided for @levelSpecialQuitTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Leave this order?'**
-  String get levelSpecialQuitTitle;
-
-  /// No description provided for @levelSpecialQuitBody.
-  ///
-  /// In en, this message translates to:
-  /// **'The customer will keep waiting — you can come back to it.'**
-  String get levelSpecialQuitBody;
-
-  /// No description provided for @levelResultWinTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Level complete!'**
-  String get levelResultWinTitle;
-
-  /// No description provided for @levelResultLoseTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'So close — let\'s try again!'**
-  String get levelResultLoseTitle;
-
-  /// Goal line below the stars on the result screen; progress is the formatted levelGoalProgress text
-  ///
-  /// In en, this message translates to:
-  /// **'Goal: {progress}'**
-  String levelResultGoal(String progress);
-
-  /// No description provided for @levelResultCoins.
-  ///
-  /// In en, this message translates to:
-  /// **'Coins earned'**
-  String get levelResultCoins;
-
-  /// No description provided for @levelResultServed.
-  ///
-  /// In en, this message translates to:
-  /// **'Happy customers'**
-  String get levelResultServed;
-
-  /// No description provided for @levelResultLost.
-  ///
-  /// In en, this message translates to:
-  /// **'Customers who left'**
-  String get levelResultLost;
-
-  /// No description provided for @levelResultSpecials.
-  ///
-  /// In en, this message translates to:
-  /// **'Special orders'**
-  String get levelResultSpecials;
-
-  /// No description provided for @levelResultBestCombo.
-  ///
-  /// In en, this message translates to:
-  /// **'Best combo'**
-  String get levelResultBestCombo;
-
-  /// No description provided for @levelResultFiveStar.
-  ///
-  /// In en, this message translates to:
-  /// **'5-star treats'**
-  String get levelResultFiveStar;
-
-  /// Result screen: one-time button, only when coins > 0.
-  ///
-  /// In en, this message translates to:
-  /// **'×2 coins (watch ad)'**
-  String get levelResultDoubleCoins;
-
-  /// Result screen: toast after the ad. coins is the extra coins added.
-  ///
-  /// In en, this message translates to:
-  /// **'Coins doubled! +{coins}'**
-  String levelResultDoubled(int coins);
-
-  /// No description provided for @levelNext.
-  ///
-  /// In en, this message translates to:
-  /// **'Next level'**
-  String get levelNext;
-
-  /// No description provided for @levelList.
-  ///
-  /// In en, this message translates to:
-  /// **'Level list'**
-  String get levelList;
-
-  /// Level play: the display case has no room for the boxed batch.
-  ///
-  /// In en, this message translates to:
-  /// **'Case full!'**
-  String get lvlCaseFull;
-
-  /// Level play: banner when rush hour starts.
-  ///
-  /// In en, this message translates to:
-  /// **'Rush hour!'**
-  String get lvlRushHour;
-
-  /// Level play: consecutive sales combo label.
-  ///
-  /// In en, this message translates to:
-  /// **'Combo ×{count}'**
-  String lvlCombo(int count);
-
-  /// Level play, mix station: batch mixed, oven busy. Keep short.
-  ///
-  /// In en, this message translates to:
-  /// **'Waiting for oven'**
-  String get lvlWaitOven;
-
-  /// Level play, oven: taken out, frosting station still busy. Keep short.
-  ///
-  /// In en, this message translates to:
-  /// **'Waiting…'**
-  String get lvlWaiting;
-
-  /// Level play, mould station idle: tap a recipe card on the left. Keep short.
-  ///
-  /// In en, this message translates to:
-  /// **'Tap a treat'**
-  String get lvlPickTreat;
-
-  /// Level play, oven: the batch burnt.
-  ///
-  /// In en, this message translates to:
-  /// **'Burnt!'**
-  String get lvlBurnt;
-
-  /// Level play, oven: needle in the golden zone, tap to take out. Keep short.
-  ///
-  /// In en, this message translates to:
-  /// **'Take out!'**
-  String get lvlTakeOut;
-
-  /// Level play, mix station hint: drag one full circle around the bowl. Keep short.
-  ///
-  /// In en, this message translates to:
-  /// **'Stir 1 turn'**
-  String get lvlStirHint;
-
-  /// Level play, frosting station hint: swipe across the cake. Keep short.
-  ///
-  /// In en, this message translates to:
-  /// **'Swipe across'**
-  String get lvlSwipeHint;
-
-  /// Ready card: small label above the row of 3 booster slots.
-  ///
-  /// In en, this message translates to:
-  /// **'Boosters'**
-  String get lvlBoosterTitle;
-
-  /// Ready card: small button next to the booster row (once per attempt).
-  ///
-  /// In en, this message translates to:
-  /// **'Watch ad: 1 free'**
-  String get lvlBoosterAdFree;
-
-  /// Ready card: label on a booster slot paid by the ad credit (replaces the price).
-  ///
-  /// In en, this message translates to:
-  /// **'Free'**
-  String get lvlBoosterFree;
-
-  /// Ready card: hint after watching the ad when no slot is chosen yet.
-  ///
-  /// In en, this message translates to:
-  /// **'Pick a booster — one is free!'**
-  String get lvlBoosterPickFree;
-
-  /// Ready card: first-time intro bubble next to the booster row.
-  ///
-  /// In en, this message translates to:
-  /// **'New! Boosters make a level easier. Here\'s one to try for free.'**
-  String get lvlBoosterIntro;
-
-  /// Ready card: screen reader label of the chosen booster slot.
-  ///
-  /// In en, this message translates to:
-  /// **'{name}, selected'**
-  String lvlBoosterSelected(String name);
-
-  /// Level map: short label under the round season button in the top bar (max ~8 chars).
-  ///
-  /// In en, this message translates to:
-  /// **'Season'**
-  String get mapSeasonShort;
-
-  /// Season pass screen title; tooltip of the map button.
-  ///
-  /// In en, this message translates to:
-  /// **'Season pass'**
-  String get seasonTitle;
-
-  /// Season pass: time-left label. time comes from seasonDaysHours / seasonHoursMinutes.
-  ///
-  /// In en, this message translates to:
-  /// **'Ends in {time}'**
-  String seasonTimeLeft(String time);
-
-  /// Season pass: time left, one day or more.
-  ///
-  /// In en, this message translates to:
-  /// **'{days}d {hours}h'**
-  String seasonDaysHours(int days, int hours);
-
-  /// Season pass: time left, under one day.
-  ///
-  /// In en, this message translates to:
-  /// **'{hours}h {minutes}m'**
-  String seasonHoursMinutes(int hours, int minutes);
-
-  /// Season pass: progress bar toward the next tier.
-  ///
-  /// In en, this message translates to:
-  /// **'{points}/{need} points'**
-  String seasonPoints(int points, int need);
-
-  /// Season pass: progress bar when the last tier is reached.
-  ///
-  /// In en, this message translates to:
-  /// **'{points} points · all tiers reached'**
-  String seasonPointsMax(int points);
-
-  /// Season pass: small line under the title.
-  ///
-  /// In en, this message translates to:
-  /// **'+{star} points for each new star, +{win} for each win'**
-  String seasonHowTo(int star, int win);
-
-  /// Season pass: label of each tier column (also screen reader).
-  ///
-  /// In en, this message translates to:
-  /// **'Tier {tier}'**
-  String seasonTierLabel(int tier);
-
-  /// Season pass: header of the free reward row.
-  ///
-  /// In en, this message translates to:
-  /// **'Free'**
-  String get seasonFreeRow;
-
-  /// Season pass: header of the premium reward row.
-  ///
-  /// In en, this message translates to:
-  /// **'Premium'**
-  String get seasonPremiumRow;
-
-  /// Season pass: button that claims every pending reward.
-  ///
-  /// In en, this message translates to:
-  /// **'Claim all'**
-  String get seasonClaimAll;
-
-  /// Season pass: toast after claiming.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{Reward claimed!} other{{count} rewards claimed!}}'**
-  String seasonClaimedToast(int count);
-
-  /// Season pass: buy premium button. price is a fixed display price.
-  ///
-  /// In en, this message translates to:
-  /// **'Unlock premium · {price}'**
-  String seasonBuyPremium(String price);
-
-  /// Season pass: label replacing the buy button once owned.
-  ///
-  /// In en, this message translates to:
-  /// **'Premium unlocked'**
-  String get seasonPremiumActive;
-
-  /// Season pass: tooltip / screen reader label of a premium cell when not purchased.
-  ///
-  /// In en, this message translates to:
-  /// **'Unlock premium to claim'**
-  String get seasonPremiumHint;
-
-  /// Season pass: dialog text when the season ends.
-  ///
-  /// In en, this message translates to:
-  /// **'The season has ended. Your unclaimed rewards were added automatically.'**
-  String get seasonEnded;
-
-  /// Season pass: shown when there is no season data.
-  ///
-  /// In en, this message translates to:
-  /// **'No season is running right now.'**
-  String get seasonNone;
-
-  /// Season pass: tooltip name of the portrait frame reward.
-  ///
-  /// In en, this message translates to:
-  /// **'Portrait frame'**
-  String get seasonRewardFrame;
-
-  /// Season pass: tooltip of a booster reward cell.
-  ///
-  /// In en, this message translates to:
-  /// **'{name} ×{count}'**
-  String seasonRewardBooster(String name, int count);
-
-  /// Small HUD label under the goal bar: a special guest visits if enough customers are served before the deadline. who is the translated guest name, time is m:ss on the countdown clock.
-  ///
-  /// In en, this message translates to:
-  /// **'{who} drops by if you serve {served}/{target} by {time}'**
-  String levelSpecialCondition(String who, int served, int target, String time);
-
-  /// Small HUD label: a special guest visits once enough customers are served, no deadline. who is the translated guest name.
-  ///
-  /// In en, this message translates to:
-  /// **'{who} drops by after {served}/{target} served'**
-  String levelSpecialConditionNoTime(String who, int served, int target);
-
-  /// Toast when a special guest's visit is skipped because the deadline passed. who is the translated guest name.
-  ///
-  /// In en, this message translates to:
-  /// **'{who} couldn\'t make it this time'**
-  String levelSpecialSkipped(String who);
-
-  /// Level map: screen-reader label of the total stars chip in the top bar.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 star} other{{count} stars}}'**
-  String mapStarsTotal(int count);
-
-  /// Level map: short label under the daily quests button (tooltip stays menuQuests). Keep short.
-  ///
-  /// In en, this message translates to:
-  /// **'Quests'**
-  String get mapQuestsShort;
-
-  /// Level map: short label under the daily gift button (tooltip stays menuLoginGift). Keep short.
-  ///
-  /// In en, this message translates to:
-  /// **'Gift'**
-  String get mapGiftShort;
-
-  /// Level map: tooltip of the previous chapter arrow button.
-  ///
-  /// In en, this message translates to:
-  /// **'Previous chapter'**
-  String get mapPrevChapter;
-
-  /// Level map: tooltip of the next chapter arrow button.
-  ///
-  /// In en, this message translates to:
-  /// **'Next chapter'**
-  String get mapNextChapter;
-
-  /// Level map: screen-reader label of an unlocked level button, also used as the replay hint button label.
-  ///
-  /// In en, this message translates to:
-  /// **'Level {level}: {stars} of 3 stars'**
-  String mapLevelLabel(int level, int stars);
-
-  /// Level map: screen-reader label of a locked level button.
-  ///
-  /// In en, this message translates to:
-  /// **'Level {level}, locked'**
-  String mapLevelLockedLabel(int level);
-
-  /// Level map: toast shown when tapping a locked level button.
-  ///
-  /// In en, this message translates to:
-  /// **'Finish the previous level to unlock this one!'**
-  String get mapLevelLocked;
-
-  /// Level map: title of the padlock card on a locked chapter page.
-  ///
-  /// In en, this message translates to:
-  /// **'Chapter {chapter} is locked'**
-  String mapChapterLockedTitle(int chapter);
-
-  /// Level map: star requirement line on a locked chapter page; a star icon is drawn before the text.
-  ///
-  /// In en, this message translates to:
-  /// **'Need {need} stars — you have {have}'**
-  String mapChapterNeedStars(int need, int have);
-
-  /// Level map: requirement line on a locked chapter page - clear the last level of the previous chapter.
-  ///
-  /// In en, this message translates to:
-  /// **'Finish chapter {chapter} first'**
-  String mapChapterNeedFinish(int chapter);
-
-  /// Level map: hint on a locked chapter page when stars are not enough; shown with up to 3 low-star level buttons.
-  ///
-  /// In en, this message translates to:
-  /// **'Replay levels with fewer stars to collect more'**
-  String get mapChapterReplayHint;
-
-  /// Level map: title of the dialog shown after the new chapter unlock animation.
-  ///
-  /// In en, this message translates to:
-  /// **'Chapter {chapter} unlocked!'**
-  String mapChapterUnlockedTitle(int chapter);
-
-  /// Level map: body of the chapter unlocked dialog, below the chapter name.
-  ///
-  /// In en, this message translates to:
-  /// **'New recipes and new faces are waiting in this part of town.'**
-  String get mapChapterUnlockedBody;
-
-  /// Level map: button that closes the chapter unlocked dialog. Keep short.
-  ///
-  /// In en, this message translates to:
-  /// **'Let\'s go!'**
-  String get mapChapterUnlockedGo;
-
-  /// Level result screen: button back to the level map (replaces levelList). Keep short.
-  ///
-  /// In en, this message translates to:
-  /// **'Map'**
-  String get mapBackToMap;
-
-  /// Level map: message shown when levels.json failed to load (empty config).
-  ///
-  /// In en, this message translates to:
-  /// **'The level map couldn\'t load. Please restart the game.'**
-  String get mapLoadError;
-
-  /// Upgrades / Decor screens: locked button text (replaces commonUnlockAtLevel); level is the level that must be cleared.
-  ///
-  /// In en, this message translates to:
-  /// **'Clear level {level} to unlock'**
-  String mapUnlockAfterLevel(int level);
-
-  /// Recipe book: locked recipe (replaces recipesMissingPage); level is the first level that features the recipe.
-  ///
-  /// In en, this message translates to:
-  /// **'Missing page. Reach level {level} to find it'**
-  String mapRecipeFromLevel(int level);
-
-  /// Recipe book: locked recipe that does not appear in any level yet.
-  ///
-  /// In en, this message translates to:
-  /// **'Missing page. Coming in a later chapter'**
-  String get mapRecipeLater;
-
-  /// Level map: title of the dialog greeting returning players after the update.
-  ///
-  /// In en, this message translates to:
-  /// **'Welcome back!'**
-  String get mapWelcomeTitle;
-
-  /// Level map: body of the welcome-back dialog for returning players; announces the gift of coins and gems.
-  ///
-  /// In en, this message translates to:
-  /// **'The bakery has a new look: play level by level on the town map. As a thank-you, here are {coins} coins and {gems} gems.'**
-  String mapWelcomeBody(int coins, int gems);
-
-  /// Upgrades screen: label of tab 1 (bakery expansions). Keep short.
-  ///
-  /// In en, this message translates to:
-  /// **'Expand the bakery'**
-  String get upgTabExpansion;
-
-  /// Upgrades screen: label of tab 2 (equipment tiers). Keep short.
-  ///
-  /// In en, this message translates to:
-  /// **'Equipment'**
-  String get upgTabEquipment;
-
-  /// Upgrades screen: status label on an expansion card that was already bought.
-  ///
-  /// In en, this message translates to:
-  /// **'Owned'**
-  String get upgOwned;
-
-  /// Upgrades screen: label on staff / rare decor cards that are not in this version yet.
-  ///
-  /// In en, this message translates to:
-  /// **'Coming soon'**
-  String get upgComingSoon;
-
-  /// Upgrades screen: toast shown after buying an expansion.
-  ///
-  /// In en, this message translates to:
-  /// **'Added to your bakery!'**
-  String get upgExpansionDone;
-
-  /// Upgrades screen: tier line of an equipment card (replaces upgradeLevelOf; 'Level' would be confused with map levels).
-  ///
-  /// In en, this message translates to:
-  /// **'Tier {current}/{max}'**
-  String upgTierOf(int current, int max);
-
-  /// Upgrades screen: fast oven stat. seconds is an already formatted number such as 6.3 (6,3 in some locales).
-  ///
-  /// In en, this message translates to:
-  /// **'Bakes in {seconds}s'**
-  String upgStatOvenSec(String seconds);
-
-  /// Upgrades screen: big tray stat.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 cake per tray} other{{count} cakes per tray}}'**
-  String upgStatBatch(int count);
-
-  /// Upgrades screen: wide display case stat.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 cake per case slot} other{{count} cakes per case slot}}'**
-  String upgStatCaseSlot(int count);
-
-  /// Upgrades screen: whisk stat (size of the good mixing zone).
-  ///
-  /// In en, this message translates to:
-  /// **'Green zone {percent}%'**
-  String upgStatMixZone(int percent);
-
-  /// Upgrades screen: piping bag stat.
-  ///
-  /// In en, this message translates to:
-  /// **'Frosting stroke {size}'**
-  String upgStatStroke(int size);
-
-  /// Upgrades screen: tongs stat (how far toppings snap into place).
-  ///
-  /// In en, this message translates to:
-  /// **'Snap range {size}'**
-  String upgStatSnap(int size);
-
-  /// Upgrades screen: tongs stat at tier 1 (snap range is 0).
-  ///
-  /// In en, this message translates to:
-  /// **'No snapping'**
-  String get upgStatSnapNone;
-
-  /// Upgrades screen: screen-reader label of the arrow between the current stat and the next tier stat. stat is one of the upgStat* strings.
-  ///
-  /// In en, this message translates to:
-  /// **'Next: {stat}'**
-  String upgStatNext(String stat);
 
   /// Level map: title of the notice card shown after the map animation when something new is unlocked.
   ///
@@ -3290,168 +2240,6 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{+1 more} other{+{count} more}}'**
   String unlockNoticeMore(int count);
 
-  /// Level 'Ready' card: bakery summary part, joined with ' · '.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 case slot} other{{count} case slots}}'**
-  String levelShopCase(int count);
-
-  /// Level 'Ready' card: bakery summary part, joined with ' · '.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 oven} other{{count} ovens}}'**
-  String levelShopOvens(int count);
-
-  /// Level 'Ready' card: bakery summary part, joined with ' · '.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{Tray of 1} other{Tray of {count}}}'**
-  String levelShopTray(int count);
-
-  /// Upgrades screen: label of tab 3 (staff). Keep short.
-  ///
-  /// In en, this message translates to:
-  /// **'Staff'**
-  String get upgTabStaff;
-
-  /// Staff card: role label.
-  ///
-  /// In en, this message translates to:
-  /// **'Cashier'**
-  String get staffRoleCashier;
-
-  /// Staff card: role label.
-  ///
-  /// In en, this message translates to:
-  /// **'Baker'**
-  String get staffRoleBaker;
-
-  /// Staff card: role label (the person who serves café tables).
-  ///
-  /// In en, this message translates to:
-  /// **'Server'**
-  String get staffRoleWaiter;
-
-  /// Staff card: role label (the person who looks after the bakery while the player is away).
-  ///
-  /// In en, this message translates to:
-  /// **'Manager'**
-  String get staffRoleManager;
-
-  /// Staff card: label of stat row 1. Keep short.
-  ///
-  /// In en, this message translates to:
-  /// **'Speed'**
-  String get staffStatSpeed;
-
-  /// Staff card: label of stat row 2. Keep short.
-  ///
-  /// In en, this message translates to:
-  /// **'Skill'**
-  String get staffStatSkill;
-
-  /// Staff card: screen-reader label of the level dots row of one stat. stat is staffStatSpeed or staffStatSkill.
-  ///
-  /// In en, this message translates to:
-  /// **'{stat} level {level} of {max}'**
-  String staffStatLevel(String stat, int level, int max);
-
-  /// Staff card: button that hires the staff member (shown next to the price). Keep short.
-  ///
-  /// In en, this message translates to:
-  /// **'Hire'**
-  String get staffHire;
-
-  /// Toast shown after hiring a staff member.
-  ///
-  /// In en, this message translates to:
-  /// **'Welcome to the team!'**
-  String get staffHired;
-
-  /// Staff card: screen-reader label of the button that upgrades one stat (the button itself only shows an arrow and the price). stat is staffStatSpeed or staffStatSkill.
-  ///
-  /// In en, this message translates to:
-  /// **'Upgrade {stat}'**
-  String staffUpgradeStat(String stat);
-
-  /// Staff card: cashier Speed stat, shown as a 'before -> after' pair so keep it short. seconds is an already formatted number such as 3.2 (3,2 in some locales).
-  ///
-  /// In en, this message translates to:
-  /// **'Sells every {seconds}s'**
-  String staffCashierSpeed(String seconds);
-
-  /// Staff card: cashier Skill stat, extra tips on sales the cashier handles; shown as a 'before -> after' pair so keep it short.
-  ///
-  /// In en, this message translates to:
-  /// **'+{percent}% tips'**
-  String staffCashierSkill(int percent);
-
-  /// Staff card: baker Speed stat. seconds is an already formatted number such as 24 or 3.2.
-  ///
-  /// In en, this message translates to:
-  /// **'A batch every {seconds}s'**
-  String staffBakerSpeed(String seconds);
-
-  /// Staff card: baker Skill stat, average star rating of the cakes. stars is an already formatted number such as 3.5 (3,5 in some locales). Do not use a star symbol.
-  ///
-  /// In en, this message translates to:
-  /// **'Cakes around {stars} stars'**
-  String staffBakerSkill(String stars);
-
-  /// Staff card: server Speed stat. seconds is an already formatted number such as 3.2.
-  ///
-  /// In en, this message translates to:
-  /// **'Serves every {seconds}s'**
-  String staffWaiterSpeed(String seconds);
-
-  /// Staff card: server Skill stat, extra patience of waiting guests.
-  ///
-  /// In en, this message translates to:
-  /// **'Waiting guests +{percent}% patience'**
-  String staffWaiterSkill(int percent);
-
-  /// Staff card: manager Speed stat (income while the player is away). The number comes first so the 'before -> after' pair stays compact, e.g. '20% -> 25% of a level's coins per hour'.
-  ///
-  /// In en, this message translates to:
-  /// **'{percent}% of a level\'s coins per hour'**
-  String staffManagerSpeed(int percent);
-
-  /// Staff card: manager Skill stat, the maximum number of away hours that earn coins.
-  ///
-  /// In en, this message translates to:
-  /// **'Counts up to {hours} hours away'**
-  String staffManagerSkill(int hours);
-
-  /// Staff card footer: the staff member is past the level gate but cannot be hired until an item is bought first (the server needs café tables). Replaces 'Reach level X to unlock'. item is the translated unlock name.
-  ///
-  /// In en, this message translates to:
-  /// **'Needs {item} first'**
-  String staffRequires(String item);
-
-  /// Staff card: toggle label on Nora / Bao cards once the outfit pack is bought.
-  ///
-  /// In en, this message translates to:
-  /// **'Festival outfit'**
-  String get staffOutfitFestival;
-
-  /// Level map: title of the away-income dialog.
-  ///
-  /// In en, this message translates to:
-  /// **'While you were away'**
-  String get offlineTitle;
-
-  /// Away-income dialog: line under the manager portrait. name is the manager's name (from JSON); duration is one of the offlineDuration* strings.
-  ///
-  /// In en, this message translates to:
-  /// **'{name} looked after the bakery for {duration}.'**
-  String offlineBody(String name, String duration);
-
-  /// Away-income dialog: note shown when the time away was cut to the manager's hour limit.
-  ///
-  /// In en, this message translates to:
-  /// **'Counted {hours} hours (the manager\'s limit).'**
-  String offlineCapped(int hours);
-
   /// Away-income dialog: time away shorter than 1 hour.
   ///
   /// In en, this message translates to:
@@ -3476,41 +2264,11 @@ abstract class AppLocalizations {
   /// **'{days, plural, =1{over a day} other{{days} days}}'**
   String offlineDurationDays(int days);
 
-  /// Away-income dialog: screen-reader label of the coin amount line.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{You earned 1 coin} other{You earned {count} coins}}'**
-  String offlineEarned(int count);
-
-  /// Away-income dialog: button that collects the coins. Keep short.
-  ///
-  /// In en, this message translates to:
-  /// **'Collect'**
-  String get offlineClaim;
-
   /// Away-income dialog: button that doubles the coins by watching a rewarded ad (hidden when no ads are left today).
   ///
   /// In en, this message translates to:
   /// **'x2 (watch ad)'**
   String get offlineDouble;
-
-  /// Away-income dialog: toast after the rewarded ad is finished.
-  ///
-  /// In en, this message translates to:
-  /// **'Coins doubled!'**
-  String get offlineDoubled;
-
-  /// Level 'Ready' card: label before the row of staff portraits.
-  ///
-  /// In en, this message translates to:
-  /// **'Helping this level'**
-  String get levelReadyStaff;
-
-  /// Level 'Ready' card: screen-reader label of the staff portraits row. names are joined with ', '.
-  ///
-  /// In en, this message translates to:
-  /// **'{names} will help this level'**
-  String levelReadyStaffNames(String names);
 
   /// Opening scene: subtitle of scene 1 (morning kitchen).
   ///
@@ -3536,107 +2294,11 @@ abstract class AppLocalizations {
   /// **'Open'**
   String get introSignOpen;
 
-  /// Short intro: small blinking hint line.
-  ///
-  /// In en, this message translates to:
-  /// **'Tap to enter the bakery'**
-  String get introTapToEnter;
-
   /// Opening scene: screen-reader label.
   ///
   /// In en, this message translates to:
   /// **'Opening scene'**
   String get introSemantics;
-
-  /// Level 1 tutorial bubble, step 1: points at the first customer. Keep short (small bubble).
-  ///
-  /// In en, this message translates to:
-  /// **'This customer wants this treat. Tap them to sell!'**
-  String get lvlTutServe;
-
-  /// Level 1 tutorial bubble, step 2: points at the cake card in the kitchen. Keep short (small bubble).
-  ///
-  /// In en, this message translates to:
-  /// **'Tap a treat card to bake a fresh batch!'**
-  String get lvlTutBake;
-
-  /// Level 1 tutorial bubble: mould station. Keep short (small bubble).
-  ///
-  /// In en, this message translates to:
-  /// **'Pick the right mould'**
-  String get lvlTutMould;
-
-  /// Level 1 tutorial bubble: mixing station (points at the bowl). Keep short (small bubble).
-  ///
-  /// In en, this message translates to:
-  /// **'Stir in circles to mix'**
-  String get lvlTutMix;
-
-  /// Level 1 tutorial bubble: oven. Keep short (small bubble).
-  ///
-  /// In en, this message translates to:
-  /// **'Wait for the needle to hit the gold mark, then tap'**
-  String get lvlTutOven;
-
-  /// Level 1 tutorial bubble: frosting station. Keep short (small bubble).
-  ///
-  /// In en, this message translates to:
-  /// **'Trace the frosting line'**
-  String get lvlTutFrost;
-
-  /// Level 1 tutorial bubble: topping station. count is the number of toppings needed (3 in level 1). Keep short (small bubble).
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{Tap the right jar once} other{Tap the right jar {count} times}}'**
-  String lvlTutTopping(int count);
-
-  /// Level 1 tutorial bubble: box station. Keep short (small bubble).
-  ///
-  /// In en, this message translates to:
-  /// **'Pick the right box'**
-  String get lvlTutBox;
-
-  /// Level 1 tutorial bubble, last step; hides itself after 3 seconds. Keep short (small bubble).
-  ///
-  /// In en, this message translates to:
-  /// **'Your treats are in the case. Now serve lots of customers!'**
-  String get lvlTutCaseReady;
-
-  /// Level 2 tutorial bubble: points at the combo meter on the HUD. Keep short (small bubble).
-  ///
-  /// In en, this message translates to:
-  /// **'Sell back to back to grow your combo — more coins!'**
-  String get lvlTutCombo;
-
-  /// Level 2 tutorial bubble: shown the first time a second treat appears in an order bubble. Keep short (small bubble).
-  ///
-  /// In en, this message translates to:
-  /// **'Each customer wants something different.'**
-  String get lvlTutNewTreat;
-
-  /// Level 3 tutorial bubble: shown when a customer's patience ring drops below 50%. Keep short (small bubble).
-  ///
-  /// In en, this message translates to:
-  /// **'The colored ring is their patience. Serve fast for tips!'**
-  String get lvlTutPatience;
-
-  /// Level 3 tutorial bubble: shown the first time a customer leaves. Keep short (small bubble).
-  ///
-  /// In en, this message translates to:
-  /// **'Customers who wait too long will leave.'**
-  String get lvlTutWalkout;
-
-  /// Level 'Ready' card: reminder line under the goal, only on the level with the patience tutorial (level 3).
-  ///
-  /// In en, this message translates to:
-  /// **'This level counts the coins you earn'**
-  String get levelReadyCoinsHint;
-
-  /// Settings: label of the row that holds the two buttons below.
-  ///
-  /// In en, this message translates to:
-  /// **'Getting started'**
-  String get settingsGuide;
 
   /// Settings: button that replays the opening scene (returns to Settings afterwards). Keep short.
   ///
@@ -3644,59 +2306,1295 @@ abstract class AppLocalizations {
   /// **'Replay opening'**
   String get settingsReplayIntro;
 
-  /// Settings: button that turns the level 1-3 tutorials back on. Keep short.
+  /// No description provided for @charNora.
   ///
   /// In en, this message translates to:
-  /// **'Replay tutorials'**
-  String get settingsReplayTutorials;
+  /// **'Nora'**
+  String get charNora;
 
-  /// Settings: toast shown after tapping the replay tutorials button.
+  /// No description provided for @charBao.
   ///
   /// In en, this message translates to:
-  /// **'Tutorials will show again in Levels 1–3'**
-  String get settingsTutorialsReset;
+  /// **'Bao'**
+  String get charBao;
 
-  /// Store: toast when a purchase attempt returns false (store, premium buy button on the Season pass).
+  /// No description provided for @charTheo.
   ///
   /// In en, this message translates to:
-  /// **'The purchase didn\'t go through.'**
-  String get storePurchaseFailed;
+  /// **'Theo'**
+  String get charTheo;
 
-  /// Store: description on the Season pass card when it can't be bought (no season running or already bought).
+  /// No description provided for @npcSquirrel.
   ///
   /// In en, this message translates to:
-  /// **'No season is running right now. Check back soon!'**
-  String get storeSeasonNone;
+  /// **'Squirrel'**
+  String get npcSquirrel;
 
-  /// Level result: bonus row showing the Season pass points earned this run.
+  /// No description provided for @npcHamster.
   ///
   /// In en, this message translates to:
-  /// **'+{points} season points'**
-  String levelResultSeasonPoints(int points);
+  /// **'Hamster'**
+  String get npcHamster;
 
-  /// Level result: intro booster gift row (first time, up to level 4). name is the booster's display name.
+  /// No description provided for @npcShiba.
   ///
   /// In en, this message translates to:
-  /// **'Gift: {name} ×1'**
-  String levelResultBoosterGift(String name);
+  /// **'Shiba'**
+  String get npcShiba;
 
-  /// Pause dialog: shown when boosters were used and at least one treat was sold.
+  /// No description provided for @npcBlackCat.
   ///
   /// In en, this message translates to:
-  /// **'Boosters used in this run won\'t be refunded.'**
-  String get levelPauseBoosterLost;
+  /// **'Black Cat'**
+  String get npcBlackCat;
 
-  /// Pause dialog: shown when boosters were used but nothing has been sold yet.
+  /// No description provided for @npcWalrus.
   ///
   /// In en, this message translates to:
-  /// **'Quit or replay now and your boosters go back to your bag.'**
-  String get levelPauseBoosterRefund;
+  /// **'Mr. Walrus'**
+  String get npcWalrus;
 
-  /// Small toast when Quit / Replay happens before the first sale (boosters refunded).
+  /// No description provided for @npcLion.
   ///
   /// In en, this message translates to:
-  /// **'Boosters returned to your bag.'**
-  String get levelBoostersRefunded;
+  /// **'Mr. Lion'**
+  String get npcLion;
+
+  /// No description provided for @talkHoaOwlL1.
+  ///
+  /// In en, this message translates to:
+  /// **'They say owls are night birds. Yet here I am at your door by five every morning.'**
+  String get talkHoaOwlL1;
+
+  /// No description provided for @talkHoaOwlL2.
+  ///
+  /// In en, this message translates to:
+  /// **'But Mr. Hoa, we open at seven!'**
+  String get talkHoaOwlL2;
+
+  /// No description provided for @talkHoaOwlL3.
+  ///
+  /// In en, this message translates to:
+  /// **'I know. Those two hours are for smelling the butter through the door.'**
+  String get talkHoaOwlL3;
+
+  /// No description provided for @talkHoaOwlC1.
+  ///
+  /// In en, this message translates to:
+  /// **'I\'ll open early for you, then!'**
+  String get talkHoaOwlC1;
+
+  /// No description provided for @talkHoaOwlR1.
+  ///
+  /// In en, this message translates to:
+  /// **'No, no. Waiting is half the flavour of an egg tart.'**
+  String get talkHoaOwlR1;
+
+  /// No description provided for @talkHoaOwlC2.
+  ///
+  /// In en, this message translates to:
+  /// **'Then I\'ll bake so well you can smell it from home!'**
+  String get talkHoaOwlC2;
+
+  /// No description provided for @talkHoaOwlR2.
+  ///
+  /// In en, this message translates to:
+  /// **'Then I\'d lose my excuse to wake up early. Very well, deal.'**
+  String get talkHoaOwlR2;
+
+  /// No description provided for @talkHoaOwlL4.
+  ///
+  /// In en, this message translates to:
+  /// **'Then tomorrow, the first tart out of the oven is yours.'**
+  String get talkHoaOwlL4;
+
+  /// No description provided for @talkLinhSketchL1.
+  ///
+  /// In en, this message translates to:
+  /// **'Mai, hold still! I\'m sketching you.'**
+  String get talkLinhSketchL1;
+
+  /// No description provided for @talkLinhSketchL2.
+  ///
+  /// In en, this message translates to:
+  /// **'But I\'ve got flour all over my hair…'**
+  String get talkLinhSketchL2;
+
+  /// No description provided for @talkLinhSketchL3.
+  ///
+  /// In en, this message translates to:
+  /// **'Done! Take a look.'**
+  String get talkLinhSketchL3;
+
+  /// No description provided for @talkLinhSketchL4.
+  ///
+  /// In en, this message translates to:
+  /// **'Linh… why am I a steamed bun wearing an apron?'**
+  String get talkLinhSketchL4;
+
+  /// No description provided for @talkLinhSketchL5.
+  ///
+  /// In en, this message translates to:
+  /// **'Because you\'re round, soft and warm. It\'s a compliment!'**
+  String get talkLinhSketchL5;
+
+  /// No description provided for @talkLinhSketchC1.
+  ///
+  /// In en, this message translates to:
+  /// **'Then give me a bow!'**
+  String get talkLinhSketchC1;
+
+  /// No description provided for @talkLinhSketchR1.
+  ///
+  /// In en, this message translates to:
+  /// **'Two bows! The cutest bun in town!'**
+  String get talkLinhSketchR1;
+
+  /// No description provided for @talkLinhSketchC2.
+  ///
+  /// In en, this message translates to:
+  /// **'Can I hang it by the counter?'**
+  String get talkLinhSketchC2;
+
+  /// No description provided for @talkLinhSketchR2.
+  ///
+  /// In en, this message translates to:
+  /// **'Really? Look, my ears just shot straight up!'**
+  String get talkLinhSketchR2;
+
+  /// No description provided for @talkKenjiCloudL1.
+  ///
+  /// In en, this message translates to:
+  /// **'Today I feel like a cloud that meant to rain… then changed its mind.'**
+  String get talkKenjiCloudL1;
+
+  /// No description provided for @talkKenjiCloudL2.
+  ///
+  /// In en, this message translates to:
+  /// **'A cloud that changed its mind… Let me think.'**
+  String get talkKenjiCloudL2;
+
+  /// No description provided for @talkKenjiCloudC1.
+  ///
+  /// In en, this message translates to:
+  /// **'Matcha cake: a little bitter at first, then sweeter.'**
+  String get talkKenjiCloudC1;
+
+  /// No description provided for @talkKenjiCloudR1.
+  ///
+  /// In en, this message translates to:
+  /// **'That\'s exactly the cloud. I\'ll photograph it before I eat.'**
+  String get talkKenjiCloudR1;
+
+  /// No description provided for @talkKenjiCloudC2.
+  ///
+  /// In en, this message translates to:
+  /// **'A vanilla cupcake, white and fluffy like a cloud.'**
+  String get talkKenjiCloudC2;
+
+  /// No description provided for @talkKenjiCloudR2.
+  ///
+  /// In en, this message translates to:
+  /// **'A bit… literal. But I like your honesty.'**
+  String get talkKenjiCloudR2;
+
+  /// No description provided for @talkKenjiCloudL3.
+  ///
+  /// In en, this message translates to:
+  /// **'Every visit here, my film roll gets a little shorter.'**
+  String get talkKenjiCloudL3;
+
+  /// No description provided for @talkRosaSecretL1.
+  ///
+  /// In en, this message translates to:
+  /// **'Do you know, dear, for sixty years I have eaten cake only with a silver fork.'**
+  String get talkRosaSecretL1;
+
+  /// No description provided for @talkRosaSecretL2.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes… but there\'s a dab of cream on the tip of your nose.'**
+  String get talkRosaSecretL2;
+
+  /// No description provided for @talkRosaSecretL3.
+  ///
+  /// In en, this message translates to:
+  /// **'Hmm. The wind must have blown it there.'**
+  String get talkRosaSecretL3;
+
+  /// No description provided for @talkRosaSecretL4.
+  ///
+  /// In en, this message translates to:
+  /// **'There\'s no wind indoors, though?'**
+  String get talkRosaSecretL4;
+
+  /// No description provided for @talkRosaSecretC1.
+  ///
+  /// In en, this message translates to:
+  /// **'(Wink) I didn\'t see a thing.'**
+  String get talkRosaSecretC1;
+
+  /// No description provided for @talkRosaSecretR1.
+  ///
+  /// In en, this message translates to:
+  /// **'Clever girl. Here\'s a tip for your discretion.'**
+  String get talkRosaSecretR1;
+
+  /// No description provided for @talkRosaSecretC2.
+  ///
+  /// In en, this message translates to:
+  /// **'Go on, have a taste, today\'s cream is lovely!'**
+  String get talkRosaSecretC2;
+
+  /// No description provided for @talkRosaSecretR2.
+  ///
+  /// In en, this message translates to:
+  /// **'(A very quick lick) …It is lovely. Tell no one.'**
+  String get talkRosaSecretR2;
+
+  /// No description provided for @talkMochiBellyL1.
+  ///
+  /// In en, this message translates to:
+  /// **'Mrrp.'**
+  String get talkMochiBellyL1;
+
+  /// No description provided for @talkMochiBellyL2.
+  ///
+  /// In en, this message translates to:
+  /// **'Soaked again? The oven\'s still warm, go dry off.'**
+  String get talkMochiBellyL2;
+
+  /// No description provided for @talkMochiBellyL3.
+  ///
+  /// In en, this message translates to:
+  /// **'(Mochi flops over and shows a fluffy belly.)'**
+  String get talkMochiBellyL3;
+
+  /// No description provided for @talkMochiBellyL4.
+  ///
+  /// In en, this message translates to:
+  /// **'It\'s a trap. I know it. Belly rubs mean bites.'**
+  String get talkMochiBellyL4;
+
+  /// No description provided for @talkMochiBellyC1.
+  ///
+  /// In en, this message translates to:
+  /// **'Rub the belly'**
+  String get talkMochiBellyC1;
+
+  /// No description provided for @talkMochiBellyR1.
+  ///
+  /// In en, this message translates to:
+  /// **'(Mochi hugs Mai\'s hand with all four paws… and purrs.)'**
+  String get talkMochiBellyR1;
+
+  /// No description provided for @talkMochiBellyC2.
+  ///
+  /// In en, this message translates to:
+  /// **'Roll the yarn ball'**
+  String get talkMochiBellyC2;
+
+  /// No description provided for @talkMochiBellyR2.
+  ///
+  /// In en, this message translates to:
+  /// **'(Mochi chases the yarn and skids a full circle across the floor.)'**
+  String get talkMochiBellyR2;
+
+  /// No description provided for @talkMochiBellyL5.
+  ///
+  /// In en, this message translates to:
+  /// **'You little rascal.'**
+  String get talkMochiBellyL5;
+
+  /// No description provided for @talkWalrusFishL1.
+  ///
+  /// In en, this message translates to:
+  /// **'Guess how big the fish I caught this morning was?'**
+  String get talkWalrusFishL1;
+
+  /// No description provided for @talkWalrusFishL2.
+  ///
+  /// In en, this message translates to:
+  /// **'How big?'**
+  String get talkWalrusFishL2;
+
+  /// No description provided for @talkWalrusFishL3.
+  ///
+  /// In en, this message translates to:
+  /// **'As big as… your oven!'**
+  String get talkWalrusFishL3;
+
+  /// No description provided for @talkWalrusFishC1.
+  ///
+  /// In en, this message translates to:
+  /// **'Last week you said it was as big as the fridge.'**
+  String get talkWalrusFishC1;
+
+  /// No description provided for @talkWalrusFishR1.
+  ///
+  /// In en, this message translates to:
+  /// **'Well… it\'s been growing! Even the fish eat your pastries.'**
+  String get talkWalrusFishR1;
+
+  /// No description provided for @talkWalrusFishC2.
+  ///
+  /// In en, this message translates to:
+  /// **'Did you bring it home?'**
+  String get talkWalrusFishC2;
+
+  /// No description provided for @talkWalrusFishR2.
+  ///
+  /// In en, this message translates to:
+  /// **'It begged to be let go. Promised to come back tomorrow… even bigger.'**
+  String get talkWalrusFishR2;
+
+  /// No description provided for @talkWalrusFishL4.
+  ///
+  /// In en, this message translates to:
+  /// **'Then I\'d better get a bigger oven ready.'**
+  String get talkWalrusFishL4;
+
+  /// No description provided for @talkSquirrelNutL1.
+  ///
+  /// In en, this message translates to:
+  /// **'Can I pay in chestnuts? I\'ve got a whole stash!'**
+  String get talkSquirrelNutL1;
+
+  /// No description provided for @talkSquirrelNutL2.
+  ///
+  /// In en, this message translates to:
+  /// **'Oh… we only take coins here.'**
+  String get talkSquirrelNutL2;
+
+  /// No description provided for @talkSquirrelNutL3.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait, let me check my tail…'**
+  String get talkSquirrelNutL3;
+
+  /// No description provided for @talkSquirrelNutL4.
+  ///
+  /// In en, this message translates to:
+  /// **'Here! Three coins, a button, and… one emergency chestnut.'**
+  String get talkSquirrelNutL4;
+
+  /// No description provided for @talkSquirrelNutC1.
+  ///
+  /// In en, this message translates to:
+  /// **'I\'ll take the coins, you keep the chestnut.'**
+  String get talkSquirrelNutC1;
+
+  /// No description provided for @talkSquirrelNutR1.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re the best! I\'ll bury it outside so a tree grows for you.'**
+  String get talkSquirrelNutR1;
+
+  /// No description provided for @talkSquirrelNutC2.
+  ///
+  /// In en, this message translates to:
+  /// **'Give me the chestnut, I\'ll bake you something with it!'**
+  String get talkSquirrelNutC2;
+
+  /// No description provided for @talkSquirrelNutR2.
+  ///
+  /// In en, this message translates to:
+  /// **'Really? I\'ll fetch more… from wherever I buried them. I forgot where.'**
+  String get talkSquirrelNutR2;
+
+  /// No description provided for @talkHamsterCheeksL1.
+  ///
+  /// In en, this message translates to:
+  /// **'Could I have… mmf-mm-mmf…'**
+  String get talkHamsterCheeksL1;
+
+  /// No description provided for @talkHamsterCheeksL2.
+  ///
+  /// In en, this message translates to:
+  /// **'Sweetie, your cheeks are already full of cookies.'**
+  String get talkHamsterCheeksL2;
+
+  /// No description provided for @talkHamsterCheeksL3.
+  ///
+  /// In en, this message translates to:
+  /// **'(Gulp) Those are for later. This one is for now!'**
+  String get talkHamsterCheeksL3;
+
+  /// No description provided for @talkHamsterCheeksC1.
+  ///
+  /// In en, this message translates to:
+  /// **'Let me box some up for you to take home.'**
+  String get talkHamsterCheeksC1;
+
+  /// No description provided for @talkHamsterCheeksR1.
+  ///
+  /// In en, this message translates to:
+  /// **'A box! My cheeks get the day off!'**
+  String get talkHamsterCheeksR1;
+
+  /// No description provided for @talkHamsterCheeksC2.
+  ///
+  /// In en, this message translates to:
+  /// **'Think you can fit one more?'**
+  String get talkHamsterCheeksC2;
+
+  /// No description provided for @talkHamsterCheeksR2.
+  ///
+  /// In en, this message translates to:
+  /// **'Challenge accepted! …Mmf… perfect fit.'**
+  String get talkHamsterCheeksR2;
+
+  /// No description provided for @smallTalkNora.
+  ///
+  /// In en, this message translates to:
+  /// **'Your usual today? I remember!'**
+  String get smallTalkNora;
+
+  /// No description provided for @smallTalkBao.
+  ///
+  /// In en, this message translates to:
+  /// **'…Fresh out of the oven. Still warm.'**
+  String get smallTalkBao;
+
+  /// No description provided for @smallTalkTheo.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s tea is brewed with a smile, give it a try!'**
+  String get smallTalkTheo;
+
+  /// No description provided for @smallTalkMai1.
+  ///
+  /// In en, this message translates to:
+  /// **'Lovely day! Been down to the beach yet?'**
+  String get smallTalkMai1;
+
+  /// No description provided for @smallTalkMai2.
+  ///
+  /// In en, this message translates to:
+  /// **'The next batch has a pinch of cinnamon, come back and try it!'**
+  String get smallTalkMai2;
+
+  /// No description provided for @smallTalkReply1.
+  ///
+  /// In en, this message translates to:
+  /// **'Aw, thank you!'**
+  String get smallTalkReply1;
+
+  /// No description provided for @smallTalkReply2.
+  ///
+  /// In en, this message translates to:
+  /// **'Lovely, I\'ll be back tomorrow!'**
+  String get smallTalkReply2;
+
+  /// No description provided for @smallTalkReply3.
+  ///
+  /// In en, this message translates to:
+  /// **'This place always smells so good.'**
+  String get smallTalkReply3;
+
+  /// No description provided for @quarrelLastCakeL1.
+  ///
+  /// In en, this message translates to:
+  /// **'This strawberry cupcake is mine! I saw it first!'**
+  String get quarrelLastCakeL1;
+
+  /// No description provided for @quarrelLastCakeL2.
+  ///
+  /// In en, this message translates to:
+  /// **'But I\'ve been dreaming about it since yesterday!'**
+  String get quarrelLastCakeL2;
+
+  /// No description provided for @quarrelLastCakeL3.
+  ///
+  /// In en, this message translates to:
+  /// **'Dreaming doesn\'t count!'**
+  String get quarrelLastCakeL3;
+
+  /// No description provided for @quarrelLastCakeL4.
+  ///
+  /// In en, this message translates to:
+  /// **'Easy, you two, the cupcake\'s getting squished!'**
+  String get quarrelLastCakeL4;
+
+  /// No description provided for @quarrelLastCakeA.
+  ///
+  /// In en, this message translates to:
+  /// **'Split it in half'**
+  String get quarrelLastCakeA;
+
+  /// No description provided for @quarrelLastCakeRA1.
+  ///
+  /// In en, this message translates to:
+  /// **'Half… fits perfectly in one cheek!'**
+  String get quarrelLastCakeRA1;
+
+  /// No description provided for @quarrelLastCakeRA2.
+  ///
+  /// In en, this message translates to:
+  /// **'My half has more frosting. Hehe.'**
+  String get quarrelLastCakeRA2;
+
+  /// No description provided for @quarrelLastCakeB.
+  ///
+  /// In en, this message translates to:
+  /// **'Rock-paper-scissors for it'**
+  String get quarrelLastCakeB;
+
+  /// No description provided for @quarrelLastCakeRB1.
+  ///
+  /// In en, this message translates to:
+  /// **'Rock, paper, scissors… shoot!'**
+  String get quarrelLastCakeRB1;
+
+  /// No description provided for @quarrelLastCakeRB2.
+  ///
+  /// In en, this message translates to:
+  /// **'I win!'**
+  String get quarrelLastCakeRB2;
+
+  /// No description provided for @quarrelLastCakeRB3.
+  ///
+  /// In en, this message translates to:
+  /// **'Hmph… next time I\'m going rock.'**
+  String get quarrelLastCakeRB3;
+
+  /// No description provided for @quarrelLastCakeC.
+  ///
+  /// In en, this message translates to:
+  /// **'A fresh batch is almost out, one each!'**
+  String get quarrelLastCakeC;
+
+  /// No description provided for @quarrelLastCakeRC1.
+  ///
+  /// In en, this message translates to:
+  /// **'One EACH?!'**
+  String get quarrelLastCakeRC1;
+
+  /// No description provided for @quarrelLastCakeRC2.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re a pastry angel!'**
+  String get quarrelLastCakeRC2;
+
+  /// No description provided for @quarrelFirstL1.
+  ///
+  /// In en, this message translates to:
+  /// **'I\'ve been here since sunrise! I go first!'**
+  String get quarrelFirstL1;
+
+  /// No description provided for @quarrelFirstL2.
+  ///
+  /// In en, this message translates to:
+  /// **'I napped on this doorstep all night. That\'s what cats do.'**
+  String get quarrelFirstL2;
+
+  /// No description provided for @quarrelFirstL3.
+  ///
+  /// In en, this message translates to:
+  /// **'Napping isn\'t queueing!'**
+  String get quarrelFirstL3;
+
+  /// No description provided for @quarrelFirstL4.
+  ///
+  /// In en, this message translates to:
+  /// **'For cats, it is.'**
+  String get quarrelFirstL4;
+
+  /// No description provided for @quarrelFirstL5.
+  ///
+  /// In en, this message translates to:
+  /// **'Okay, okay, deep breaths!'**
+  String get quarrelFirstL5;
+
+  /// No description provided for @quarrelFirstA.
+  ///
+  /// In en, this message translates to:
+  /// **'Come in together, the door\'s wide enough!'**
+  String get quarrelFirstA;
+
+  /// No description provided for @quarrelFirstRA1.
+  ///
+  /// In en, this message translates to:
+  /// **'…It\'s a bit tight.'**
+  String get quarrelFirstRA1;
+
+  /// No description provided for @quarrelFirstRA2.
+  ///
+  /// In en, this message translates to:
+  /// **'Suck in your tummy.'**
+  String get quarrelFirstRA2;
+
+  /// No description provided for @quarrelFirstRA3.
+  ///
+  /// In en, this message translates to:
+  /// **'(They\'re stuck in the doorway for a second… then both burst out laughing.)'**
+  String get quarrelFirstRA3;
+
+  /// No description provided for @quarrelFirstB.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the paw prints on the doormat'**
+  String get quarrelFirstB;
+
+  /// No description provided for @quarrelFirstRB1.
+  ///
+  /// In en, this message translates to:
+  /// **'Cat prints underneath… shiba prints on top.'**
+  String get quarrelFirstRB1;
+
+  /// No description provided for @quarrelFirstRB2.
+  ///
+  /// In en, this message translates to:
+  /// **'Well… I did stand on their paw prints.'**
+  String get quarrelFirstRB2;
+
+  /// No description provided for @quarrelFirstRB3.
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you. You\'re adorable. After me.'**
+  String get quarrelFirstRB3;
+
+  /// No description provided for @quarrelFirstC.
+  ///
+  /// In en, this message translates to:
+  /// **'Best joke goes first'**
+  String get quarrelFirstC;
+
+  /// No description provided for @quarrelFirstRC1.
+  ///
+  /// In en, this message translates to:
+  /// **'Why did the croissant see a doctor? It was feeling flaky!'**
+  String get quarrelFirstRC1;
+
+  /// No description provided for @quarrelFirstRC2.
+  ///
+  /// In en, this message translates to:
+  /// **'…That was awful. I laughed. You go first.'**
+  String get quarrelFirstRC2;
+
+  /// No description provided for @quarrelTartL1.
+  ///
+  /// In en, this message translates to:
+  /// **'Egg tarts are the king of pastries! Crisp, rich, golden as the sun!'**
+  String get quarrelTartL1;
+
+  /// No description provided for @quarrelTartL2.
+  ///
+  /// In en, this message translates to:
+  /// **'King? I\'m the king around here. And the king picks apple pie.'**
+  String get quarrelTartL2;
+
+  /// No description provided for @quarrelTartL3.
+  ///
+  /// In en, this message translates to:
+  /// **'All you\'ve got is a big mane!'**
+  String get quarrelTartL3;
+
+  /// No description provided for @quarrelTartL4.
+  ///
+  /// In en, this message translates to:
+  /// **'And all you\'ve got is a round belly!'**
+  String get quarrelTartL4;
+
+  /// No description provided for @quarrelTartL5.
+  ///
+  /// In en, this message translates to:
+  /// **'Gentlemen, the whole street is watching!'**
+  String get quarrelTartL5;
+
+  /// No description provided for @quarrelTartA.
+  ///
+  /// In en, this message translates to:
+  /// **'Blind taste test, try both!'**
+  String get quarrelTartA;
+
+  /// No description provided for @quarrelTartRA1.
+  ///
+  /// In en, this message translates to:
+  /// **'This one\'s… better. It\'s the apple pie?!'**
+  String get quarrelTartRA1;
+
+  /// No description provided for @quarrelTartRA2.
+  ///
+  /// In en, this message translates to:
+  /// **'And I picked… the egg tart. Oh no.'**
+  String get quarrelTartRA2;
+
+  /// No description provided for @quarrelTartRA3.
+  ///
+  /// In en, this message translates to:
+  /// **'Fine, we\'ll buy both!'**
+  String get quarrelTartRA3;
+
+  /// No description provided for @quarrelTartB.
+  ///
+  /// In en, this message translates to:
+  /// **'Every pastry is delicious, shake hands!'**
+  String get quarrelTartB;
+
+  /// No description provided for @quarrelTartRB1.
+  ///
+  /// In en, this message translates to:
+  /// **'Spoken like a diplomat.'**
+  String get quarrelTartRB1;
+
+  /// No description provided for @quarrelTartRB2.
+  ///
+  /// In en, this message translates to:
+  /// **'Bland as unseasoned dough.'**
+  String get quarrelTartRB2;
+
+  /// No description provided for @quarrelTartC.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask Mr. Hoa to settle it'**
+  String get quarrelTartC;
+
+  /// No description provided for @quarrelTartCAlt.
+  ///
+  /// In en, this message translates to:
+  /// **'Do your best Mr. Hoa impression'**
+  String get quarrelTartCAlt;
+
+  /// No description provided for @quarrelTartRC1.
+  ///
+  /// In en, this message translates to:
+  /// **'Egg tart. Forty years. Not up for debate.'**
+  String get quarrelTartRC1;
+
+  /// No description provided for @quarrelTartRC1Alt.
+  ///
+  /// In en, this message translates to:
+  /// **'(Deep voice) Ahem… Egg tart. Forty years. Not up for debate.'**
+  String get quarrelTartRC1Alt;
+
+  /// No description provided for @quarrelTartRC2.
+  ///
+  /// In en, this message translates to:
+  /// **'Hear that? Hear that!'**
+  String get quarrelTartRC2;
+
+  /// No description provided for @quarrelTartRC3.
+  ///
+  /// In en, this message translates to:
+  /// **'Hmph. The seniors\' club is biased.'**
+  String get quarrelTartRC3;
+
+  /// No description provided for @quarrelBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'There\'s a commotion outside!'**
+  String get quarrelBanner;
+
+  /// No description provided for @quarrelLook.
+  ///
+  /// In en, this message translates to:
+  /// **'Look'**
+  String get quarrelLook;
+
+  /// No description provided for @quarrelSendMai.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Mai'**
+  String get quarrelSendMai;
+
+  /// No description provided for @quarrelIntervene.
+  ///
+  /// In en, this message translates to:
+  /// **'Step in'**
+  String get quarrelIntervene;
+
+  /// No description provided for @quarrelTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'The two customers stomped off in a huff…'**
+  String get quarrelTimeout;
+
+  /// No description provided for @quarrelPeace.
+  ///
+  /// In en, this message translates to:
+  /// **'Peace returns to the street.'**
+  String get quarrelPeace;
+
+  /// No description provided for @staffMenuControl.
+  ///
+  /// In en, this message translates to:
+  /// **'Control'**
+  String get staffMenuControl;
+
+  /// No description provided for @staffMenuTalk.
+  ///
+  /// In en, this message translates to:
+  /// **'Talk to a customer'**
+  String get staffMenuTalk;
+
+  /// No description provided for @actionPickUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick up'**
+  String get actionPickUp;
+
+  /// No description provided for @actionPutDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Put down'**
+  String get actionPutDown;
+
+  /// No description provided for @actionPlaceOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Place'**
+  String get actionPlaceOn;
+
+  /// No description provided for @actionGive.
+  ///
+  /// In en, this message translates to:
+  /// **'Offer'**
+  String get actionGive;
+
+  /// No description provided for @actionThrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Throw'**
+  String get actionThrow;
+
+  /// No description provided for @actionTalk.
+  ///
+  /// In en, this message translates to:
+  /// **'Talk'**
+  String get actionTalk;
+
+  /// No description provided for @actionWave.
+  ///
+  /// In en, this message translates to:
+  /// **'Wave'**
+  String get actionWave;
+
+  /// No description provided for @controlHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag the left circle to walk, tap the right buttons to act.'**
+  String get controlHint;
+
+  /// No description provided for @talkPickCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a customer to chat with'**
+  String get talkPickCustomer;
+
+  /// No description provided for @talkNoCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'No customers are free to chat right now.'**
+  String get talkNoCustomer;
+
+  /// No description provided for @itemYarn.
+  ///
+  /// In en, this message translates to:
+  /// **'Yarn ball'**
+  String get itemYarn;
+
+  /// No description provided for @itemCakeBox.
+  ///
+  /// In en, this message translates to:
+  /// **'Cake box'**
+  String get itemCakeBox;
+
+  /// No description provided for @itemFlour.
+  ///
+  /// In en, this message translates to:
+  /// **'Flour sack'**
+  String get itemFlour;
+
+  /// No description provided for @reactOops.
+  ///
+  /// In en, this message translates to:
+  /// **'Oops!'**
+  String get reactOops;
+
+  /// No description provided for @reactStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Hey, quit it!'**
+  String get reactStop;
+
+  /// No description provided for @reactThanks.
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you!'**
+  String get reactThanks;
+
+  /// No description provided for @reactFull.
+  ///
+  /// In en, this message translates to:
+  /// **'I\'m full, but thank you!'**
+  String get reactFull;
+
+  /// No description provided for @reactNoThrowCake.
+  ///
+  /// In en, this message translates to:
+  /// **'Cake is handed, not thrown!'**
+  String get reactNoThrowCake;
+
+  /// No description provided for @reactExcuseMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Excuse me!'**
+  String get reactExcuseMe;
+
+  /// No description provided for @reactPurr.
+  ///
+  /// In en, this message translates to:
+  /// **'Purr…'**
+  String get reactPurr;
+
+  /// Goodwill reward toast in the 3D shop scene.
+  ///
+  /// In en, this message translates to:
+  /// **'+{count} goodwill'**
+  String interactGoodwill(int count);
+
+  /// Coin reward toast in the 3D shop scene.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{+1 coin} other{+{count} coins}}'**
+  String interactCoins(int count);
+
+  /// No description provided for @townEnterShop.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter'**
+  String get townEnterShop;
+
+  /// No description provided for @townExitShop.
+  ///
+  /// In en, this message translates to:
+  /// **'Go outside'**
+  String get townExitShop;
+
+  /// No description provided for @townMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Map'**
+  String get townMap;
+
+  /// No description provided for @townOpenMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Open map'**
+  String get townOpenMap;
+
+  /// No description provided for @townYouAreHere.
+  ///
+  /// In en, this message translates to:
+  /// **'You are here'**
+  String get townYouAreHere;
+
+  /// No description provided for @townHomeShop.
+  ///
+  /// In en, this message translates to:
+  /// **'Grandma\'s bakery'**
+  String get townHomeShop;
+
+  /// No description provided for @townBranchN.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch {n}'**
+  String townBranchN(int n);
+
+  /// No description provided for @townLotForSale.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty lot'**
+  String get townLotForSale;
+
+  /// No description provided for @townLotLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlocks at level {level}'**
+  String townLotLocked(int level);
+
+  /// Branch lot note once the player's level has reached this lot. The lot opens for business later.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlocked · on sale soon'**
+  String get townLotUnlocked;
+
+  /// Toast shown after a level-up unlocks new branch lots. count = number of new lots.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{New lot unlocked!} other{{count} new lots unlocked!}}'**
+  String townLotsUnlockedToast(int count);
+
+  /// No description provided for @townComingSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Coming soon'**
+  String get townComingSoon;
+
+  /// No description provided for @townStreetName.
+  ///
+  /// In en, this message translates to:
+  /// **'Bakery Street'**
+  String get townStreetName;
+
+  /// No description provided for @townOpening.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening the door…'**
+  String get townOpening;
+
+  /// No description provided for @citySeaMarketName.
+  ///
+  /// In en, this message translates to:
+  /// **'Seaside Market'**
+  String get citySeaMarketName;
+
+  /// No description provided for @cityRealtyName.
+  ///
+  /// In en, this message translates to:
+  /// **'Harbor Realty'**
+  String get cityRealtyName;
+
+  /// No description provided for @cityParkName.
+  ///
+  /// In en, this message translates to:
+  /// **'Lighthouse Park'**
+  String get cityParkName;
+
+  /// No description provided for @cityRestaurantName.
+  ///
+  /// In en, this message translates to:
+  /// **'Lighthouse Kitchen'**
+  String get cityRestaurantName;
+
+  /// No description provided for @citySalonName.
+  ///
+  /// In en, this message translates to:
+  /// **'Seashell Salon'**
+  String get citySalonName;
+
+  /// No description provided for @cityOrderFood.
+  ///
+  /// In en, this message translates to:
+  /// **'Order'**
+  String get cityOrderFood;
+
+  /// No description provided for @cityGetHaircut.
+  ///
+  /// In en, this message translates to:
+  /// **'Style hair'**
+  String get cityGetHaircut;
+
+  /// No description provided for @cityPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'{coins} coins'**
+  String cityPrice(int coins);
+
+  /// No description provided for @cityXpGain.
+  ///
+  /// In en, this message translates to:
+  /// **'+{xp} XP'**
+  String cityXpGain(int xp);
+
+  /// No description provided for @cityMaiLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'Level {n}'**
+  String cityMaiLevel(int n);
+
+  /// No description provided for @cityLevelUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Level up!'**
+  String get cityLevelUp;
+
+  /// No description provided for @cityNotEnoughCoins.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough coins'**
+  String get cityNotEnoughCoins;
+
+  /// No description provided for @cityAteToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Already eaten today – less XP'**
+  String get cityAteToday;
+
+  /// No description provided for @cityBuffFull.
+  ///
+  /// In en, this message translates to:
+  /// **'Full & happy: +10% tips next shift'**
+  String get cityBuffFull;
+
+  /// No description provided for @cityConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get cityConfirm;
+
+  /// No description provided for @cityCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cityCancel;
+
+  /// No description provided for @cityFirstVisit.
+  ///
+  /// In en, this message translates to:
+  /// **'First visit bonus!'**
+  String get cityFirstVisit;
+
+  /// No description provided for @cityMenuTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s menu'**
+  String get cityMenuTitle;
+
+  /// No description provided for @citySalonTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a new look'**
+  String get citySalonTitle;
+
+  /// No description provided for @cityHairStyle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hairstyle'**
+  String get cityHairStyle;
+
+  /// No description provided for @cityHairColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Hair color'**
+  String get cityHairColor;
+
+  /// No description provided for @cityEating.
+  ///
+  /// In en, this message translates to:
+  /// **'Enjoying the meal…'**
+  String get cityEating;
+
+  /// No description provided for @citySaveReadOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'This save is from a newer game version. Progress this session won\'t be saved.'**
+  String get citySaveReadOnly;
+
+  /// Action button shown at the shop counter in the 3D town to start a shift.
+  ///
+  /// In en, this message translates to:
+  /// **'Open shop'**
+  String get shiftOpen;
+
+  /// Toast on the first visit to the shop, pointing Mai to the counter.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to the counter and tap “Open shop” to start selling'**
+  String get shiftHintCounter;
+
+  /// Chip shown while the next customer walks to the counter during a shift.
+  ///
+  /// In en, this message translates to:
+  /// **'A customer is on the way…'**
+  String get shiftCustomerComing;
+
+  /// Title of the end-of-shift summary card.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift complete!'**
+  String get shiftSummaryTitle;
+
+  /// Button to close the shop before the shift ends.
+  ///
+  /// In en, this message translates to:
+  /// **'Close early'**
+  String get shiftCloseEarly;
+
+  /// Toast after closing the shop early. coins = coins kept from served customers.
+  ///
+  /// In en, this message translates to:
+  /// **'Shop closed · +{coins} coins kept'**
+  String shiftClosedToast(int coins);
+
+  /// Line on the result card for the tip bonus from the Full & happy buff. amount = extra tip.
+  ///
+  /// In en, this message translates to:
+  /// **'Full & happy: +{amount} tips'**
+  String shiftBuffTip(int amount);
+
+  /// No description provided for @dishFishSoup.
+  ///
+  /// In en, this message translates to:
+  /// **'Seaside fish soup'**
+  String get dishFishSoup;
+
+  /// No description provided for @dishOmeletteRice.
+  ///
+  /// In en, this message translates to:
+  /// **'Omelette rice'**
+  String get dishOmeletteRice;
+
+  /// No description provided for @dishVeggieCurry.
+  ///
+  /// In en, this message translates to:
+  /// **'Veggie curry'**
+  String get dishVeggieCurry;
+
+  /// No description provided for @dishSeafoodNoodles.
+  ///
+  /// In en, this message translates to:
+  /// **'Seafood noodles'**
+  String get dishSeafoodNoodles;
+
+  /// No description provided for @hairPonytail.
+  ///
+  /// In en, this message translates to:
+  /// **'Ponytail'**
+  String get hairPonytail;
+
+  /// No description provided for @hairBob.
+  ///
+  /// In en, this message translates to:
+  /// **'Bob'**
+  String get hairBob;
+
+  /// No description provided for @hairBun.
+  ///
+  /// In en, this message translates to:
+  /// **'Bun'**
+  String get hairBun;
+
+  /// No description provided for @hairTwinTails.
+  ///
+  /// In en, this message translates to:
+  /// **'Twin tails'**
+  String get hairTwinTails;
+
+  /// No description provided for @hairColorChestnut.
+  ///
+  /// In en, this message translates to:
+  /// **'Chestnut'**
+  String get hairColorChestnut;
+
+  /// No description provided for @hairColorCaramel.
+  ///
+  /// In en, this message translates to:
+  /// **'Caramel'**
+  String get hairColorCaramel;
+
+  /// No description provided for @hairColorBlack.
+  ///
+  /// In en, this message translates to:
+  /// **'Black'**
+  String get hairColorBlack;
+
+  /// No description provided for @hairColorStrawberry.
+  ///
+  /// In en, this message translates to:
+  /// **'Strawberry'**
+  String get hairColorStrawberry;
 }
 
 class _AppLocalizationsDelegate
