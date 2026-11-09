@@ -4,6 +4,7 @@ import 'package:thermion_flutter/thermion_flutter.dart' hide Material, Texture, 
 import '../../core/app_scope.dart';
 import '../../core/city/city_game.dart';
 import '../../core/debug_params.dart';
+import '../../core/models/ids.dart';
 import '../../core/save/city_save_store.dart';
 import '../../core/shift/shift_session.dart';
 import '../../ui/shift/shift_layer.dart';
@@ -27,6 +28,9 @@ import 'town3d_view.dart';
 ///
 /// Ca bán (docs/v3/city-gd3-spec.md, GĐ3): "Mở ca" ở quầy tạo [ShiftSession] trên [CityGame]; lớp 2D là [ShiftLayer]
 /// (quảng cáo qua `AppScope`); chưa từng mở ca thì view gợi ý mở ca khi vào tiệm.
+///
+/// Chi nhánh (docs/v3/city-gd4-spec.md, GĐ4): view nghe [CityGame.branches]; chip "x2 lần thu" xem quảng cáo thưởng
+/// `AdPlacement.branchDouble` qua `AppScope` (chung hạn mỗi ngày với các chỗ khác).
 class Town3dPage extends StatefulWidget {
   const Town3dPage({super.key, required this.game, required this.store, this.debug = CityDebugParams.none});
 
@@ -123,6 +127,9 @@ class _Town3dPageState extends State<Town3dPage> {
         shiftLayer: (context, session, host) =>
             ShiftLayer(session: session, host: host, ads: AppScope.read(context).ads, game: game),
         shiftHint: game.bakery.shifts == 0,
+        branches: game.branches,
+        watchBranchAd: (context) => AppScope.read(context).ads.showRewarded(context, AdPlacement.branchDouble),
+        canWatchBranchAd: () => AppScope.read(context).ads.canShowRewarded(),
       ),
     );
   }

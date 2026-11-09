@@ -33,11 +33,16 @@ class BakeMeter {
     return false;
   }
 
-  /// Nhấc tay. Chạm quá ngắn (< [minRelease]) coi như chạm nhầm: không ghi, lần nhấn sau chạy tiếp.
+  /// Nhấc tay. Chạm quá ngắn (< [minRelease]) coi như chạm nhầm: không ghi, kim về 0 (không cộng dồn qua các lần
+  /// chạm — trước đây vài lần chạm nhanh cộng lại thành một lần thả và chuyển trạm).
   void lift({double minRelease = 0.04}) {
     if (!_holding || released) return;
     _holding = false;
-    if (_value >= minRelease) _release = _value;
+    if (_value >= minRelease) {
+      _release = _value;
+    } else {
+      _value = 0;
+    }
   }
 }
 

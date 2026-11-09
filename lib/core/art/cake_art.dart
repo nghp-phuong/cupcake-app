@@ -282,6 +282,39 @@ abstract final class CakeArt {
       bottomRight: const Radius.elliptical(54, 26),
     ));
 
+  /// Giữa đáy chiếc macaron trên ảnh khay (px ảnh) — tâm xoay/co của từng chiếc trong chồng.
+  static const _macaronBase = Offset(382.5, 357);
+
+  /// Chồng 3 chiếc, vẽ sau → trước: dời (dx, dy) px ảnh, co [k], xoay rad, độ tối (chiếc phía sau tối hơn cho tách
+  /// lớp). Chiếc trước cùng đáy, mặt gần trùng mặt bánh cũ (vùng đặt topping); cả chồng nằm trong bề ngang và đáy
+  /// của chiếc cũ (test khung) và không vượt đỉnh khung vuông.
+  static const _macaronStack = [
+    (16.0, -66.0, 0.7, -0.16, 0.14),
+    (-14.0, -40.0, 0.74, 0.12, 0.08),
+    (0.0, 0.0, 0.9, 0.0, 0.0),
+  ];
+
+  /// Một chiếc macaron cắt từ ảnh khay + viền nâu ấm che mép giấy khay; [shade] > 0 phủ tối nhẹ.
+  static void _macaronShell(Canvas canvas, Image image, Rect src, Paint paint, double shade) {
+    canvas.save();
+    canvas.clipPath(_macaronClip);
+    canvas.drawImageRect(image, src, src, paint);
+    canvas.restore();
+    if (shade > 0) canvas.drawPath(_macaronClip, _fillC(Color.fromRGBO(90, 48, 32, shade)));
+    canvas.drawPath(_macaronClip, _strokeC(const Color(0xB38A5A40), 1.2));
+  }
+
+  /// Cupcake đã phủ kem: bỏ vai vòm bánh của ảnh (rộng hơn các tầng kem xoắn, lộ hai bên) = phần trên giữa tầng kem
+  /// dưới cùng và ngoài mặt bánh — như ảnh món, chỉ thấy kem trên miệng cốc giấy. Trong mặt bánh giữ nguyên (vệt hở khi
+  /// phủ chưa kín lộ mặt bánh).
+  static final Path _cupcakeFrostedClip = () {
+    final f = _fits[MouldType.cupcakeLiner]!;
+    final t = f.top;
+    final cut = t.center.dy + t.height * 0.3; // giữa tầng kem dưới cùng (`_FrostGeom.build`)
+    final hidden = Path.combine(PathOperation.difference, Path()..addRect(Rect.fromLTRB(f.src.left, f.src.top, f.src.right, cut)), Path()..addOval(t));
+    return Path.combine(PathOperation.difference, Path()..addRect(f.src), hidden);
+  }();
+
   static final Paint _imagePaintBase = Paint()
     ..filterQuality = FilterQuality.medium
     ..isAntiAlias = true;
@@ -376,16 +409,29 @@ abstract final class CakeArt {
     canvas.scale(k);
     canvas.translate(-fit.body.center.dx, -fit.body.bottom);
     final macaron = v.mould == MouldType.macaronMat;
+    final frostedCupcake = v.mould == MouldType.cupcakeLiner && v.frosting != null;
     if (macaron) {
-      canvas.save();
-      canvas.clipPath(_macaronClip);
+      // Ảnh món là chồng 3 chiếc: hai chiếc xếp nghiêng phía sau nhô lên trên, chiếc chính phía trước gần đúng chỗ/cỡ
+      // cũ (mặt bánh = vùng đặt topping không đổi, đáy và bề ngang trong khung cũ).
+      final paint = _imagePaint(v);
+      for (final (dx, dy, k, turn, shade) in _macaronStack) {
+        canvas.save();
+        canvas.translate(_macaronBase.dx + dx, _macaronBase.dy + dy);
+        canvas.rotate(turn);
+        canvas.scale(k);
+        canvas.translate(-_macaronBase.dx, -_macaronBase.dy);
+        _macaronShell(canvas, image, fit.src, paint, shade);
+        canvas.restore();
+      }
+    } else {
+      if (frostedCupcake) {
+        canvas.save();
+        canvas.clipPath(_cupcakeFrostedClip);
+      }
+      canvas.drawImageRect(image, fit.src, fit.src, _imagePaint(v));
+      if (frostedCupcake) canvas.restore();
     }
-    canvas.drawImageRect(image, fit.src, fit.src, _imagePaint(v));
-    if (macaron) {
-      canvas.restore();
-      // Viền nâu ấm che mép giấy khay sau khi cắt.
-      canvas.drawPath(_macaronClip, _strokeC(const Color(0xB38A5A40), 1.2));
-    } else if (v.frosting != null) {
+    if (!macaron && v.frosting != null) {
       if (_isGlaze(v)) {
         _paintGlaze(canvas, v, fit, image);
       } else {
@@ -477,18 +523,28 @@ abstract final class CakeArt {
     recorder.endRecording().dispose();
   }
 
+  /// Món vẽ kiểu bánh tầng (ảnh món: kem phủ phẳng mặt, lớp nhân kem lộ ở thành bánh) thay cho kem chảy của khuôn.
+  static const _layerCakes = {RecipeId.strawberryCake};
+
   static void _paintFrosting(Canvas canvas, CakeVisual v, _BakedFit fit) {
     final frosting = v.frosting!;
     final step = _coverStep(v.frostCoverage);
     final burn = _burnStep(v.baked);
     final spots = _custardSpots(v);
-    final key = _fitKey(v.mould, v.recipe);
+    final layered = _layerCakes.contains(v.recipe);
+    final key = layered ? v.recipe! : _fitKey(v.mould, v.recipe);
     final art = _frostArts.obtain((key, frosting, step, burn, spots), () {
-      final geom = _frostGeoms[key] ??= _FrostGeom.build(v.mould, fit.top);
-      return _FrostArt(_recordFrosting(geom, _FrostColors(frosting, burn), step, spots));
+      final geom = _frostGeoms[key] ??= _FrostGeom.build(v.mould, fit.top, side: fit.body.bottom - fit.top.bottom, layered: layered);
+      final col = _FrostColors(frosting, burn);
+      return _FrostArt(_recordFrosting(geom, col, geom.puffs.isEmpty ? col : _FrostColors(_piping(frosting), burn), step, spots));
     });
     canvas.drawPicture(art.picture);
   }
+
+  /// Màu viền bắt bông (bánh sinh nhật, ảnh món: thân kem vani, viền bông hồng): kem vani → bông kem dâu, kem khác
+  /// (sô-cô-la, dâu) → bông kem vani.
+  static FrostingId _piping(FrostingId frosting) =>
+      frosting == FrostingId.vanillaCream ? FrostingId.strawberryCream : FrostingId.vanillaCream;
 
   /// Đốm cháy cạnh của tart trứng (custard nướng cùng vỏ). Tart trái cây cùng khuôn + kem nhưng kem không nướng.
   static bool _custardSpots(CakeVisual v) =>
@@ -496,7 +552,7 @@ abstract final class CakeArt {
 
   /// Ghi lớp kem: từng mảng tô màu nước (sáng trên → đậm dần ở mép, vệt loang) + nét mực run tay; phủ chưa kín
   /// thì lớp kem mỏng hơn và hở vài mảng lộ mặt bánh (mép mảng hở đọng màu như vệt màu nước).
-  static Picture _recordFrosting(_FrostGeom g, _FrostColors col, int step, bool spots) {
+  static Picture _recordFrosting(_FrostGeom g, _FrostColors col, _FrostColors piping, int step, bool spots) {
     final recorder = PictureRecorder();
     final c = Canvas(recorder);
     final alpha = 0.8 + 0.2 * step / 20;
@@ -510,13 +566,20 @@ abstract final class CakeArt {
     for (final layer in g.layers) {
       _wash(c, layer, col);
     }
+    if (g.dust != null) _dust(c, g.dust!, col);
     for (final puff in g.puffs) {
-      _puff(c, puff, col);
+      _puff(c, puff, piping);
     }
     if (spots) {
-      // Đốm cháy cạnh đặc trưng của tart trứng.
-      for (final s in g.spots) {
-        c.drawPath(s, _fillC(const Color(0x389A5A1E)));
+      // Đốm cháy cạnh đặc trưng của tart trứng: viền caramel, quầng nhạt + lõi cháy sẫm, mép nhoè.
+      for (final (s, color, blur) in g.spots) {
+        c.drawPath(
+          s,
+          Paint()
+            ..isAntiAlias = true
+            ..color = color
+            ..maskFilter = MaskFilter.blur(BlurStyle.normal, blur),
+        );
       }
     }
     if (holes != null) {
@@ -578,7 +641,21 @@ abstract final class CakeArt {
             const [0, 0.5, 1]),
     );
     c.drawPath(p.outline, _strokeC(col.softInk, 1.4));
+    c.drawPath(p.crease, _strokeC(col.inkSoft, 1.3));
     c.drawPath(p.shine, _fillC(col.shine));
+  }
+
+  /// Đường bột rắc (muffin): mảng trắng mờ viền nhoè + hạt đường li ti, không che thớ bánh.
+  static void _dust(Canvas c, _FrostDust d, _FrostColors col) {
+    final white = Color.lerp(col.base, const Color(0xFFFFFFFF), 0.75)!;
+    final soft = Paint()
+      ..isAntiAlias = true
+      ..color = white.withValues(alpha: 0.42)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 7);
+    for (final p in d.patches) {
+      c.drawPath(p, soft);
+    }
+    c.drawPath(d.specks, _fillC(white.withValues(alpha: 0.9)));
   }
 
   // ================================================================== Hình code (dự phòng)
@@ -1326,11 +1403,50 @@ class _FrostPuff {
           seed: SLRandom.mix(seed, 3),
           amplitude: r * 0.05,
           step: 2,
-        );
+        ),
+        crease = Path()..addArc(Rect.fromCircle(center: c.translate(r * 0.08, r * 0.05), radius: r * 0.52), -math.pi * 0.15, math.pi * 0.95);
 
   final Path outline;
   final Rect bounds;
   final Path shine;
+
+  /// Nếp xoáy của bông kem bắt túi.
+  final Path crease;
+}
+
+/// Đường bột rắc trên mặt bánh [t] (px ảnh): vài mảng mờ chồng nhau dày ở đỉnh vòm + hạt đường rải đều, tất định
+/// theo [seed].
+class _FrostDust {
+  factory _FrostDust(Rect t, int seed) {
+    final rnd = SLRandom(seed);
+    final c = t.center;
+    final patches = [
+      for (final (dx, dy, k) in const [(-0.22, -0.2, 0.3), (0.16, -0.26, 0.26), (0.3, 0.06, 0.22), (-0.04, 0.02, 0.3), (-0.38, 0.12, 0.18), (0.08, 0.32, 0.2)])
+        wobblePath(
+          Path()..addOval(Rect.fromCenter(center: c + Offset(dx * t.width, dy * t.height), width: t.width * k, height: t.height * k * 1.3)),
+          seed: rnd.nextInt32(),
+          amplitude: t.height * 0.03,
+          step: 5,
+        ),
+    ];
+    final specks = Path();
+    for (var i = 0; i < 140; i++) {
+      // Rải trong elip mặt bánh, dày hơn ở giữa.
+      final a = rnd.range(0, 2 * math.pi);
+      final r = math.pow(rnd.nextDouble(), 0.7) * 0.95;
+      specks.addOval(Rect.fromCircle(
+        center: Offset(c.dx + math.cos(a) * r * t.width / 2, c.dy + math.sin(a) * r * t.height / 2),
+        radius: rnd.range(1.1, 2.6),
+      ));
+    }
+    return _FrostDust._(patches, specks, _FrostGeom._scaled(t, 1.1));
+  }
+
+  _FrostDust._(this.patches, this.specks, this.bounds);
+
+  final List<Path> patches;
+  final Path specks;
+  final Rect bounds;
 }
 
 /// Một vệt hở (phủ chưa kín) = khoảng giữa hai nét quệt kem bị sót: dải cong theo elip mặt bánh ở bán kính chuẩn
@@ -1341,14 +1457,19 @@ typedef _Hole = ({double rho, double from, double span, double thick, double thr
 /// Hình lớp kem của một khuôn (px ảnh), dựng một lần rồi giữ trong cache: các mảng kem, bông kem, đốm cháy tart,
 /// mảng hở theo độ phủ.
 class _FrostGeom {
-  _FrostGeom(this.layers, this.puffs, this.spots, this._top, this._holeSpecs)
-      : bounds = [for (final l in layers) l.bounds, for (final p in puffs) p.bounds]
+  _FrostGeom(this.layers, this.puffs, this.spots, this._top, this._holeSpecs, {this.dust})
+      : bounds = [for (final l in layers) l.bounds, for (final p in puffs) p.bounds, if (dust != null) dust.bounds]
                 .fold<Rect?>(null, (a, b) => a?.expandToInclude(b) ?? b) ??
             Rect.zero;
 
   final List<_FrostLayer> layers;
   final List<_FrostPuff> puffs;
-  final List<Path> spots;
+
+  /// Đốm cháy tart trứng (hình, màu, độ nhoè px ảnh), vẽ theo thứ tự.
+  final List<(Path, Color, double)> spots;
+
+  /// Đường bột rắc thay cho lớp kem (muffin).
+  final _FrostDust? dust;
 
   /// Elip mặt bánh (vệt hở nằm trong đó → luôn lộ mặt bánh của ảnh, không lộ nền).
   final Rect _top;
@@ -1398,7 +1519,8 @@ class _FrostGeom {
         return Path.combine(PathOperation.difference, Path()..addRect(bounds.inflate(40)), h);
       });
 
-  static _FrostGeom build(MouldType mould, Rect t) {
+  /// [side]: độ cao thành bánh trụ (px ảnh, từ mép trước mặt bánh tới đáy); [layered]: bánh tầng (`CakeArt._layerCakes`).
+  static _FrostGeom build(MouldType mould, Rect t, {double side = 0, bool layered = false}) {
     final seed = 0xF057 + mould.index * 97;
     final c = t.center;
     _FrostLayer layer(Path p, int i, {Path? shine, List<Path> details = const [], double inkTo = 1}) =>
@@ -1407,15 +1529,17 @@ class _FrostGeom {
     final holes = _holeSpecsFor(seed, cupcake: mould == MouldType.cupcakeLiner);
     switch (mould) {
       case MouldType.cupcakeLiner:
-        // Kem xoắn 3 tầng (mép dưới mỗi tầng lượn bông) + chóp xoáy tròn mềm liền khối, đáy chóp cong theo tầng.
+        // Kem xoắn 4 tầng thu nhỏ dần thành chóp cao (như ảnh món: kem cao gần bằng cốc giấy, tầng dưới phủ kín
+        // miệng cốc), mép dưới mỗi tầng lượn bông nhẹ + chóp xoáy tròn mềm liền khối, đáy chóp cong theo tầng.
         final tiers = [
-          Rect.fromCenter(center: c.translate(0, t.height * 0.16), width: t.width * 1.2, height: t.height * 0.86),
-          Rect.fromCenter(center: c.translate(0, -t.height * 0.2), width: t.width * 0.88, height: t.height * 0.62),
-          Rect.fromCenter(center: c.translate(0, -t.height * 0.52), width: t.width * 0.56, height: t.height * 0.5),
+          Rect.fromCenter(center: c.translate(0, t.height * 0.3), width: t.width * 1.2, height: t.height * 0.8),
+          Rect.fromCenter(center: c.translate(0, -t.height * 0.1), width: t.width * 1.06, height: t.height * 0.6),
+          Rect.fromCenter(center: c.translate(0, -t.height * 0.48), width: t.width * 0.76, height: t.height * 0.53),
+          Rect.fromCenter(center: c.translate(0, -t.height * 0.8), width: t.width * 0.5, height: t.height * 0.38),
         ];
-        final by = tiers[2].center.dy + t.height * 0.02;
-        double x(double k) => c.dx + t.width * k;
-        double y(double k) => by - t.height * k;
+        final by = tiers[3].center.dy;
+        double x(double k) => c.dx + t.width * k * 0.8;
+        double y(double k) => by - t.height * k * 0.72;
         // Chóp: đỉnh cuộn nghiêng sang phải như kem bắt túi; đáy cong tròn lẫn vào tầng dưới, không đi nét mực
         // (liền khối với tầng kem, không có cạnh cắt).
         final tipTop = Path()
@@ -1435,12 +1559,12 @@ class _FrostGeom {
           ..quadraticBezierTo(x(0.0), y(0.04), x(0.11), y(0.2));
         return _FrostGeom(
           [
-            for (final (i, (box, n, amp)) in [(tiers[0], 10, 0.11), (tiers[1], 8, 0.12), (tiers[2], 6, 0.13)].indexed)
+            for (final (i, (box, n, amp)) in [(tiers[0], 9, 0.07), (tiers[1], 8, 0.08), (tiers[2], 7, 0.09), (tiers[3], 5, 0.1)].indexed)
               layer(_tier(box, n, amp), i, shine: arc(_scaled(box, 0.72), math.pi * 1.12, math.pi * 0.32)),
             layer(
               tip,
-              3,
-              shine: arc(Rect.fromCenter(center: Offset(x(-0.02), y(0.2)), width: t.width * 0.2, height: t.height * 0.34), math.pi * 1.05,
+              4,
+              shine: arc(Rect.fromCenter(center: Offset(x(-0.02), y(0.2)), width: t.width * 0.16, height: t.height * 0.25), math.pi * 1.05,
                   math.pi * 0.4),
               details: [crease],
               inkTo: tipInk,
@@ -1452,20 +1576,24 @@ class _FrostGeom {
           holes,
         );
       case MouldType.muffinCup:
-        // Kem rưới mỏng, vài giọt chảy phía trước.
-        final e = _scaled(t, 1.04);
-        return _FrostGeom(
-          [
-            layer(_drip(e, const [(0.3, 0.1, 30.0), (0.55, 0.09, 22.0), (0.78, 0.1, 34.0)], sag: 6, wobble: 0.025, waves: 7), 0,
-                shine: arc(_scaled(t, 0.68), math.pi * 1.1, math.pi * 0.3)),
-          ],
-          const [],
-          const [],
-          t,
-          holes,
-        );
+        // Ảnh món: muffin không phủ kem, mặt vòm rắc đường bột → kem của trạm vẽ thành lớp đường bột mờ, giữ thớ bánh.
+        return _FrostGeom(const [], const [], const [], t, holes, dust: _FrostDust(t, SLRandom.mix(seed, 1)));
       case MouldType.tartShell:
-        // Nhân phủ kín lòng vỏ.
+        // Nhân phủ kín lòng vỏ; ảnh món: mép nhân sém caramel, đốm cháy sẫm loang (dày ở mép, vài đốm giữa) — mỗi
+        // đốm quầng caramel nhoè + lõi nâu sẫm méo, đốm lớn có tâm gần đen.
+        Path blot(Offset o, double w, double aspect, double amp, int i) => wobblePath(
+              Path()
+                ..addOval(Rect.fromCenter(center: c + Offset(o.dx * t.width, o.dy * t.height), width: t.width * w, height: t.width * w * aspect)),
+              seed: SLRandom.mix(seed, 80 + i),
+              amplitude: t.width * w * amp,
+              step: 3,
+            );
+        const burns = [
+          (Offset(-0.38, -0.06), 0.11, 0.6), (Offset(-0.3, 0.24), 0.09, 0.45), (Offset(-0.16, -0.34), 0.08, 0.5),
+          (Offset(0.18, -0.33), 0.1, 0.42), (Offset(0.38, -0.1), 0.08, 0.7), (Offset(0.32, 0.22), 0.12, 0.5),
+          (Offset(0.04, 0.36), 0.08, 0.45), (Offset(-0.1, 0.06), 0.05, 0.7), (Offset(0.16, 0.1), 0.045, 0.8),
+          (Offset(-0.36, 0.1), 0.05, 0.6),
+        ];
         return _FrostGeom(
           [
             layer(_drip(_scaled(t, 0.98), const [], sag: 0, wobble: 0.012, waves: 9), 0,
@@ -1473,36 +1601,46 @@ class _FrostGeom {
           ],
           const [],
           [
-            for (final (i, o) in const [Offset(-0.32, -0.05), Offset(0.26, 0.12), Offset(0.04, -0.2), Offset(-0.1, 0.3)].indexed)
-              wobblePath(
-                Path()..addOval(Rect.fromCenter(center: c + Offset(o.dx * t.width, o.dy * t.height), width: t.width * 0.12, height: t.height * 0.1)),
-                seed: SLRandom.mix(seed, 80 + i),
-                amplitude: t.height * 0.012,
-                step: 3,
-              ),
+            (Path.combine(PathOperation.difference, Path()..addOval(_scaled(t, 0.97)), Path()..addOval(_scaled(t, 0.74))), const Color(0x70D07626), 14),
+            for (final (i, (o, w, k)) in burns.indexed) (blot(o, w * 2, k, 0.16, i), const Color(0x90B45A16), 8),
+            for (final (i, (o, w, k)) in burns.indexed) (blot(o, w * 1.2, k, 0.24, 40 + i), const Color(0xC0582810), 4),
+            for (final (i, (o, w, k)) in burns.indexed)
+              if (w >= 0.08) (blot(o + const Offset(0.008, 0.004), w * 0.55, k, 0.25, 70 + i), const Color(0xA0381808), 2.5),
           ],
           t,
           holes,
         );
       case MouldType.roundPan:
-        // Phủ mặt + chảy xuống cạnh + viền bắt bông.
+        if (layered) {
+          // Bánh tầng (kem dâu): kem phủ phẳng mặt, mép hơi tràn (không chảy giọt, không bông viền) + hai lớp nhân kem
+          // lộ ở thành bánh giữa các lớp bông lan.
+          return _FrostGeom(
+            [
+              for (final (i, (from, to)) in const [(0.2, 0.36), (0.56, 0.72)].indexed) layer(_sideBand(t, side * from, side * to), 10 + i),
+              layer(_drip(_scaled(t, 1.015), const [], sag: side * 0.1, wobble: 0.01, waves: 11), 0,
+                  shine: arc(_scaled(t, 0.62), math.pi * 1.12, math.pi * 0.26)),
+            ],
+            const [],
+            const [],
+            t,
+            holes,
+          );
+        }
+        // Kem phủ kín mặt và gần hết thành bánh (ảnh bánh matcha), mép dưới lượn nhẹ, chừa chân bông lan.
         return _FrostGeom(
           [
-            layer(_drip(_scaled(t, 1.015), _drips(7, 42, 24, 0.065), sag: 10, wobble: 0.01, waves: 11), 0,
-                shine: arc(_scaled(t, 0.62), math.pi * 1.12, math.pi * 0.26)),
+            layer(_coat(_scaled(t, 1.01), side * 0.74), 0, shine: arc(_scaled(t, 0.62), math.pi * 1.12, math.pi * 0.26)),
           ],
-          [
-            for (final (i, (o, r)) in _ring(_scaled(t, 0.86), 12, t.height * 0.085, 0, math.pi * 2).indexed)
-              _FrostPuff(o, r, SLRandom.mix(seed, 100 + i)),
-          ],
+          const [],
           const [],
           t,
           holes,
         );
       case MouldType.springformPan:
+        // Ảnh món: cheesecake mặt phẳng ngà, không chảy giọt → lớp kem phủ vừa kín mặt, mép tròn gọn.
         return _FrostGeom(
           [
-            layer(_drip(_scaled(t, 1.012), _drips(5, 24, 14, 0.06), sag: 6, wobble: 0.008, waves: 11), 0,
+            layer(_drip(_scaled(t, 1.0), const [], sag: 2, wobble: 0.005, waves: 11), 0,
                 shine: arc(_scaled(t, 0.62), math.pi * 1.12, math.pi * 0.26)),
           ],
           const [],
@@ -1511,15 +1649,24 @@ class _FrostGeom {
           holes,
         );
       case MouldType.tallPan:
-        // Tầng trên phủ mặt + chảy; bắt bông ở chân tầng trên (nửa trước).
-        final junction = Rect.fromCenter(center: Offset(c.dx, t.center.dy + 66), width: t.width * 1.0, height: t.height);
+        // Ảnh món (bánh sinh nhật): hai tầng phủ kem kín mặt + thành, viền bông (màu `CakeArt._piping`) ở mép mặt
+        // tầng trên, chân tầng trên và chân tầng dưới. Số đo theo ảnh đế 2 tầng: thành tầng trên ~⅓ [side], mặt tầng
+        // dưới rộng hơn ~12%, thấp hơn ~0,72 cao elip mặt, thành tầng dưới ~0,44 [side].
+        final upperSide = side * 0.33;
+        final lowerTop = Rect.fromCenter(center: c.translate(0, t.height * 0.72), width: t.width * 1.12, height: t.height * 1.02);
+        final lowerSide = side * 0.44;
+        Rect down(Rect r, double dy, double kx) => Rect.fromCenter(center: r.center.translate(0, dy), width: r.width * kx, height: r.height);
         return _FrostGeom(
           [
-            layer(_drip(_scaled(t, 1.015), _drips(7, 30, 18, 0.065), sag: 6, wobble: 0.01, waves: 11), 0,
-                shine: arc(_scaled(t, 0.62), math.pi * 1.12, math.pi * 0.26)),
+            layer(_coat(lowerTop, lowerSide), 1),
+            layer(_coat(_scaled(t, 1.01), upperSide), 0, shine: arc(_scaled(t, 0.62), math.pi * 1.12, math.pi * 0.26)),
           ],
           [
-            for (final (i, (o, r)) in _ring(junction, 9, 17, math.pi * 0.05, math.pi * 0.95).indexed)
+            for (final (i, (o, r)) in [
+              ..._ring(down(lowerTop, lowerSide - 10, 0.95), 22, 18, -math.pi * 0.02, math.pi * 1.02),
+              ..._ring(down(t, upperSide, 1.0), 19, 18, -math.pi * 0.04, math.pi * 1.04),
+              ..._ring(_scaled(t, 0.97), 34, 16, 0, math.pi * 2),
+            ].indexed)
               _FrostPuff(o, r, SLRandom.mix(seed, 100 + i)),
           ],
           const [],
@@ -1542,11 +1689,20 @@ class _FrostGeom {
           holes,
         );
       case MouldType.eclairTray:
-        // Dải kem dọc thân éclair, vài giọt chảy nhỏ.
+        // Ảnh món: dải ganache phủ nửa trên thân éclair, chạy dọc từ mép miệng ống (trái dưới) tới đầu kia (phải
+        // trên), mép dưới lượn vài giọt nhỏ. Toạ độ theo thân ống trên ảnh đế (px ảnh 512, quy theo mặt bánh [t]).
+        Offset p(double x, double y) => Offset(t.left + (x - 60) / 410 * t.width, t.top + (y - 95) / 235 * t.height);
+        final band = _smooth([
+          p(74, 228), p(108, 196), p(158, 164), p(212, 138), p(268, 109), p(330, 87), p(386, 83), p(432, 97), p(463, 128),
+          p(478, 168), p(472, 204), p(452, 226), p(428, 242), p(418, 256), p(404, 248), p(372, 262), p(346, 276), p(334, 292),
+          p(320, 284), p(292, 298), p(262, 310), p(252, 286), p(232, 254), p(186, 226), p(130, 216),
+        ]);
         return _FrostGeom(
           [
-            layer(_drip(_scaled(t, 1.0), _drips(4, 12, 7, 0.06), sag: 3, wobble: 0.015, waves: 9), 0,
-                shine: arc(_scaled(t, 0.7), math.pi * 1.1, math.pi * 0.26)),
+            layer(band, 0,
+                shine: Path()
+                  ..moveTo(p(150, 186).dx, p(150, 186).dy)
+                  ..quadraticBezierTo(p(250, 136).dx, p(250, 136).dy, p(370, 106).dx, p(370, 106).dy)),
           ],
           const [],
           const [],
@@ -1671,6 +1827,34 @@ class _FrostGeom {
       pts.add(Offset(x, y));
     }
     return _smooth(pts);
+  }
+
+  /// Kem phủ bánh trụ có mặt [e]: nửa sau theo elip mặt bánh, nửa trước hạ [depth] px (phủ thành bánh), mép dưới
+  /// lượn nhẹ.
+  static Path _coat(Rect e, double depth) {
+    const n = 144;
+    final pts = <Offset>[];
+    for (var i = 0; i < n; i++) {
+      final a = math.pi * 2 * i / n;
+      var y = e.center.dy + math.sin(a) * e.height / 2;
+      if (a > 0 && a < math.pi) y += depth * math.pow(math.sin(a), 0.08) + depth * 0.05 * math.sin(a * 13);
+      pts.add(Offset(e.center.dx + math.cos(a) * e.width / 2, y));
+    }
+    return _smooth(pts);
+  }
+
+  /// Lớp nhân lộ ở thành bánh trụ có mặt [t]: dải giữa cung trước của elip mặt bánh hạ [from] và [to] px, mép lượn
+  /// nhẹ như kem bị ép giữa hai lớp bánh.
+  static Path _sideBand(Rect t, double from, double to) {
+    const n = 48;
+    final rx = t.width / 2 * 0.99, ry = t.height / 2, c = t.center;
+    final w = (to - from) * 0.12;
+    Offset at(int i, double d, double phase) {
+      final a = math.pi * i / n;
+      return Offset(c.dx + math.cos(a) * rx, c.dy + math.sin(a) * ry + d + w * math.sin(a * 9 + phase));
+    }
+
+    return _smooth([for (var i = 0; i <= n; i++) at(i, from, 0), for (var i = n; i >= 0; i--) at(i, to, 1.3)]);
   }
 
   /// Một tầng kem xoắn: nửa trên elip, mép dưới thành [scallops] bông lượn (sâu [amp]·cao).

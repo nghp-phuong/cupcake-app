@@ -27,6 +27,28 @@ abstract final class TownMeshes {
   /// Ngân sách tam giác mỗi món ("vài trăm").
   static const int maxTriangles = 600;
 
+  /// Biểu tượng két đầy: kem bóng nói, xu vàng bơ, cạnh xu caramel nhạt.
+  static const int bubble = 0xFFF4E6;
+  static const int coin = 0xFFD27A;
+  static const int coinEdge = 0xE0A84E;
+
+  /// Ngân sách tam giác của biểu tượng két đầy (docs/v3/city-gd4-spec.md §5: "khoảng 150").
+  static const int tillFullMaxTriangles = 200;
+
+  /// Biểu tượng két đầy trên sân chi nhánh (docs/v3/city-gd4-spec.md §5): bóng nói kem dẹt (mặt phẳng xy, đuôi chĩa
+  /// xuống trái) + chồng 3 đồng xu nằm ngang xuyên qua bóng — thấy được cả từ camera phố (+z) lẫn góc cận (−z). Gốc ở
+  /// **tâm bóng** (khác món ăn); cảnh đặt ở y ≈ 2,3 và lắc quanh trục z.
+  static ChibiMesh tillFull() {
+    final b = ChibiMeshBuilder()
+      ..ellipsoid(0, 0, 0, 0.36, 0.27, 0.085, bubble, lat: 3, lon: 6)
+      ..frustum(-0.12, -0.18, 0, -0.24, -0.41, 0, 0.085, 0, bubble, radial: 4, capB: false);
+    for (var i = 0; i < 3; i++) {
+      final x = 0.015 * (i - 1), y = -0.085 + i * 0.055;
+      b.frustum(x, y, 0, x, y + 0.042, 0, 0.145, 0.145, i.isEven ? coin : coinEdge, radial: 6);
+    }
+    return b.build();
+  }
+
   /// Món ăn đặt trên bàn hiên quán "Bếp Hải Đăng" theo id món (`RestaurantMenu`); id lạ → đĩa trứng chiên cơm.
   static ChibiMesh dish(String dishId) => switch (dishId) {
         'fish_soup' => fishSoup(),

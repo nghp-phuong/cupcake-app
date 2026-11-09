@@ -19,6 +19,50 @@ Color townLotColor(LotKind k) => switch (k) {
   LotKind.branch => const Color(0xFFD9CBBE),
 };
 
+/// Dữ liệu chi nhánh để vẽ lên bản đồ: lô đã mua ([owned]), lô có két đầy ([full]), cấp từng lô ([levels]).
+/// Lô đã mua tô màu nhấn theo [accentOf]; két đầy có huy hiệu đồng xu ở góc lô.
+@immutable
+class TownBranchMarks {
+  const TownBranchMarks({
+    this.owned = const {},
+    this.full = const {},
+    this.levels = const {},
+  });
+
+  static const none = TownBranchMarks();
+
+  final Set<String> owned, full;
+  final Map<String, int> levels;
+
+  /// Màu nhấn của lô chi nhánh: s1 hồng dâu, s3 bạc hà, s4 vàng bơ; lô khác → null.
+  static Color? accentOf(String lotId) => switch (lotId) {
+    's1' => AppColors.strawberry,
+    's3' => AppColors.mint,
+    's4' => AppColors.butter,
+    _ => null,
+  };
+
+  /// Khung (px) của huy hiệu đồng xu ở góc trên trái lô [r].
+  static Rect coinBounds(Rect r) {
+    final u = (r.shortestSide * 0.26).clamp(7.0, 16.0).toDouble();
+    return Rect.fromLTWH(r.left + 2, r.top + 2, u, u);
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is TownBranchMarks &&
+      setEquals(other.owned, owned) &&
+      setEquals(other.full, full) &&
+      mapEquals(other.levels, levels);
+
+  @override
+  int get hashCode => Object.hash(
+    Object.hashAllUnordered(owned),
+    Object.hashAllUnordered(full),
+    Object.hashAllUnordered(levels.entries.map((e) => Object.hash(e.key, e.value))),
+  );
+}
+
 /// Vẽ quận nhìn từ trên: nền, vỉa hè, lòng đường, lô, chấm Mai. x → phải, z → xuống (bắc ở trên).
 /// Vị trí/hướng Mai đọc từ ValueListenable khi vẽ; `repaint` quyết định lúc nào vẽ lại.
 class TownMapPainter extends CustomPainter {
@@ -29,6 +73,7 @@ class TownMapPainter extends CustomPainter {
     this.dotRadius = 5,
     this.playerLevel,
     this.cornerLock = false,
+    this.branches,
     super.repaint,
   });
 
@@ -42,6 +87,9 @@ class TownMapPainter extends CustomPainter {
 
   /// true: ổ khoá nhỏ (~22% cạnh ngắn) ở góc trên phải lô, để không đè chữ (bản đồ lớn). false: to, giữa lô (minimap).
   final bool cornerLock;
+
+  /// Lô chi nhánh đã mua / két đầy. null = không vẽ gì thêm (hành vi cũ).
+  final TownBranchMarks? branches;
 
   /// Khung (px) của ổ khoá trong lô [r] — dùng khi vẽ và khi kiểm tra không đè chữ.
   static Rect lockBounds(Rect r, {bool corner = false}) {
@@ -96,10 +144,12 @@ class TownMapPainter extends CustomPainter {
       final r = lotRect(d, l, size).deflate(1);
       final rr = RRect.fromRectAndRadius(r, const Radius.circular(3));
       final locked = playerLevel != null && l.requiresLevel > playerLevel!;
-      final base = townLotColor(l.kind);
+      final owned = branches?.owned.contains(l.id) ?? false;
+      final base = (owned ? TownBranchMarks.accentOf(l.id) : null) ?? townLotColor(l.kind);
       canvas.drawRRect(rr, fill..color = locked ? base.withValues(alpha: 0.55) : base);
       canvas.drawRRect(rr, edge);
       if (locked) _paintLock(canvas, r, cornerLock);
+      if (owned && branches!.full.contains(l.id)) _paintCoin(canvas, TownBranchMarks.coinBounds(r));
     }
     canvas.drawRect(
       Offset.zero & size,
@@ -133,6 +183,28 @@ class TownMapPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2
         ..color = Colors.white,
+    );
+  }
+
+  /// Huy hiệu đồng xu bằng path trong khung [b]: đĩa vàng viền nâu, vòng trong.
+  static void _paintCoin(Canvas canvas, Rect b) {
+    final c = b.center;
+    final rad = b.shortestSide / 2;
+    final disc = Path()..addOval(Rect.fromCircle(center: c, radius: rad));
+    canvas.drawPath(disc, Paint()..color = const Color(0xFFFFC857));
+    canvas.drawPath(
+      disc,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = math.max(1.2, rad * 0.22)
+        ..color = AppColors.chocolate,
+    );
+    canvas.drawPath(
+      Path()..addOval(Rect.fromCircle(center: c, radius: rad * 0.55)),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = math.max(1.0, rad * 0.14)
+        ..color = AppColors.caramel,
     );
   }
 
@@ -173,7 +245,8 @@ class TownMapPainter extends CustomPainter {
       old.district != district ||
       old.maiPos != maiPos ||
       old.maiYaw != maiYaw ||
-      old.dotRadius != dotRadius;
+      old.dotRadius != dotRadius ||
+      old.branches != branches;
 }
 
 /// Bản đồ nhỏ ở góc màn hình; chạm → [onTap] (mở [TownMapSheet]). Vị trí/hướng Mai lấy từ ValueListenable, chỉ vẽ
@@ -186,6 +259,7 @@ class TownMinimap extends StatefulWidget {
     this.maiYaw,
     required this.onTap,
     this.playerLevel,
+    this.branches,
     this.width = 168,
     this.interval = const Duration(milliseconds: 100),
   });
@@ -200,6 +274,9 @@ class TownMinimap extends StatefulWidget {
   /// Cấp của Mai; đổi thì vẽ lại (lô còn khoá có ổ khoá). null = không vẽ khoá.
   final ValueListenable<int>? playerLevel;
 
+  /// Chi nhánh đã mua / két đầy; đổi thì vẽ lại. null = không vẽ (hành vi cũ).
+  final ValueListenable<TownBranchMarks>? branches;
+
   /// Bề ngang (px); bề cao theo tỉ lệ quận.
   final double width;
 
@@ -212,6 +289,7 @@ class TownMinimap extends StatefulWidget {
 
 class _TownMinimapState extends State<TownMinimap> {
   static final _noLevel = ValueNotifier<int>(0);
+  static final _noMarks = ValueNotifier<TownBranchMarks>(TownBranchMarks.none);
   final _tick = ValueNotifier<int>(0);
   final _clock = Stopwatch()..start();
   Timer? _pending;
@@ -227,12 +305,14 @@ class _TownMinimapState extends State<TownMinimap> {
     w.maiPos.addListener(_onChange);
     w.maiYaw?.addListener(_onChange);
     w.playerLevel?.addListener(_onLevel);
+    w.branches?.addListener(_onLevel);
   }
 
   void _detach(TownMinimap w) {
     w.maiPos.removeListener(_onChange);
     w.maiYaw?.removeListener(_onChange);
     w.playerLevel?.removeListener(_onLevel);
+    w.branches?.removeListener(_onLevel);
   }
 
   void _onLevel() => _tick.value++;
@@ -240,7 +320,8 @@ class _TownMinimapState extends State<TownMinimap> {
   @override
   void didUpdateWidget(TownMinimap old) {
     super.didUpdateWidget(old);
-    if (old.maiPos != widget.maiPos || old.maiYaw != widget.maiYaw || old.playerLevel != widget.playerLevel) {
+    if (old.maiPos != widget.maiPos || old.maiYaw != widget.maiYaw || old.playerLevel != widget.playerLevel ||
+        old.branches != widget.branches) {
       _detach(old);
       _attach(widget);
       _tick.value++;
@@ -299,15 +380,19 @@ class _TownMinimapState extends State<TownMinimap> {
               child: ValueListenableBuilder<int>(
                 valueListenable:
                     widget.playerLevel ?? _noLevel,
-                builder: (context, level, _) => CustomPaint(
-                  painter: TownMapPainter(
-                    district: d,
-                    maiPos: widget.maiPos,
-                    maiYaw: widget.maiYaw,
-                    playerLevel: widget.playerLevel == null ? null : level,
-                    repaint: _tick,
+                builder: (context, level, _) => ValueListenableBuilder<TownBranchMarks>(
+                  valueListenable: widget.branches ?? _noMarks,
+                  builder: (context, marks, _) => CustomPaint(
+                    painter: TownMapPainter(
+                      district: d,
+                      maiPos: widget.maiPos,
+                      maiYaw: widget.maiYaw,
+                      playerLevel: widget.playerLevel == null ? null : level,
+                      branches: widget.branches == null ? null : marks,
+                      repaint: _tick,
+                    ),
+                    size: Size(w, h),
                   ),
-                  size: Size(w, h),
                 ),
               ),
             ),

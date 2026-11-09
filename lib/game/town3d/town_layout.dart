@@ -15,8 +15,9 @@ import '../shop3d/shop3d_layout.dart';
 ///
 /// Mặt tiền mỗi lô dựng trong "khung lô" (l = sang phải khi nhìn từ phố vào, d = độ sâu từ mép lô giáp vỉa hè, lô bắc
 /// d = -z - 5,5, lô nam d = z - 5,5) rồi đổi sang toạ độ thế giới. Nhà cao ~4,4 m, mái tới ~5,6 m, mặt tiền lùi 0,9 m so
-/// với mép lô (hiên nhỏ có thể đi lên, cửa không bị tường chắn). Quầy quán ăn / tiệm tóc: ô cửa ở mặt tiền, chủ quán
-/// đứng trong hốc (keeper), Mai đứng trên vỉa hè trước ô cửa (counter).
+/// với mép lô (hiên nhỏ có thể đi lên, cửa không bị tường chắn). Quầy quán ăn / tiệm tóc / văn phòng địa ốc: ô cửa ở mặt
+/// tiền, chủ quán đứng trong hốc (keeper), Mai đứng trên vỉa hè trước ô cửa (counter). Lô chi nhánh (s1, s3, s4) chỉ có
+/// hộp chặn cố định ở đây; mặt tiền theo cấp dựng riêng ([TownLayout.branchFacade]).
 class TownPoint {
   const TownPoint(this.x, this.z, [this.yaw = 0]);
 
@@ -29,7 +30,7 @@ class TownPoint {
 
 /// Các điểm tương tác của một lô. [yaw] của từng điểm là hướng nhìn của người đứng ở đó:
 /// - [door]: Mai đứng ở mép lô (đúng `LotDef.doorX/doorZ`), quay vào lô;
-/// - [counter]: Mai đứng trên vỉa hè trước ô cửa quầy, quay vào ô cửa (chỉ quán ăn, tiệm tóc);
+/// - [counter]: Mai đứng trên vỉa hè trước ô cửa quầy, quay vào ô cửa (chỉ quán ăn, tiệm tóc, văn phòng địa ốc);
 /// - [keeper]: chủ quán NPC đứng trong hốc sau ô cửa, quay ra phố — nằm trong hộp chặn (Mai không tới được);
 /// - [seat]: ghế hiên của quán ăn, Mai ngồi, quay vào bàn.
 class TownLotSpots {
@@ -84,6 +85,32 @@ class TownLayout {
   /// Bố cục của quận [d] (quận không có lô vẫn có đường, vỉa hè, đất, biên).
   static TownLayout forDistrict(DistrictDef d) =>
       _cache[d] ??= _TownBuilder(d).build();
+
+  /// Cấp cao nhất của mặt tiền chi nhánh ([branchFacade]).
+  static const int branchMaxLevel = 5;
+
+  /// Hộp chặn cố định của lô chi nhánh trong khung lô (l ∈ [−[branchBlockL]; [branchBlockL]], d ∈ [[branchBlockD0];
+  /// [branchBlockD1]]), giống nhau ở mọi cấp: `TownPilot` dựng bộ điều hướng một lần.
+  static const double branchBlockL = 5.4,
+      branchBlockD0 = 0.3,
+      branchBlockD1 = 9.95;
+
+  /// Mặt tiền lô chi nhánh [lot] ở cấp [level] (0 = lô trống đang bán: rào kín, cổng đóng; 1..[branchMaxLevel] = cấp
+  /// chi nhánh — docs/v3/city-gd4-spec.md §5), toạ độ lớp phố, `pickable: false`. [forDistrict] không chứa đồ của lô
+  /// chi nhánh; cảnh dựng riêng qua `TownBatches.buildLot` để đổi theo cấp. Mọi khối nằm trong lô, không lấn vỉa hè và
+  /// dưới đường bao `TownRules.branchEnvelope`.
+  static List<Shop3dProp> branchFacade(LotDef lot, int level) {
+    final parts = <Shop3dPart>[];
+    _BranchFacade(lot, level.clamp(0, branchMaxLevel), parts).build();
+    return [
+      Shop3dProp(
+        'branch:${lot.id}',
+        Shop3dZone.entrance,
+        List.unmodifiable(parts),
+        pickable: false,
+      ),
+    ];
+  }
 
   final DistrictDef district;
 
@@ -613,11 +640,18 @@ class _TownBuilder {
       case LotKind.salon:
         lotSpots = _salon(s, f, lot, door, inYaw);
       case LotKind.realty:
-        _realty(s);
+        lotSpots = _realty(s, f, lot, door, inYaw);
       case LotKind.park:
         _park(s, f, lot);
       case LotKind.branch:
-        _emptyLot(s, lot);
+        // Đồ của lô chi nhánh dựng riêng theo cấp ([TownLayout.branchFacade]); bố cục chung chỉ giữ hộp chặn cố định
+        // (giống nhau ở mọi cấp — bộ điều hướng dựng một lần).
+        s.block(
+          -TownLayout.branchBlockL,
+          TownLayout.branchBlockL,
+          TownLayout.branchBlockD0,
+          TownLayout.branchBlockD1,
+        );
     }
     spots[lot.id] = lotSpots;
     // Bụi cây chắn khe 1 m giữa hai lô cạnh nhau (ở lô cuối hàng thì chắn bên trái: biên quận đã chặn bên kia).
@@ -720,7 +754,7 @@ class _TownBuilder {
   }
 
   /// Mái hiên sọc: những nêm lăng trụ hai màu nhô ra phố [proj] m từ mặt tường (d = [fd]), diềm sóng ở mép.
-  void _awning(
+  static void _awning(
     _Sink s,
     _C a,
     _C b,
@@ -743,7 +777,7 @@ class _TownBuilder {
   }
 
   /// Cửa sổ có ánh ấm (mặt đục không chịu ánh sáng, không kính trong suốt): khung, ô sáng, nan chữ thập, bệ.
-  void _window(
+  static void _window(
     _Sink s,
     double l,
     double fd, {
@@ -761,7 +795,7 @@ class _TownBuilder {
   }
 
   /// Cửa ra vào: khung, cánh [leaf] có ô sáng nhỏ, tay nắm, bậc gỗ thấp (3 cm).
-  void _door(
+  static void _door(
     _Sink s,
     double l,
     double fd,
@@ -1073,13 +1107,40 @@ class _TownBuilder {
 
   // ---- Văn phòng địa ốc (n1) ----------------------------------------------------------------------------------------
 
-  void _realty(_Sink s) {
-    const fd = 0.9, h = 4.2, back = 7.2;
+  /// Văn phòng địa ốc: ô cửa quầy ở l = +3 (mẫu tiệm tóc), chủ văn phòng đứng trong hốc (keeper), Mai đứng trên vỉa hè
+  /// trước ô cửa (counter) — vùng quầy quanh (−15; −5,0), cách vùng cửa 3 m (docs/v3/city-gd4-spec.md §4).
+  TownLotSpots _realty(
+    _Sink s,
+    _F f,
+    LotDef lot,
+    TownPoint door,
+    double inYaw,
+  ) {
+    const fd = 0.9, rf = 2.4, h = 4.2, back = 7.2;
+    const hc = 3.0, hw = 2.4;
+    const hl0 = hc - hw / 2, hl1 = hc + hw / 2;
+    const wall = _C.butterLight, trim = _C.cream;
     s.tile(_paving, -5.4, 5.4, 0, fd + 0.1, top: 0);
-    _shell(s, _C.butterLight, _C.woodLight, _C.cream, -5.4, 5.4, fd, back, h);
+    s.boxR(wall, -5.4, 5.4, 0, h, rf, back);
+    s.boxR(wall, -5.4, hl0, 0, h, fd, rf);
+    s.boxR(wall, hl1, 5.4, 0, h, fd, rf);
+    s.boxR(_C.woodLight, -5.46, 5.46, 0, 0.5, fd - 0.06, back + 0.06);
+    s.boxR(trim, -5.5, 5.5, h - 0.2, h, fd - 0.1, back + 0.1);
+    _hatch(s, hc, hw, fd, rf, h, wall, trim);
+    _awning(
+      s,
+      _C.mint,
+      _C.cream,
+      hl0 - 0.3,
+      hl1 + 0.3,
+      fd,
+      2.55,
+      proj: 0.6,
+      rise: 0.4,
+      stripe: 0.5,
+    );
     _roofSide(s, _C.mint, _C.cream, -5.9, 5.9, fd - 0.5, back + 0.4, h, 1.1);
     _window(s, -3.2, fd, y0: 0.95, w: 1.6, h: 1.3, sill: _C.caramel);
-    _window(s, 3.2, fd, y0: 0.95, w: 1.6, h: 1.3, sill: _C.caramel);
     _door(s, 0, fd, _C.woodDark, pane: false); // cửa đóng
     _awning(
       s,
@@ -1112,14 +1173,21 @@ class _TownBuilder {
     s.box(_C.caramel, 0.58, 3.37, fd - 0.12, 0.045, 0.07, 0.04);
     s.box(_C.caramel, 0.5, 3.37, fd - 0.12, 0.045, 0.07, 0.04);
     _pot(s, -1.5, 0.45, _C.pinkLight);
-    _pot(s, 1.5, 0.45, _C.strawberry);
-    s.block(-5.4, 5.4, fd - 0.06, back + 0.1);
+    _pot(s, 1.15, 0.45, _C.strawberry); // lùi sát cửa: bên phải là bệ quầy
+    s.block(-5.46, 5.46, fd - 0.06, back + 0.1);
+    s.block(hl0 - 0.25, hl1 + 0.25, fd - 0.55, fd);
+    return TownLotSpots(
+      lotId: lot.id,
+      door: door,
+      counter: TownPoint(f.x(hc), f.z(-0.5), inYaw),
+      keeper: TownPoint(f.x(hc), f.z(fd + 0.8), inYaw == _pi ? 0.0 : _pi),
+    );
   }
 
   // ---- Lô trống bán (s1, s3, s4) ------------------------------------------------------------------------------------
 
   /// Hàng rào gỗ trắng thấp chạy dọc l ([alongL]) hoặc dọc d, từ [a] tới [b], ở vị trí [fixed] của trục kia.
-  void _fence(_Sink s, bool alongL, double fixed, double a, double b) {
+  static void _fence(_Sink s, bool alongL, double fixed, double a, double b) {
     final n = math.max(1, ((b - a) / 1.5).ceil());
     final step = (b - a) / n;
     for (var i = 0; i <= n; i++) {
@@ -1141,69 +1209,6 @@ class _TownBuilder {
       s.block(a - 0.05, b + 0.05, fixed - 0.06, fixed + 0.06);
     } else {
       s.block(fixed - 0.06, fixed + 0.06, a - 0.05, b + 0.05);
-    }
-  }
-
-  void _emptyLot(_Sink s, LotDef lot) {
-    const gate = 1.0, fy = 0.3, edge = 5.4, depth = 9.9;
-    // hàng rào trước có lối vào ở giữa, hai bên + sau kín
-    _fence(s, true, fy, -edge, -gate);
-    _fence(s, true, fy, gate, edge);
-    _fence(s, false, -edge, fy, depth);
-    _fence(s, false, edge, fy, depth);
-    _fence(s, true, depth, -edge, edge);
-    for (final l in const [-gate, gate]) {
-      s.box(_C.cream, l, 0, fy, 0.14, 1.15, 0.14);
-      s.box(_C.butterLight, l, 1.15, fy, 0.2, 0.08, 0.2);
-    }
-    // bảng gỗ nhỏ không chữ trên hai cọc: viền vàng bơ, hình lá cờ nhỏ
-    final accent = lot.id == 's1'
-        ? _C.strawberry
-        : lot.id == 's3'
-        ? _C.mint
-        : _C.butter;
-    for (final l in const [-3.4, -2.4]) {
-      s.box(_C.woodDark, l, 0, 1.1, 0.1, 1.2, 0.1);
-      s.blockC(l, 1.1, 0.14, 0.14);
-    }
-    s.box(_C.woodLight, -2.9, 0.6, 1.1, 1.3, 0.6, 0.06);
-    for (final side in const [-1.0, 1.0]) {
-      // hai mặt bảng đều có sọc màu (camera nhìn được từ cả phố lẫn phía sau lô)
-      for (final l in const [-3.2, -2.9, -2.6]) {
-        s.box(accent, l, 0.72, 1.1 + side * 0.03, 0.12, 0.36, 0.02);
-      }
-      s.box(_C.butter, -2.9, 0.6, 1.1 + side * 0.03, 1.3, 0.05, 0.02);
-      s.box(_C.butter, -2.9, 1.15, 1.1 + side * 0.03, 1.3, 0.05, 0.02);
-    }
-    // cây non + đám hoa dại cho đỡ trống
-    s.cyl(_C.woodDark, 4.3, 0, 7.4, 0.18, 1.1);
-    s.ball(_C.leafLight, 4.3, 0.95, 7.4, 1.3);
-    s.blockC(4.3, 7.4, 0.3, 0.3);
-    const wild = [
-      _C.strawberry,
-      _C.butter,
-      _C.cream,
-      _C.pinkLight,
-      _C.butter,
-      _C.strawberry,
-    ];
-    for (var i = 0; i < wild.length; i++) {
-      s.bloom(
-        wild[i],
-        -4.6 + (i % 3) * 0.35,
-        0.0,
-        6.0 + (i ~/ 3) * 0.4 + (i % 2) * 0.12,
-        0.12,
-      );
-    }
-    // vài bụi cây trong lô
-    for (final (l, dd, c) in const [
-      (-4.4, 2.2, _C.leafDeep),
-      (4.4, 2.6, _C.correct),
-    ]) {
-      s.ball(c, l, 0, dd, 0.8);
-      s.bloom(_C.pinkLight, l + 0.2, 0.68, dd + 0.2, 0.12);
-      s.blockC(l, dd, 0.7, 0.7);
     }
   }
 
@@ -1373,5 +1378,320 @@ class _TownBuilder {
     s.bloom(_C.chocolate, px + 0.12, 1.77, pz + 0.1, 0.08);
     s.blockC(px, pz, 0.2, 0.2);
     _emit('busStop', parts);
+  }
+}
+
+// ---- Mặt tiền lô chi nhánh (s1, s3, s4) theo cấp ---------------------------------------------------------------------
+
+/// Dựng mặt tiền một lô chi nhánh ở cấp [level] (0 = lô trống đang bán, 1..5 = cấp chi nhánh — docs/v3/city-gd4-spec.md
+/// §0, §5) trong khung lô (l, d) của `_TownBuilder._lot`. Mọi khối nằm dưới đường bao `y ≤ 0,6 + 0,8·d`
+/// (`TownRules.branchEnvelope`): sân trước thấp, tường trước lùi d = [_fd] cao [_frontH], mái lệch dốc lên tới khối sau
+/// cao (nửa sau của lăng trụ mái nằm trong khối sau). Hộp chặn không dựng ở đây: bố cục chung giữ một hộp cố định cho
+/// mọi cấp.
+class _BranchFacade {
+  _BranchFacade(this.lot, this.level, this.parts)
+    : s = _Sink(_frameOf(lot), parts, <NavBox>[], <TownGroundTile>[]),
+      accent = switch (lot.id) {
+        's1' => _C.strawberry,
+        's3' => _C.mint,
+        _ => _C.butter,
+      },
+      accentLight = switch (lot.id) {
+        's1' => _C.pinkLight,
+        's3' => _C.mintLight,
+        _ => _C.butterLight,
+      };
+
+  final LotDef lot;
+  final int level;
+  final List<Shop3dPart> parts;
+  final _Sink s;
+  final _C accent, accentLight;
+
+  static const double _pi = math.pi;
+
+  /// Mặt tường trước, chiều cao tường trước; mặt trước khối sau, mặt sau nhà, chiều cao khối sau.
+  static const double _fd = 2.4, _frontH = 2.45;
+  static const double _rearD = 4.4, _back = 7.4, _rearH = 3.85;
+
+  /// Mái lệch: lăng trụ tam giác đáy ở [_roofY] từ d = [_eaveD] tới đỉnh ở mặt trước khối sau ([_rearD]).
+  static const double _eaveD = 2.15, _roofY = 2.3, _roofRise = 1.6;
+
+  /// Mái hiên: đáy ở [_awnY] trên mặt tường trước, nhô [_awnProj], cao [_awnRise].
+  static const double _awnY = 2.05, _awnProj = 0.55, _awnRise = 0.38;
+
+  /// Biển hai mặt ở sân: tâm (l, d).
+  static const double _signL = -3.8, _signD = 1.4;
+
+  static _F _frameOf(LotDef lot) {
+    final north = math.cos(lot.yaw) > 0;
+    return _F(lot.doorX, lot.doorZ, north ? 1 : -1, north ? -1 : 1);
+  }
+
+  void build() {
+    if (level <= 0) {
+      _forSale();
+      return;
+    }
+    // Cấp 1–2: tiệm nhỏ lệch phải; từ cấp 3 nhà rộng hết lô.
+    final (l0, l1) = level >= 3 ? (-5.0, 5.0) : (-2.0, 4.6);
+    final windows = level >= 3 ? const [-2.7, 2.7] : const [2.7];
+    _yard();
+    _house(l0, l1);
+    for (final wl in windows) {
+      _TownBuilder._window(
+        s,
+        wl,
+        _fd,
+        y0: 0.85,
+        w: 1.5,
+        h: 1.1,
+        sill: accent == _C.butter ? _C.caramel : accent,
+      );
+    }
+    _TownBuilder._door(s, 0, _fd, accent);
+    _sign();
+    if (level >= 2) {
+      if (level >= 4) {
+        // mái hiên dài suốt mặt tiền
+        _TownBuilder._awning(
+          s,
+          accent,
+          _C.cream,
+          l0 + 0.2,
+          l1 - 0.2,
+          _fd,
+          _awnY,
+          proj: _awnProj,
+          rise: _awnRise,
+          stripe: 1.6,
+        );
+      } else {
+        _TownBuilder._awning(
+          s,
+          accent,
+          _C.cream,
+          windows.last - 1.05,
+          windows.last + 1.05,
+          _fd,
+          _awnY,
+          proj: _awnProj,
+          rise: _awnRise,
+          stripe: 0.5,
+        );
+      }
+      _pot(-1.1, _fd - 0.3, accent);
+      _pot(1.1, _fd - 0.3, _C.butter);
+    }
+    if (level >= 3) _table(3.6, 1.3);
+    if (level >= 4) {
+      _lights(l0 + 0.5, l1 - 0.5);
+      for (final wl in windows) {
+        _flowerBox(wl);
+      }
+    }
+    if (level >= 5) {
+      // ống khói trên khối sau, sao vàng trên biển, 2 đèn lồng hai bên cửa
+      s.boxR(_C.caramel, l1 - 1.6, l1 - 1.0, _rearH, 4.8, 5.6, 6.2);
+      s.boxR(_C.woodDark, l1 - 1.66, l1 - 0.94, 4.8, 4.9, 5.54, 6.26);
+      // sao sáu cánh: tam giác đỉnh lên + tam giác đỉnh xuống lùi xuống 1/3 chiều cao
+      s.prism(_C.butter, _signL, 1.3, _signD, 0.3, 0.26, 0.06, topScale: 0);
+      s.prism(
+        _C.butter,
+        _signL,
+        1.3 - 0.26 / 3,
+        _signD,
+        0.3,
+        0.26,
+        0.06,
+        bottomScale: 0,
+      );
+      for (final l in const [-1.05, 1.05]) {
+        _lantern(l);
+      }
+    }
+  }
+
+  // ---- Lô trống: rào trắng kín (cổng đóng), biển hai mặt, cây non -------------------------------------------------
+
+  void _forSale() {
+    const edge = 5.4, fy = 0.45, depth = 9.9, gate = 1.0;
+    _TownBuilder._fence(s, true, fy, -edge, -gate);
+    _TownBuilder._fence(s, true, fy, gate, edge);
+    _TownBuilder._fence(s, false, -edge, fy, depth);
+    _TownBuilder._fence(s, false, edge, fy, depth);
+    _TownBuilder._fence(s, true, depth, -edge, edge);
+    // cổng đóng: hai cột thấp + hai cánh kín (dày hơn thanh rào nên che thanh ngang), chốt gỗ
+    for (final l in const [-gate, gate]) {
+      s.box(_C.cream, l, 0, fy, 0.14, 0.8, 0.14);
+      s.box(_C.butterLight, l, 0.8, fy, 0.2, 0.06, 0.2);
+    }
+    s.boxR(
+      _C.butterLight,
+      -gate + 0.07,
+      -0.01,
+      0.12,
+      0.72,
+      fy - 0.035,
+      fy + 0.035,
+    );
+    s.boxR(
+      _C.butterLight,
+      0.01,
+      gate - 0.07,
+      0.12,
+      0.72,
+      fy - 0.035,
+      fy + 0.035,
+    );
+    s.box(_C.woodDark, 0, 0.38, fy, 0.12, 0.12, 0.1);
+    // biển hai mặt: sọc màu nhấn xuyên qua bảng (thấy ở cả hai mặt)
+    _signFrame();
+    for (final l in const [-0.3, 0.0, 0.3]) {
+      s.box(accent, _signL + l, 0.7, _signD, 0.12, 0.36, 0.12);
+    }
+    // cây non (thân + hai tầng lá hình nón) + vài bông hoa dại, một bụi nhỏ
+    s.cyl(_C.woodDark, 4.0, 0, 7.4, 0.09, 0.9);
+    s.cone(_C.leafLight, 4.0, 0.7, 7.4, 0.9, 0, 0.8);
+    s.cone(_C.correct, 4.0, 1.2, 7.4, 0.6, 0, 0.6);
+    const wild = [_C.strawberry, _C.butter, _C.pinkLight, _C.cream];
+    for (var i = 0; i < wild.length; i++) {
+      s.bloom(wild[i], -4.4 + i * 0.4, 0, 6.0 + (i % 2) * 0.3, 0.12);
+    }
+    s.ball(_C.leafDeep, -4.2, 0, 2.6, 0.44);
+    s.bloom(_C.pinkLight, -4.1, 0.36, 2.7, 0.12);
+  }
+
+  // ---- Chi nhánh -------------------------------------------------------------------------------------------------
+
+  /// Sân: lối đi lát từ cổng tới cửa, bụi thấp quanh lô (hai khúc trước chừa cổng mở), hai cột cổng.
+  void _yard() {
+    const edge = 5.4, gate = 0.9, depth = 9.9;
+    s.boxR(_C.pavingLight, -0.6, 0.6, -0.01, 0.012, 0.0, _fd - 0.4);
+    void hedge(double l0, double l1, double d0, double d1) {
+      s.boxR(_C.leafDeep, l0, l1, 0, 0.5, d0, d1);
+      s.boxR(
+        _C.leafLight,
+        l0 + 0.04,
+        l1 - 0.04,
+        0.5,
+        0.6,
+        d0 + 0.04,
+        d1 - 0.04,
+      );
+    }
+
+    hedge(-edge, -gate, 0.2, 0.65);
+    hedge(gate, edge, 0.2, 0.65);
+    hedge(-edge, -edge + 0.45, 0.65, depth);
+    hedge(edge - 0.45, edge, 0.65, depth);
+    hedge(-edge + 0.45, edge - 0.45, depth - 0.45, depth);
+    for (final l in const [-gate, gate]) {
+      s.box(_C.caramel, l, 0, 0.42, 0.16, 0.7, 0.16);
+      s.box(accent, l, 0.7, 0.42, 0.22, 0.08, 0.22);
+    }
+  }
+
+  /// Thân nhà: phần trước thấp (tường trước ở [_fd]) + khối sau cao, chân tường, mái lệch màu nhấn có gờ, nắp khối sau.
+  void _house(double l0, double l1) {
+    s.boxR(_C.wall, l0, l1, 0, _frontH, _fd, _rearD);
+    s.boxR(_C.wall, l0, l1, 0, _rearH, _rearD, _back);
+    s.boxR(accentLight, l0 - 0.05, l1 + 0.05, 0, 0.4, _fd - 0.05, _back + 0.05);
+    const half = _rearD - _eaveD;
+    s.prism(
+      accent,
+      (l0 + l1) / 2,
+      _roofY,
+      _rearD,
+      2 * half,
+      _roofRise,
+      l1 - l0 + 0.4,
+      rotY: _pi / 2,
+      topScale: 0,
+    );
+    s.boxR(
+      _C.cream,
+      l0 - 0.2,
+      l1 + 0.2,
+      _roofY - 0.06,
+      _roofY + 0.02,
+      _eaveD,
+      _eaveD + 0.07,
+    );
+    s.boxR(
+      accent,
+      l0 - 0.1,
+      l1 + 0.1,
+      _rearH,
+      _rearH + 0.12,
+      _rearD - 0.1,
+      _back + 0.1,
+    );
+  }
+
+  void _signFrame() {
+    for (final l in const [-0.45, 0.45]) {
+      s.box(_C.woodDark, _signL + l, 0, _signD, 0.08, 1.25, 0.08);
+    }
+    s.box(_C.woodDark, _signL, 0.55, _signD, 1.1, 0.7, 0.06);
+    s.box(_C.cream, _signL, 0.61, _signD, 0.98, 0.58, 0.1);
+  }
+
+  /// Biển cupcake hai mặt ở sân (hình xuyên qua bảng nên thấy ở cả hai mặt).
+  void _sign() {
+    _signFrame();
+    s.prism(
+      _C.caramel,
+      _signL,
+      0.68,
+      _signD,
+      0.34,
+      0.18,
+      0.12,
+      bottomScale: 0.7,
+    );
+    s.prism(accentLight, _signL, 0.86, _signD, 0.4, 0.12, 0.12, topScale: 0.65);
+    s.prism(accentLight, _signL, 0.98, _signD, 0.26, 0.1, 0.12, topScale: 0.5);
+    s.box(_C.strawberry, _signL, 1.07, _signD, 0.09, 0.09, 0.12);
+  }
+
+  /// Chậu hoa nhỏ: chậu nón cụt, chỏm lá hình nón, một bông.
+  void _pot(double l, double d, _C bloom) {
+    s.cone(_C.caramel, l, 0, d, 0.24, 0.32, 0.32);
+    s.cone(_C.correct, l, 0.3, d, 0.34, 0, 0.32);
+    s.bloom(bloom, l, 0.5, d - 0.08, 0.1);
+  }
+
+  /// Bàn nhỏ có ô dù ở sân (ô thấp cho vừa đường bao).
+  void _table(double l, double d) {
+    s.boxR(_C.pavingLight, l - 0.8, l + 0.8, -0.01, 0.014, d - 0.55, d + 0.55);
+    s.cyl(_C.woodDark, l, 0, d, 0.08, 0.5);
+    s.cyl(_C.cream, l, 0.5, d, 0.6, 0.04);
+    s.cyl(_C.woodLight, l, 0.54, d, 0.04, 0.62);
+    s.cone(accent, l, 1.15, d, 1.1, 0, 0.4);
+  }
+
+  /// Dây đèn treo dưới mép mái hiên dài: dây mảnh + bóng vàng ấm (không chịu ánh sáng).
+  void _lights(double l0, double l1) {
+    const d = _fd - _awnProj + 0.03, y = 1.84;
+    s.boxR(_C.woodDark, l0, l1, y, y + 0.02, d - 0.01, d + 0.01);
+    const n = 4;
+    for (var i = 0; i < n; i++) {
+      s.bloom(_C.sun, l0 + (i + 0.5) * (l1 - l0) / n, y - 0.1, d, 0.1);
+    }
+  }
+
+  /// Bồn hoa trên bệ cửa sổ [wl].
+  void _flowerBox(double wl) {
+    s.boxR(_C.woodLight, wl - 0.7, wl + 0.7, 0.71, 0.86, _fd - 0.3, _fd - 0.1);
+    s.bloom(_C.strawberry, wl - 0.35, 0.86, _fd - 0.2, 0.12);
+    s.bloom(_C.butter, wl + 0.35, 0.86, _fd - 0.2, 0.12);
+  }
+
+  /// Đèn lồng gắn tường cạnh cửa: tay treo, thân sáng, nắp.
+  void _lantern(double l) {
+    s.box(_C.woodDark, l, 1.86, _fd - 0.1, 0.06, 0.06, 0.2);
+    s.box(_C.sun, l, 1.5, _fd - 0.15, 0.18, 0.28, 0.18);
+    s.box(_C.woodDark, l, 1.78, _fd - 0.15, 0.24, 0.06, 0.24);
   }
 }

@@ -114,6 +114,48 @@ void main() {
     await _until<FrostStation>(tester);
   });
 
+  testWidgets('nhấn nhanh nút nướng nhiều lần: mỗi lần thả kim về 0, không cộng dồn thành một lần thả, không chuyển trạm',
+      (tester) async {
+    await tester.pumpWidget(_host(BakeSessionView(order: _order, modifiers: BakeModifiers.base, onComplete: (_) {})));
+    final mould = await _until<MouldStation>(tester);
+    await _drag(tester, MouldStation.slotCenter(mould.choices.indexOf(MouldType.cupcakeLiner)), MouldStation.trayRect.center);
+    await _until<MixStation>(tester);
+    final mix = await tester.startGesture(_map(tester, MixStation.center + const Offset(150, 0)));
+    for (var i = 1; i <= 108; i++) {
+      final a = i * 2 * math.pi / 36;
+      await mix.moveTo(_map(tester, MixStation.center + Offset(math.cos(a), math.sin(a)) * 150));
+    }
+    await mix.up();
+    await tester.pump();
+    await tester.tap(find.text('Done'));
+    final bake = await _until<BakeStation>(tester);
+
+    // Mỗi lần giữ ~0.1 s (dưới ngưỡng chạm nhầm 0.04 × 3 s): trước đây kim cộng dồn, lần thứ 2–3 thành "thả" ở ~0.07.
+    for (var k = 0; k < 5; k++) {
+      final tap = await tester.startGesture(_map(tester, BakeStation.buttonCenter));
+      await _run(tester, 0.1);
+      await tap.up();
+      await tester.pump();
+      expect(bake.meter.value, 0, reason: 'lần thả ${k + 1}: kim lò phải về 0');
+      expect(bake.meter.released, isFalse, reason: 'lần thả ${k + 1}: chạm nhanh không được tính là thả');
+      await _run(tester, 0.3);
+    }
+    await _run(tester, 1.5);
+    expect(_game(tester).currentStation, same(bake), reason: 'chạm nhanh nhiều lần làm chuyển trạm');
+    expect(bake.isDone, isFalse);
+
+    // Giữ thật vẫn chạy từ 0 và thả đúng vạch như thường.
+    final hold = await tester.startGesture(_map(tester, BakeStation.buttonCenter));
+    await tester.pump();
+    while (bake.meter.value < 0.65 - 0.002) {
+      await tester.pump(const Duration(milliseconds: 4));
+    }
+    await hold.up();
+    await tester.pump();
+    expect(_game(tester).record.bakeRelease, closeTo(0.65, 0.01));
+    await _until<FrostStation>(tester);
+  });
+
   testWidgets('đổi cỡ cửa sổ giữa màn (800×600 → 1920×1080 → 640×360): thao tác vẫn trúng, ra kết quả đúng', (tester) async {
     addTearDown(tester.view.reset);
     tester.view.devicePixelRatio = 1;

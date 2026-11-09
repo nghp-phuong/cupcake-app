@@ -116,6 +116,13 @@ abstract final class TownBatches {
     ];
   }
 
+  /// Lưới mặt tiền lô chi nhánh [lot] ở cấp [level] ([TownLayout.branchFacade], toạ độ lớp phố): một lưới mỗi bề mặt —
+  /// tối đa 2 (mờ + không chịu ánh sáng), tức ≤ 2 entity mỗi lô. Cảnh dựng lưới mới xong mới gỡ lưới cũ khi đổi cấp.
+  static Map<Shop3dSurfaceKey, Shop3dMesh> buildLot(LotDef lot, int level) =>
+      buildMeshesBySurface([
+        for (final p in TownLayout.branchFacade(lot, level)) ...p.parts,
+      ]);
+
   /// Cắt [t] theo các đường chia ô nằm trong quận (không cắt phần ngoài biên → ít mảnh).
   static Iterable<(double, double, double, double)> _split(
     TownGroundTile t,

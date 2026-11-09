@@ -27,6 +27,7 @@ import 'shop3d_math.dart';
 import 'shop3d_pick.dart';
 import 'shop3d_quality.dart';
 import 'shop3d_scene.dart';
+import 'shop3d_surface.dart';
 import 'talk/talk_stories.dart';
 
 /// Màn tiệm bánh 3D (bản thử GĐ a): cảnh [Shop3dScene] + camera quỹ đạo 360° [OrbitCameraController]; nhãn chọn nhân
@@ -390,6 +391,10 @@ class _Shop3dViewState extends State<Shop3dView> {
 
   /// Mũi tên gợi ý mở ca: trên máy tính tiền của quầy thu ngân.
   static const _hintAnchor = (x: 0.9, y: 1.45, z: -0.66);
+
+  /// Ô đánh dấu chỗ đứng mở ca: trên bục gỗ phía khách trước quầy thu ngân (z ∈ [0,385; 1,215], mặt bục cao 0,16),
+  /// nằm trong vùng quầy của `TownRules.atShopCounter`. Hiện khi có ca bán mà Mai chưa đứng ở quầy.
+  static const _counterMark = (x: 1.0, y: Shop3dLayout.customerStepHeight + 0.01, z: 0.8, r: 0.42);
 
   bool get _embedded => widget.embed != null;
 
@@ -874,7 +879,14 @@ class _Shop3dViewState extends State<Shop3dView> {
     final hud = pilot.hud.value;
     final hint = (widget.embed?.shiftHint ?? false) && !_atCounter.value ? _hintAnchor : null;
     final arrowAt = hud.controlsVisible ? pilot.targetPoint() ?? hint : null;
-    if (pilot.bubbles.isEmpty && pick == null && arrowAt == null && menu == null) {
+    final embed = widget.embed;
+    final markAt = hud.controlsVisible &&
+        embed != null &&
+        embed.onOpenShift != null &&
+        !_shift &&
+        !_atCounter.value &&
+        !_atDoor.value;
+    if (pilot.bubbles.isEmpty && pick == null && arrowAt == null && menu == null && !markAt) {
       if (!identical(_overlay.value, _OverlayFrame.empty)) _overlay.value = _OverlayFrame.empty;
       return;
     }
@@ -894,11 +906,26 @@ class _Shop3dViewState extends State<Shop3dView> {
         for (final id in pick.guestIds)
           if (proj(_headOf(id)) case final o?) (id, o),
     ];
+    // Ô sàn: chiếu tâm và 4 điểm trên chu vi (±r theo x, z) → hình elip bao theo phối cảnh.
+    Rect? mark;
+    if (markAt) {
+      const m = _counterMark;
+      final c = proj((x: m.x, y: m.y, z: m.z));
+      final l = proj((x: m.x - m.r, y: m.y, z: m.z));
+      final r = proj((x: m.x + m.r, y: m.y, z: m.z));
+      final n = proj((x: m.x, y: m.y, z: m.z - m.r));
+      final f = proj((x: m.x, y: m.y, z: m.z + m.r));
+      if (c != null && l != null && r != null && n != null && f != null) {
+        mark = Rect.fromCenter(
+            center: c, width: math.max(24, (r.dx - l.dx).abs()), height: math.max(12, (f.dy - n.dy).abs()));
+      }
+    }
     final next = _OverlayFrame(
       bubbles: bubbles,
       chips: chips,
       arrow: proj(arrowAt),
       menu: menu == null ? null : proj(_headOf(menu.$1)),
+      mark: mark,
     );
     // Không đổi (nhân vật / camera đứng yên): khỏi báo → không dựng lại lớp phủ, không có khung Flutter.
     if (!next.sameAs(_overlay.value)) _overlay.value = next;
@@ -1278,7 +1305,7 @@ class _Shop3dViewState extends State<Shop3dView> {
           return Stack(
             fit: StackFit.expand,
             children: [
-              if (viewer != null) Positioned.fill(child: _scaled(context, ThermionWidget(viewer: viewer))),
+              if (viewer != null) Positioned.fill(child: _scaled(context, Shop3dSurface(viewer: viewer))),
               Positioned.fill(
                 child: Listener(
                   onPointerSignal: _onPointerSignal,
@@ -1358,6 +1385,7 @@ class _Shop3dViewState extends State<Shop3dView> {
                   PilotBubbleKind.thinking => Shop3dBubbleKind.thinking,
                 },
               ),
+            if (o.mark case final m?) _FloorMark(key: const ValueKey('shop3d-floor-mark'), rect: m),
             if (o.arrow case final a?) Shop3dTargetArrow(key: const ValueKey('target-arrow'), anchor: a),
             for (final (id, at) in o.chips)
               Shop3dNameChip(
@@ -1374,6 +1402,16 @@ class _Shop3dViewState extends State<Shop3dView> {
         valueListenable: pilot.hud,
         builder: (context, hud, _) => Shop3dJoystick(controller: _joy, visible: hud.controlsVisible),
       ),
+      if (_embedded)
+        // Ghép thành phố: nút "Ra ngoài" luôn hiện góc phải trên (cùng luồng ra phố với khe cửa).
+        ValueListenableBuilder<PilotHud>(
+          valueListenable: pilot.hud,
+          builder: (context, hud, _) => _ExitButton(
+            label: l.shopExitButton,
+            visible: hud.controlsVisible,
+            onPressed: _exitStreet,
+          ),
+        ),
       if (_embedded)
         // Ghép thành phố: Mai luôn được điều khiển (không "Xong"); ở khe cửa nút A = ra phố.
         // Ở quầy: nút A = mở ca (cửa được ưu tiên — [_checkStreetDoor]).
@@ -1505,7 +1543,8 @@ class _Shop3dViewState extends State<Shop3dView> {
     final mq = MediaQuery.of(context);
     final scale = _graphics.renderScaleFor(_size.width, _size.height, mq.devicePixelRatio);
     _renderScale = scale;
-    if (scale == 1) return child;
+    // Luôn cùng một cấu trúc cây (kể cả khi scale = 1): đo `auto` hạ mức đồ hoạ / đổi cỡ cửa sổ không làm ảnh 3D +
+    // platform view của canvas bị gỡ rồi dựng lại (web: lần xin texture mới hỏng, ảnh bị cắt / phóng to).
     final small = MediaQuery(data: mq.copyWith(devicePixelRatio: mq.devicePixelRatio * scale), child: child);
     // Web: thermion đặt cỡ CSS của canvas = cỡ ảnh / devicePixelRatio THẬT của cửa sổ, nên canvas chỉ phủ `scale` phần
     // màn (góc trên trái) — phóng lại bằng transform (platform view nhận transform). Native: Texture tự giãn kín ô.
@@ -1602,6 +1641,62 @@ class _Shop3dViewState extends State<Shop3dView> {
 
 /// Cụm nút khi ghép vào thành phố: A (Ø96) + B "Ném" (Ø68, khi cầm đồ ném được) + C "Vẫy chào" (Ø60) — cùng vị trí /
 /// kiểu với [Shop3dActionCluster] ([Shop3dActionLayout]) nhưng không có "Xong" (Mai luôn được điều khiển).
+/// Nút "Ra ngoài" góc phải trên khi ghép thành phố (trong tiệm lớp minimap của phố ẩn nên góc này trống).
+class _ExitButton extends StatelessWidget {
+  const _ExitButton({required this.label, required this.visible, required this.onPressed});
+
+  final String label;
+  final bool visible;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final pad = MediaQuery.paddingOf(context);
+    return Positioned(
+      right: 12 + pad.right,
+      top: 12 + pad.top,
+      child: IgnorePointer(
+        ignoring: !visible,
+        child: AnimatedOpacity(
+          opacity: visible ? 1 : 0,
+          duration: Shop3dStyle.fade,
+          child: Shop3dPillButton(
+            key: const ValueKey('shop3d-exit'),
+            label: label,
+            icon: Icons.door_front_door_rounded,
+            onPressed: onPressed,
+            height: Shop3dStyle.minTap,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Ô đánh dấu chỗ đứng trên sàn: elip phẳng bơ nhạt, viền mảnh, không nhận chạm.
+class _FloorMark extends StatelessWidget {
+  const _FloorMark({super.key, required this.rect});
+
+  final Rect rect;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fromRect(
+      rect: rect,
+      child: IgnorePointer(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            shape: BoxShape.rectangle,
+            borderRadius: BorderRadius.all(Radius.elliptical(rect.width / 2, rect.height / 2)),
+            color: AppColors.butter.withValues(alpha: 0.28),
+            border: Border.all(color: AppColors.butter.withValues(alpha: 0.8), width: 2),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _EmbedCluster extends StatelessWidget {
   const _EmbedCluster({
     required this.primaryLabel,
@@ -1764,7 +1859,7 @@ class _DebugButton extends StatelessWidget {
 
 /// Vị trí màn (đã chiếu) của lớp phủ bám đầu nhân vật trong một khung.
 class _OverlayFrame {
-  const _OverlayFrame({this.bubbles = const [], this.chips = const [], this.arrow, this.menu});
+  const _OverlayFrame({this.bubbles = const [], this.chips = const [], this.arrow, this.menu, this.mark});
 
   static const empty = _OverlayFrame();
 
@@ -1776,6 +1871,9 @@ class _OverlayFrame {
   final Offset? arrow;
   final Offset? menu;
 
+  /// Ô đánh dấu chỗ đứng trên sàn (hình elip bao, toạ độ màn).
+  final Rect? mark;
+
   /// Cùng bong bóng / chip (cùng đối tượng, cùng thứ tự) và mọi vị trí lệch < [_epsilon].
   bool sameAs(_OverlayFrame o) {
     if (identical(this, o)) return true;
@@ -1786,6 +1884,9 @@ class _OverlayFrame {
     for (var i = 0; i < chips.length; i++) {
       if (chips[i].$1 != o.chips[i].$1 || !_near(chips[i].$2, o.chips[i].$2)) return false;
     }
+    final a = mark, b = o.mark;
+    if ((a == null) != (b == null)) return false;
+    if (a != null && (!_near(a.center, b!.center) || (a.width - b.width).abs() >= _epsilon)) return false;
     return _near(arrow, o.arrow) && _near(menu, o.menu);
   }
 

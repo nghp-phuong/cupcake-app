@@ -10,6 +10,8 @@ import 'package:flutter/services.dart';
 import 'package:thermion_flutter/thermion_flutter.dart' hide KeyEvent, Material, Texture, Transform, View;
 
 import '../../core/art/cake_art.dart';
+import '../../core/branch/city_branches.dart';
+import '../../core/branch/till_clock.dart' show ClockAnomaly;
 import '../../core/catalog.dart';
 import '../../core/city/city_config.dart';
 import '../../core/city/city_wallet.dart';
@@ -22,10 +24,13 @@ import '../../l10n/gen/app_localizations.dart';
 import '../../ui/shop3d/action_cluster.dart';
 import '../../ui/shop3d/joystick.dart';
 import '../../ui/shop3d/shop3d_toasts.dart';
+import '../../ui/town/branch_double_chip.dart';
+import '../../ui/town/branch_sheet.dart';
 import '../../ui/town/city_hud.dart';
 import '../../ui/town/city_menu_button.dart';
 import '../../ui/town/location_banner.dart';
 import '../../ui/town/minimap.dart';
+import '../../ui/town/realty_sheet.dart';
 import '../../ui/town/restaurant_sheet.dart';
 import '../../ui/town/salon_sheet.dart';
 import '../../ui/town/town_fade.dart';
@@ -34,6 +39,7 @@ import '../../ui/town/town_map_sheet.dart';
 import '../logic/station_setup.dart';
 import '../stations/frost_station.dart';
 import '../stations/topping_station.dart';
+import '../shop3d/chibi/chibi_actor.dart' show ChibiAction;
 import '../shop3d/orbit_camera.dart' show degToRad;
 import '../shop3d/shift/shift_binder.dart';
 import '../shop3d/shift/shift_stage.dart';
@@ -42,7 +48,10 @@ import '../shop3d/shop3d_layout.dart' show Shop3dRequires;
 import '../shop3d/shop3d_pick.dart';
 import '../shop3d/shop3d_quality.dart';
 import '../shop3d/shop3d_scene.dart';
+import '../shop3d/shop3d_surface.dart';
 import '../shop3d/shop3d_view.dart';
+import 'town_branch_cast.dart';
+import 'town_branch_ui.dart';
 import 'town_camera.dart';
 import 'town_layout.dart';
 import 'town_pilot.dart';
@@ -92,6 +101,14 @@ abstract interface class TownSheetHost {
 /// không ra phố được, phím của phố / tiệm trả `ignored`. [shiftHint]: mỗi lần vào tiệm (tới khi mở ca đầu) hiện toast
 /// `shiftHintCounter` + mũi tên trên quầy.
 ///
+/// Giai đoạn 4 (docs/v3/city-gd4-spec.md §4, §5) — văn phòng địa ốc, chi nhánh: [branches] (nơi gọi giữ, view nghe).
+/// Quầy văn phòng địa ốc → A "Xem lô đất": Mai đứng ở quầy (`TownPilot.beginCounter`), camera cận, [RealtySheet]; mua →
+/// toast, mặt tiền 3D + minimap đổi theo notify. Cửa chi nhánh đã mua → A "Thu tiền" (két ≥ 25% trần hoặc đầy: thu ngay,
+/// toast, Mai vui, nhân viên vẫy, chip x2 [BranchDoubleChip] nếu được — quảng cáo qua [watchBranchAd]) hoặc "Chi nhánh"
+/// (dưới mức đó: [BranchSheet] với camera cận nhìn mặt tiền, trong bảng vẫn thu được). Mỗi giây (bộ đếm FPS, ngoài build): két đầy → biểu tượng 3D +
+/// huy hiệu minimap ([TownBranchMarks]), nhân viên đứng ở sân ([TownBranchCast.plan]), toast vắng nhà
+/// ([CityBranches.takeAway], cả lúc phố vừa hiện).
+///
 /// Chip debug (chữ tiếng Anh, không qua AppLocalizations như cảnh tiệm): FPS · ui · mức · entity trong scene / đã tạo
 /// (tĩnh) · material · tam giác · ms Dart mỗi khung · lệnh setTransform / bộ phận · thời gian chuyển cảnh gần nhất.
 /// `?log=1`: in thêm pha ca bán và bố trí trạm mỗi lần làm bánh (`Shift bake open …`, cho script CDP).
@@ -112,6 +129,9 @@ class Town3dView extends StatefulWidget {
     this.openShift,
     this.shiftLayer,
     this.shiftHint = false,
+    this.branches,
+    this.watchBranchAd,
+    this.canWatchBranchAd,
   });
 
   /// Ví của Mai (nơi gọi giữ; view không dispose).
@@ -148,11 +168,21 @@ class Town3dView extends StatefulWidget {
   /// Chưa từng mở ca (`bakery.shifts == 0`): gợi ý mở ca khi vào tiệm.
   final bool shiftHint;
 
+  /// Chi nhánh của Mai (GĐ4; nơi gọi giữ, view nghe, không dispose). null = phố không có chi nhánh / văn phòng địa ốc
+  /// không bán lô.
+  final CityBranches? branches;
+
+  /// Xem quảng cáo thưởng "x2 lần thu" (`AdPlacement.branchDouble`); true = xem xong. null = không có chip x2.
+  final Future<bool> Function(BuildContext context)? watchBranchAd;
+
+  /// Còn lượt quảng cáo thưởng hôm nay (chip x2 chỉ hiện khi còn). null = coi như còn.
+  final bool Function()? canWatchBranchAd;
+
   @override
   State<Town3dView> createState() => _Town3dViewState();
 }
 
-enum _Sheet { none, menu, salon, map, settings }
+enum _Sheet { none, menu, salon, map, settings, realty, branch }
 
 class _Town3dViewState extends State<Town3dView> implements TownSheetHost {
   /// Góc nhìn dọc (độ) — như cảnh tiệm (camera dùng chung, đặt bằng tiêu cự).
@@ -165,6 +195,9 @@ class _Town3dViewState extends State<Town3dView> implements TownSheetHost {
 
   /// Vào tiệm khi nội thất chưa xong: chờ tối đa chừng này.
   static const _interiorTimeout = Duration(seconds: 90);
+
+  /// Mở màn: chờ texture đầu của ảnh 3D tối đa chừng này rồi vẫn sáng màn.
+  static const _textureWait = Duration(seconds: 5);
 
   final _layout = TownLayout.forDistrict(CityConfig.alpha.district('bakery_street'));
   CityWallet get _wallet => widget.wallet;
@@ -179,6 +212,10 @@ class _Town3dViewState extends State<Town3dView> implements TownSheetHost {
   Shop3dFrameDriver? _driver;
   Object? _error;
   bool _disposed = false;
+
+  /// Ảnh 3D ([Shop3dSurface]) đã chèn vào cây (cảnh dựng xong); texture đầu của nó.
+  bool _shown = false;
+  Completer<void>? _firstTexture;
 
   // Vòng cập nhật (request-frame hook).
   final _frameClock = Stopwatch();
@@ -247,6 +284,19 @@ class _Town3dViewState extends State<Town3dView> implements TownSheetHost {
   bool _baking = false;
   late final _shiftHost = _ShiftHost(this);
 
+  // Chi nhánh (GĐ4): dữ liệu minimap, nút A "Thu tiền" / "Chi nhánh" ở cửa chi nhánh, lô của bảng chi nhánh đang mở,
+  // nhịp 1 Hz cho bảng (két tăng theo giờ, không notify), chip x2, hàng toast vắng nhà.
+  CityBranches? get _branches => widget.branches;
+  final _marks = ValueNotifier<TownBranchMarks>(TownBranchMarks.none);
+  final _collectable = ValueNotifier<bool>(false);
+  String? _branchLot;
+  int _sheetCollect = 0;
+  final _sheetTick = ValueNotifier<int>(0);
+  final _double = ValueNotifier<({int serial, String lot, int coins})?>(null);
+  int _doubleSerial = 0;
+  final _awayQueue = <String>[];
+  Timer? _awayTimer;
+
   Shop3dGraphics get _graphics {
     final preset = Shop3dGraphics.preset(_level);
     return widget.graphicsOverrides.apply(kIsWeb ? preset.forWeb() : preset);
@@ -275,6 +325,7 @@ class _Town3dViewState extends State<Town3dView> implements TownSheetHost {
   void initState() {
     super.initState();
     _wallet.addListener(_onWallet);
+    _branches?.addListener(_onBranches);
     // Mốc đã chuẩn hoá (cấp giảm / không lô nào mở) → lưu lại sau khung đầu (không notify giữa lúc dựng cây widget).
     if (_unlock.seen != widget.levelSeen) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -305,7 +356,6 @@ class _Town3dViewState extends State<Town3dView> implements TownSheetHost {
       }
       SchedulerBinding.instance.addTimingsCallback(_onTimings);
       _fpsTimer = Timer.periodic(const Duration(seconds: 1), (_) => _sampleFps());
-      if (mounted) setState(() {});
       final camera = await viewer.getActiveCamera();
       final aspect = _size.isEmpty ? 16 / 9 : _size.width / _size.height;
       await camera.setLensProjection(
@@ -335,6 +385,7 @@ class _Town3dViewState extends State<Town3dView> implements TownSheetHost {
       _shop = shop;
       unawaited(shop.setShadowFar(_streetShadowFar));
       final pilot = _pilot = TownPilot(_layout, _wallet, look: look);
+      pilot.hud.addListener(_updateCollectable);
       final sp = widget.spawn;
       if (sp != null) pilot.placeAt(sp.x, sp.z, _layout.spawn.yaw);
       final town = await TownScene.build(
@@ -348,6 +399,9 @@ class _Town3dViewState extends State<Town3dView> implements TownSheetHost {
       );
       if (_disposed) return;
       _town = town;
+      // Mặt tiền chi nhánh theo cấp (lô trống = 0) dựng xong trước khi phố hiện.
+      await _syncBranches(town, pilot);
+      if (_disposed) return;
       _cam.snapTo(pilot.mai.pose.x, pilot.mai.pose.z);
       _cameraDirty = true;
       final shifts = widget.openShift != null && widget.shiftLayer != null;
@@ -363,7 +417,14 @@ class _Town3dViewState extends State<Town3dView> implements TownSheetHost {
       )
         ..shiftHint = shifts && widget.shiftHint
         ..onTick = stage.update;
+      // Ảnh 3D chèn vào cây chỉ khi cảnh đã dựng xong (dưới màn đen, luồng chính rảnh): chèn sớm rồi dựng cảnh nặng thì
+      // trên web platform view của canvas chưa kịp vào DOM lúc widget xin texture → "Failed to size for canvas", cảnh
+      // trống. Chờ texture đầu ([Shop3dSurface] tự xin lại nếu hỏng) rồi mới sáng màn; quá [_textureWait] vẫn sáng.
+      final texture = _firstTexture = Completer<void>();
+      _shown = true;
       if (mounted) setState(() {});
+      await texture.future.timeout(_textureWait, onTimeout: () {});
+      if (_disposed) return;
       await _fade.fadeIn();
       if (_disposed) return;
       _transit.value = false;
@@ -372,6 +433,7 @@ class _Town3dViewState extends State<Town3dView> implements TownSheetHost {
       if (widget.saveReadOnly && l != null) {
         _toasts.show(l.citySaveReadOnly, icon: Icons.info_outline_rounded, duration: const Duration(seconds: 5));
       }
+      _pumpAway();
       _probeArmed = true;
       // Nội thất dựng nền (lớp tiệm tắt, ở gốc toạ độ — xa lớp phố). Embed tự gắn điều khiển khi nhân vật xong.
       await Future<void>.delayed(_interiorDelay);
@@ -406,6 +468,7 @@ class _Town3dViewState extends State<Town3dView> implements TownSheetHost {
     }
     _fps.value = (filament, skipped, _uiFrames);
     _uiFrames = 0;
+    _branchTick();
     // ?log=1: in chip debug mỗi 5 s (đo tự động qua console, khỏi đọc ảnh).
     if (widget.verbose && ++_logTick % 5 == 0) debugPrint('Town3dView: ${_debugText(_fps.value)}');
     final probe = _probe;
@@ -521,14 +584,21 @@ class _Town3dViewState extends State<Town3dView> implements TownSheetHost {
     for (final e in events) {
       switch (e.kind) {
         case TownEventKind.banner:
-          final b = TownRules.bannerFor(e.lot!, _wallet.level);
+          final lot = e.lot!;
+          final v = _branches?.view(lot.id);
+          final b = TownRules.bannerFor(lot, _wallet.level, owned: v != null);
           _banner.show(
-            cityText(l, b.nameKey),
+            v != null ? l.townBranchN(v.branchNo) : cityText(l, b.nameKey),
             subtitle: switch (b.note) {
               TownBannerNote.none => null,
               TownBannerNote.comingSoon => l.townComingSoon,
               TownBannerNote.locked => l.townLotLocked(b.level),
               TownBannerNote.unlocked => l.townLotUnlocked,
+              TownBannerNote.branch => v == null
+                  ? null
+                  : v.full
+                      ? l.branchBannerFull(v.level)
+                      : l.branchBannerTill(v.level, v.till, v.cap),
             },
           );
         case TownEventKind.firstVisit:
@@ -625,6 +695,7 @@ class _Town3dViewState extends State<Town3dView> implements TownSheetHost {
   void _pressA() {
     final pilot = _pilot;
     if (pilot == null || _busy || _sheet.value != _Sheet.none || !pilot.hud.value.controls) return;
+    _double.value = null;
     switch (pilot.action) {
       case TownAction.enterShop:
         unawaited(_enterShop());
@@ -635,6 +706,10 @@ class _Town3dViewState extends State<Town3dView> implements TownSheetHost {
         _sheet.value = _Sheet.menu;
       case TownAction.getHaircut:
         _openSalon();
+      case TownAction.realty:
+        _openRealty(pilot);
+      case TownAction.branch:
+        _pressBranch(pilot);
       case TownAction.none:
         break;
     }
@@ -764,11 +839,266 @@ class _Town3dViewState extends State<Town3dView> implements TownSheetHost {
   /// không toast nào đang hiện / sắp hiện — để không đè toast ăn uống, ghé lần đầu.
   void _pumpUnlock(TownPilot pilot) {
     if (_transit.value || _busy || _sheet.value != _Sheet.none || !pilot.hud.value.controls) return;
-    if (_toasts.current.value != null || (_toastTimer?.isActive ?? false)) return;
+    if (_toasts.current.value != null || (_toastTimer?.isActive ?? false) || (_awayTimer?.isActive ?? false)) return;
     final l = _l10n;
     if (l == null) return;
     final lots = _unlock.take(_uptime.elapsed);
     if (lots.isNotEmpty) _toasts.show(l.townLotsUnlockedToast(lots.length), icon: Icons.lock_open_rounded);
+  }
+
+  // ---- Chi nhánh (GĐ4) ----------------------------------------------------------------------------------------
+
+  /// Đồng bộ phố với [CityBranches]: cấp mặt tiền mọi lô chi nhánh (scene bỏ qua lô không đổi cấp; chưa mua = 0), lô
+  /// đã mua cho nút A, minimap, biểu tượng két đầy, nhân viên ở sân. Hoàn tất khi mặt tiền đã dựng (lần đầu: trước khi
+  /// phố hiện). Không có [Town3dView.branches] → mọi lô là lô trống.
+  Future<void> _syncBranches(TownScene town, TownPilot pilot) {
+    final b = _branches;
+    if (b == null) {
+      return Future.wait([
+        for (final lot in _layout.district.lots)
+          if (lot.kind == LotKind.branch) town.setBranchLevel(lot.id, 0),
+      ]);
+    }
+    pilot.ownedLots = b.owned.toSet();
+    _refreshBranches(b, town, pilot);
+    return Future.wait([
+      for (final e in TownBranchUi.levels(_layout.district, b).entries) town.setBranchLevel(e.key, e.value),
+      // Chibi của mọi nhân viên đang làm dựng sẵn (lần đầu: dưới màn đen; sau đó: lúc thuê) — vào sân chỉ còn thêm vào
+      // scene, không giật khi Mai đi tới gần lô.
+      town.prepareStaff({
+        for (final m in b.staff)
+          if (TownBranchCast.chibiOf[m.id] case final c?) c,
+      }),
+    ]);
+  }
+
+  /// [CityBranches] notify (mua, nâng cấp, thuê, thu tiền, xoá dữ liệu…).
+  void _onBranches() {
+    final town = _town, pilot = _pilot;
+    if (_disposed || town == null || pilot == null) return;
+    unawaited(_syncBranches(town, pilot));
+  }
+
+  /// Mỗi giây (bộ đếm FPS — ngoài build): két tăng theo giờ mà không notify → biểu tượng / minimap / nút A; nhân viên
+  /// theo vị trí Mai; bảng chi nhánh dựng lại khi số đang hiện đổi (web: mỗi lần dựng lại bảng, CanvasKit vẽ lại cả
+  /// bảng — tốn ~1 khung); toast vắng nhà.
+  void _branchTick() {
+    final b = _branches, town = _town, pilot = _pilot;
+    if (b == null || town == null || pilot == null || _disposed) return;
+    _refreshBranches(b, town, pilot);
+    final lot = _sheetBranchLot;
+    final v = lot == null ? null : b.view(lot);
+    if (v != null) {
+      final key = (v.till, v.full, v.fullIn.inMinutes);
+      if (key != _sheetKey) {
+        _sheetKey = key;
+        _sheetTick.value++;
+      }
+    }
+    _pumpAway();
+  }
+
+  (int, bool, int)? _sheetKey;
+
+  void _refreshBranches(CityBranches b, TownScene town, TownPilot pilot) {
+    final marks = TownBranchUi.marks(b);
+    if (marks != _marks.value) _marks.value = marks;
+    town.setFullIcons(marks.full);
+    final m = pilot.mai.pose;
+    town.setBranchActors(TownBranchCast.plan(_layout, TownBranchUi.staffByLot(b.staff), m.x, m.z,
+        focusLot: _sheet.value == _Sheet.branch ? _branchLot : null));
+    _updateCollectable();
+  }
+
+  /// Nút A ở cửa chi nhánh: "Thu tiền" khi két ≥ 25% trần hoặc đầy (gọi khi vùng đổi, mỗi giây, sau khi thu).
+  void _updateCollectable() {
+    if (_disposed) return;
+    final hud = _pilot?.hud.value;
+    final lot = hud?.action == TownAction.branch ? hud?.lotId : null;
+    _collectable.value = TownBranchUi.collectable(lot == null ? null : _branches?.view(lot));
+  }
+
+  /// Toast vắng nhà / quản lý gửi về / giờ máy lùi ([CityBranches.takeAway]): chỉ ngoài phố khi phố đã hiện (trong tiệm
+  /// để dành tới khi ra); nối tiếp nhau, chờ toast khác đang hiện xong.
+  void _pumpAway() {
+    final b = _branches, l = _l10n;
+    if (b == null || l == null || _insideNow || _transit.value) return;
+    _awayQueue.addAll(TownBranchUi.awayToasts(l, b.takeAway()));
+    _showAwayNext();
+  }
+
+  void _showAwayNext() {
+    if (_disposed || _awayQueue.isEmpty || (_awayTimer?.isActive ?? false)) return;
+    if (_toasts.current.value != null) {
+      _awayTimer = Timer(const Duration(milliseconds: 600), _showAwayNext);
+      return;
+    }
+    _toasts.show(_awayQueue.removeAt(0), icon: Icons.savings_rounded, duration: TownBranchUi.awayToastDuration);
+    _awayTimer = Timer(TownBranchUi.awayToastDuration + const Duration(milliseconds: 250), _showAwayNext);
+  }
+
+  /// Quầy văn phòng địa ốc: Mai đứng ở quầy, chủ văn phòng nói chuyện, camera cận như quầy quán ăn, bảng lô đất.
+  void _openRealty(TownPilot pilot) {
+    if (_branches == null) return;
+    _joy.reset();
+    pilot.beginCounter();
+    _setCloseUp(_menuCloseUp(pilot));
+    _sheet.value = _Sheet.realty;
+  }
+
+  void _closeRealty() {
+    if (_sheet.value != _Sheet.realty) return;
+    _sheet.value = _Sheet.none;
+    _setCloseUp(null);
+    _pilot?.endCounter();
+    _keys.requestFocus();
+  }
+
+  /// Mua lô (bảng đã xác nhận): được → đóng bảng, toast "Chi nhánh n khai trương!" (mặt tiền + minimap đổi theo notify).
+  void _realtyBuy(String lotId) {
+    final b = _branches, l = _l10n;
+    if (b == null || l == null) return;
+    switch (b.buy(lotId)) {
+      case BranchBuy.ok:
+        _closeRealty();
+        _toasts.show(l.branchOpenedToast(_layout.district.branchNumber(lotId)), icon: Icons.storefront_rounded);
+      case BranchBuy.notEnoughCoins:
+        _toasts.show(l.cityNotEnoughCoins, icon: Icons.info_outline_rounded);
+      case BranchBuy.notBranch:
+      case BranchBuy.owned:
+      case BranchBuy.levelTooLow:
+        break;
+    }
+  }
+
+  /// A ở cửa chi nhánh đã mua: két ≥ 25% trần hoặc đầy ([TownBranchUi.collectable]) → thu ngay (toast, Mai vui, nhân
+  /// viên vẫy, chip x2 nếu được); dưới mức đó → bảng chi nhánh (trong bảng vẫn thu được).
+  void _pressBranch(TownPilot pilot) {
+    final b = _branches, lot = pilot.hud.value.lotId;
+    if (b == null || lot == null) return;
+    final c = TownBranchUi.collectable(b.view(lot)) ? b.collect(lot) : null;
+    if (c == null || !c.ok) {
+      _openBranch(pilot, lot);
+      return;
+    }
+    _celebrateCollect(lot, c.coins);
+    _offerDouble(lot, c.coins);
+  }
+
+  void _celebrateCollect(String lot, int coins) {
+    final l = _l10n;
+    if (l != null) _toasts.show(l.branchCollectedToast(coins), icon: Icons.savings_rounded);
+    _pilot?.mai.perform(ChibiAction.happy, 1.2, freeze: 0);
+    _town?.waveBranch(lot);
+    _updateCollectable();
+  }
+
+  /// Chip x2 trên nút A (8 s) nếu lần thu này được x2 và còn lượt quảng cáo hôm nay.
+  void _offerDouble(String lot, int coins) {
+    final b = _branches;
+    if (b == null || widget.watchBranchAd == null || !b.canDouble(lot)) return;
+    if (!(widget.canWatchBranchAd?.call() ?? true)) return;
+    _double.value = (serial: ++_doubleSerial, lot: lot, coins: coins);
+  }
+
+  Future<void> _watchDouble(String lot) async {
+    final watch = widget.watchBranchAd, b = _branches;
+    _double.value = null;
+    if (watch == null || b == null) return;
+    var watched = false;
+    try {
+      watched = await watch(context);
+    } catch (e) {
+      debugPrint('Town3dView: branch ad failed: $e');
+    }
+    final l = _l10n;
+    if (!mounted || _disposed || l == null) return;
+    if (!watched) {
+      _toasts.show((widget.canWatchBranchAd?.call() ?? true) ? l.adNotCompleted : l.adsLimitReached,
+          icon: Icons.info_outline_rounded);
+      return;
+    }
+    final add = b.applyDouble(lot);
+    if (add > 0) _toasts.show(l.branchCollectedToast(add), icon: Icons.savings_rounded);
+  }
+
+  /// Bảng chi nhánh: Mai quay vào lô, camera cận nhìn mặt tiền từ phía đường ([TownBranchUi.closeUp]); nhân viên của lô
+  /// đứng ở sân dù Mai ở xa ([TownBranchCast.plan] `focusLot`).
+  void _openBranch(TownPilot pilot, String lot) {
+    final b = _branches, town = _town;
+    if (b == null || town == null) return;
+    final def = _layout.district.lot(lot);
+    _joy.reset();
+    _branchLot = lot;
+    _sheetCollect = 0;
+    pilot.mai.driveFace(def.z > 0 ? 0 : math.pi);
+    _setCloseUp(TownBranchUi.closeUp(def));
+    _sheet.value = _Sheet.branch;
+    _refreshBranches(b, town, pilot);
+  }
+
+  /// Đóng bảng chi nhánh; vừa thu trong bảng mà được x2 → chip x2 trên nút A.
+  void _closeBranch() {
+    if (_sheet.value != _Sheet.branch) return;
+    final lot = _branchLot, collected = _sheetCollect;
+    _sheet.value = _Sheet.none;
+    _branchLot = null;
+    _sheetCollect = 0;
+    _setCloseUp(null);
+    _keys.requestFocus();
+    if (lot != null && collected > 0) _offerDouble(lot, collected);
+  }
+
+  String? get _sheetBranchLot => _sheet.value == _Sheet.branch ? _branchLot : null;
+
+  void _branchCollect() {
+    final b = _branches, lot = _sheetBranchLot;
+    if (b == null || lot == null) return;
+    final c = b.collect(lot);
+    if (!c.ok) return;
+    _sheetCollect = c.coins;
+    _celebrateCollect(lot, c.coins);
+  }
+
+  void _branchUpgrade() {
+    final b = _branches, lot = _sheetBranchLot, l = _l10n;
+    if (b == null || lot == null || l == null) return;
+    switch (b.upgrade(lot)) {
+      case BranchUpgrade.ok:
+        final v = b.view(lot);
+        if (v != null) _toasts.show(l.branchUpgradedToast(v.branchNo, v.level), icon: Icons.upgrade_rounded);
+      case BranchUpgrade.notEnoughCoins:
+        _toasts.show(l.cityNotEnoughCoins, icon: Icons.info_outline_rounded);
+      case BranchUpgrade.notOwned:
+      case BranchUpgrade.maxLevel:
+      case BranchUpgrade.levelTooLow:
+        break;
+    }
+  }
+
+  void _branchHire(String staffId) {
+    final b = _branches, lot = _sheetBranchLot, l = _l10n;
+    if (b == null || lot == null || l == null) return;
+    switch (b.hire(staffId, lot)) {
+      case StaffHire.ok:
+        _toasts.show(l.branchHiredToast(staffName(l, staffId), _layout.district.branchNumber(lot)),
+            icon: Icons.person_add_alt_1_rounded);
+      case StaffHire.notEnoughCoins:
+        _toasts.show(l.cityNotEnoughCoins, icon: Icons.info_outline_rounded);
+      case StaffHire.unknown:
+      case StaffHire.taken:
+      case StaffHire.notOwned:
+      case StaffHire.noSlot:
+      case StaffHire.levelTooLow:
+        break;
+    }
+  }
+
+  void _branchDismiss(String staffId) {
+    final b = _branches, l = _l10n;
+    if (b == null || _sheetBranchLot == null || l == null) return;
+    final r = b.dismiss(staffId);
+    if (r.ok && r.collected > 0) _toasts.show(l.branchCollectedToast(r.collected), icon: Icons.savings_rounded);
   }
 
   /// Vào tiệm của bà: mờ đen → (chờ nội thất nếu chưa xong) → kiểu tóc → Mai ở khe cửa → đổi lớp → sáng dần.
@@ -1041,6 +1371,10 @@ class _Town3dViewState extends State<Town3dView> implements TownSheetHost {
           _closeMap();
         case _Sheet.settings:
           close();
+        case _Sheet.realty:
+          _closeRealty();
+        case _Sheet.branch:
+          _closeBranch();
         case _Sheet.none:
           break;
       }
@@ -1088,6 +1422,7 @@ class _Town3dViewState extends State<Town3dView> implements TownSheetHost {
     _fpsTimer?.cancel();
     _tadaTimer?.cancel();
     _toastTimer?.cancel();
+    _awayTimer?.cancel();
     SchedulerBinding.instance.removeTimingsCallback(_onTimings);
     final viewer = _viewer, shop = _shop, town = _town, driver = _driver;
     _viewer = null;
@@ -1110,6 +1445,7 @@ class _Town3dViewState extends State<Town3dView> implements TownSheetHost {
       }());
     }
     _wallet.removeListener(_onWallet);
+    _branches?.removeListener(_onBranches);
     // Ca dở (rời trang giữa ca): thôi nghe phiên (cảnh huỷ cùng viewer); lớp ca (con) đã bị gỡ trước.
     _binder?.stop();
     _shift.value?.dispose();
@@ -1130,6 +1466,10 @@ class _Town3dViewState extends State<Town3dView> implements TownSheetHost {
     _fps.dispose();
     _transit.dispose();
     _playerLevel.dispose();
+    _marks.dispose();
+    _collectable.dispose();
+    _sheetTick.dispose();
+    _double.dispose();
     super.dispose();
   }
 
@@ -1154,7 +1494,8 @@ class _Town3dViewState extends State<Town3dView> implements TownSheetHost {
               return Stack(
                 fit: StackFit.expand,
                 children: [
-                  if (viewer != null) Positioned.fill(child: _scaled(context, ThermionWidget(viewer: viewer))),
+                  if (viewer != null && _shown)
+                    Positioned.fill(child: _scaled(context, Shop3dSurface(viewer: viewer, onTexture: _onTexture))),
                   Positioned.fill(
                     child: Listener(
                       onPointerSignal: _onPointerSignal,
@@ -1221,10 +1562,10 @@ class _Town3dViewState extends State<Town3dView> implements TownSheetHost {
                       controller: _joy, visible: pilot.hud.value.controls && _sheet.value == _Sheet.none),
                 ),
                 ListenableBuilder(
-                  listenable: Listenable.merge([pilot.hud, _sheet]),
+                  listenable: Listenable.merge([pilot.hud, _sheet, _collectable]),
                   builder: (context, _) {
                     final hud = pilot.hud.value;
-                    final (label, icon) = _actionOf(l, hud.action);
+                    final (label, icon) = _actionOf(l, hud.action, collect: _collectable.value);
                     final enabled = hud.action != TownAction.none;
                     return _TownButtons(
                       visible: hud.controls && _sheet.value == _Sheet.none,
@@ -1238,6 +1579,11 @@ class _Town3dViewState extends State<Town3dView> implements TownSheetHost {
                     );
                   },
                 ),
+                // Chip x2 (thu tiền chi nhánh) ngay trên nút A; tự ẩn sau 8 s.
+                ValueListenableBuilder<({int serial, String lot, int coins})?>(
+                  valueListenable: _double,
+                  builder: (context, d, _) => d == null ? const SizedBox.shrink() : _doubleChip(d),
+                ),
                 Positioned(
                   right: 12 + pad.right,
                   top: 12 + pad.top,
@@ -1247,6 +1593,7 @@ class _Town3dViewState extends State<Town3dView> implements TownSheetHost {
                       maiPos: _maiPos,
                       maiYaw: _maiYaw,
                       playerLevel: _playerLevel,
+                      branches: _marks,
                       onTap: _openMap,
                       width: 168 * s,
                     ),
@@ -1302,6 +1649,29 @@ class _Town3dViewState extends State<Town3dView> implements TownSheetHost {
     ];
   }
 
+  /// Chip x2 đặt ngay trên nút A (vị trí theo [Shop3dActionLayout] như [_TownButtons]).
+  Widget _doubleChip(({int serial, String lot, int coins}) d) => Positioned.fill(
+        child: LayoutBuilder(builder: (context, constraints) {
+          final size = constraints.biggest;
+          final a = Shop3dActionLayout.of(size, padding: MediaQuery.paddingOf(context));
+          const r = Shop3dActionLayout.primaryDiameter / 2;
+          return Stack(children: [
+            Positioned(
+              right: math.max(8, size.width - a.primary.dx - r),
+              bottom: size.height - a.primary.dy + r + 6,
+              child: BranchDoubleChip(
+                key: ValueKey(d.serial),
+                coins: d.coins,
+                onTap: () => unawaited(_watchDouble(d.lot)),
+                onExpired: () {
+                  if (_double.value?.serial == d.serial) _double.value = null;
+                },
+              ),
+            ),
+          ]);
+        }),
+      );
+
   /// Bảng đang mở: thực đơn / làm tóc (tự bọc Positioned) hoặc bản đồ lớn / cài đặt (phủ cả màn).
   Widget _sheetLayer() => ValueListenableBuilder<_Sheet>(
         valueListenable: _sheet,
@@ -1332,13 +1702,14 @@ class _Town3dViewState extends State<Town3dView> implements TownSheetHost {
               ]);
             case _Sheet.map:
               return Positioned.fill(
-                child: ValueListenableBuilder<int>(
-                  valueListenable: _playerLevel,
-                  builder: (context, level, _) => TownMapSheet(
+                child: ListenableBuilder(
+                  listenable: Listenable.merge([_playerLevel, _marks]),
+                  builder: (context, _) => TownMapSheet(
                     district: _layout.district,
                     maiPos: _maiPos,
                     maiYaw: _maiYaw,
-                    playerLevel: level,
+                    playerLevel: _playerLevel.value,
+                    branches: _marks.value,
                     onClose: _closeMap,
                   ),
                 ),
@@ -1346,23 +1717,75 @@ class _Town3dViewState extends State<Town3dView> implements TownSheetHost {
             case _Sheet.settings:
               final sheet = widget.settingsSheet;
               return sheet == null ? const SizedBox.shrink() : Positioned.fill(child: sheet(context, this));
+            case _Sheet.realty:
+              final b = _branches;
+              if (b == null) return const SizedBox.shrink();
+              return Stack(fit: StackFit.expand, children: [
+                ListenableBuilder(
+                  listenable: Listenable.merge([b, _wallet]),
+                  builder: (context, _) => RealtySheet(
+                    district: _layout.district,
+                    owned: b.owned.toSet(),
+                    coins: _wallet.coins,
+                    playerLevel: _wallet.level,
+                    onBuy: _realtyBuy,
+                    onClose: _closeRealty,
+                  ),
+                ),
+              ]);
+            case _Sheet.branch:
+              final b = _branches, lot = _branchLot;
+              if (b == null || lot == null) return const SizedBox.shrink();
+              return Stack(fit: StackFit.expand, children: [
+                // Két tăng theo giờ mà không notify → dựng lại mỗi giây ([_sheetTick]) khi bảng mở.
+                ListenableBuilder(
+                  listenable: Listenable.merge([b, _wallet, _sheetTick]),
+                  builder: (context, _) {
+                    final v = b.view(lot);
+                    if (v == null) return const SizedBox.shrink();
+                    return BranchSheet(
+                      view: v,
+                      staff: b.staff,
+                      coins: _wallet.coins,
+                      playerLevel: _wallet.level,
+                      clockBehind: b.anomaly == ClockAnomaly.behind,
+                      onCollect: _branchCollect,
+                      onUpgrade: _branchUpgrade,
+                      onHire: _branchHire,
+                      onDismiss: _branchDismiss,
+                      onClose: _closeBranch,
+                    );
+                  },
+                ),
+              ]);
           }
         },
       );
 
-  static (String, IconData) _actionOf(AppLocalizations l, TownAction a) => switch (a) {
+  /// Nhãn + icon nút A; ở cửa chi nhánh: [collect] (két ≥ 25% trần / đầy) → "Thu tiền", không thì "Chi nhánh".
+  static (String, IconData) _actionOf(AppLocalizations l, TownAction a, {bool collect = false}) => switch (a) {
         TownAction.enterShop => (l.townEnterShop, Icons.storefront_rounded),
         TownAction.orderFood => (l.cityOrderFood, Icons.restaurant_menu_rounded),
         TownAction.getHaircut => (l.cityGetHaircut, Icons.content_cut_rounded),
+        TownAction.realty => (l.townActionRealty, Icons.real_estate_agent_rounded),
+        TownAction.branch =>
+          collect ? (l.townActionCollect, Icons.savings_rounded) : (l.townActionBranch, Icons.store_mall_directory_rounded),
         TownAction.none => ('', Icons.back_hand_rounded),
       };
+
+  void _onTexture() {
+    final c = _firstTexture;
+    if (c != null && !c.isCompleted) c.complete();
+  }
 
   /// Ảnh Filament theo [Shop3dGraphics.renderScale] + trần điểm ảnh web (như cảnh tiệm).
   Widget _scaled(BuildContext context, Widget child) {
     final mq = MediaQuery.of(context);
     final scale = _graphics.renderScaleFor(_size.width, _size.height, mq.devicePixelRatio);
     _renderScale = scale;
-    if (scale == 1) return child;
+    // Luôn cùng một cấu trúc cây (kể cả khi scale = 1): đo `auto` hạ mức đồ hoạ / đổi cỡ cửa sổ không làm ảnh 3D +
+    // platform view của canvas bị gỡ rồi dựng lại — trên web canvas rời DOM, lần xin texture mới hỏng, canvas giữ cỡ cũ
+    // dưới transform mới (ảnh bị cắt, phóng to).
     final small = MediaQuery(data: mq.copyWith(devicePixelRatio: mq.devicePixelRatio * scale), child: child);
     // Web: thermion đặt cỡ CSS của canvas = cỡ ảnh / devicePixelRatio THẬT của cửa sổ, nên canvas chỉ phủ `scale` phần
     // màn (góc trên trái) — phóng lại bằng transform (platform view nhận transform). Native: Texture tự giãn kín ô.

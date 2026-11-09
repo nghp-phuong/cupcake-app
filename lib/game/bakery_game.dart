@@ -51,6 +51,7 @@ class BakeHud extends ChangeNotifier {
   bool _doneEnabled = false;
   bool _doneVisible = false;
   StationId? _tutorial;
+  bool _recipeGuide = false;
   GameToast? _toast;
   int _toastSerial = 0;
   BakeOutcome? _outcome;
@@ -64,6 +65,9 @@ class BakeHud extends ChangeNotifier {
 
   /// Trạm đang hiện thẻ hướng dẫn (null = không).
   StationId? get tutorial => _tutorial;
+
+  /// Đang hiện thẻ hướng dẫn từng bước của món (lần đầu làm món này).
+  bool get recipeGuide => _recipeGuide;
   GameToast? get toast => _toast;
   int get toastSerial => _toastSerial;
 
@@ -90,6 +94,12 @@ class BakeHud extends ChangeNotifier {
   void _showTutorial(StationId? s) {
     if (_tutorial == s) return;
     _tutorial = s;
+    notifyListeners();
+  }
+
+  void _showRecipeGuide(bool v) {
+    if (_recipeGuide == v) return;
+    _recipeGuide = v;
     notifyListeners();
   }
 
@@ -121,13 +131,22 @@ class BakeHud extends ChangeNotifier {
 /// Khung rộng (máy 20:9, game rộng W = 1280–1600): thế giới 1280×720 nằm giữa, lệch [inset] = (W − 1280) / 2;
 /// [renderTree] dịch canvas [inset], nền bếp tự trải ra hai bên (x −[inset] .. 1280 + [inset]).
 class BakeryGame extends FlameGame {
-  BakeryGame({required this.order, required this.modifiers, Set<StationId> tutorialFor = const {}, int? ovenLevel})
-      : _tutorialFor = {...tutorialFor},
+  BakeryGame({
+    required this.order,
+    required this.modifiers,
+    Set<StationId> tutorialFor = const {},
+    bool recipeTutorial = false,
+    int? ovenLevel,
+  })  : _tutorialFor = {...tutorialFor},
+        _recipeGuidePending = recipeTutorial,
         ovenLevel = ovenLevel ?? ovenLevelFor(modifiers);
 
   final Order order;
   final BakeModifiers modifiers;
   final Set<StationId> _tutorialFor;
+
+  /// Còn phải hiện thẻ hướng dẫn của món (hiện ở khung hình đầu, trước thẻ hướng dẫn trạm 1).
+  bool _recipeGuidePending;
 
   /// Cấp lò 1..5 (chọn ảnh lò). Không truyền → suy từ [modifiers] (vùng hoàn hảo của từng cấp lò).
   final int ovenLevel;
@@ -160,8 +179,8 @@ class BakeryGame extends FlameGame {
 
   Station? get currentStation => _current;
 
-  /// Đang khoá thao tác (thẻ hướng dẫn đang mở).
-  bool get inputLocked => hud.tutorial != null;
+  /// Đang khoá thao tác (thẻ hướng dẫn trạm hoặc món đang mở).
+  bool get inputLocked => hud.tutorial != null || hud.recipeGuide;
 
   @override
   Color backgroundColor() => AppColors.cream;
@@ -269,7 +288,8 @@ class BakeryGame extends FlameGame {
     add(s);
     _pointer = null;
     hud._set(station: id, doneVisible: s.usesDone, doneEnabled: false);
-    if (_tutorialFor.remove(id)) hud._showTutorial(id);
+    // Thẻ của món đang mở: thẻ trạm chờ tới khi đóng thẻ món ([dismissRecipeGuide]).
+    if (!hud.recipeGuide && _tutorialFor.remove(id)) hud._showTutorial(id);
   }
 
   /// Trạm hiện tại báo xong; chuyển trạm sau [delay] giây (hoạt cảnh mừng).
@@ -279,6 +299,13 @@ class BakeryGame extends FlameGame {
   }
 
   void dismissTutorial() => hud._showTutorial(null);
+
+  /// Đóng thẻ hướng dẫn của món; trạm đang đứng còn thẻ hướng dẫn thì hiện tiếp.
+  void dismissRecipeGuide() {
+    hud._showRecipeGuide(false);
+    final s = _current;
+    if (s != null && _tutorialFor.remove(s.id)) hud._showTutorial(s.id);
+  }
 
   void showToast(GameToast t) {
     hud._showToast(t);
@@ -294,6 +321,10 @@ class BakeryGame extends FlameGame {
 
   @override
   void update(double dt) {
+    if (_recipeGuidePending) {
+      _recipeGuidePending = false;
+      hud._showRecipeGuide(true);
+    }
     // Trạm đầu tiên vào ở khung hình (không trong lúc build widget), khi ảnh của nó đã sẵn hoặc chờ quá lâu.
     if (_index < 0) {
       _artWait += dt;

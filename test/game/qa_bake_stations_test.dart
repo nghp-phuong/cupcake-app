@@ -440,17 +440,17 @@ void main() {
       expect(p.game.currentStation, same(s));
     });
 
-    testWidgets('trạm nướng: chạm nhanh (< 4% thanh) không ghi, nhấn lại vẫn chạy tiếp', (tester) async {
+    testWidgets('trạm nướng: chạm nhanh (< 4% thanh) không ghi, kim về 0, nhấn lại chạy từ đầu', (tester) async {
       final p = await _Player.start(tester, _orderFor(r));
       await p.mould();
       await p.mix(r.mixTurns.toDouble());
       final s = await p.until<BakeStation>();
       p.game.pointerDown(9, BakeStation.buttonCenter);
       await tester.pump(const Duration(milliseconds: 30));
+      expect(s.meter.value, greaterThan(0));
       p.game.pointerUp(9, BakeStation.buttonCenter);
       expect(s.meter.released, isFalse);
-      final before = s.meter.value;
-      expect(before, greaterThan(0));
+      expect(s.meter.value, 0);
       await p.bake(r.bakeTarget);
       expect(p.game.record.bakeRelease, closeTo(r.bakeTarget, 0.01));
     });

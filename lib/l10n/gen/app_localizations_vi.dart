@@ -1201,7 +1201,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get settingsResetConfirmBody =>
-      'Xu, cấp, kiểu tóc của Mai và các nơi đã ghé sẽ bị xoá. Giữ nguyên ngôn ngữ và âm thanh. Không thể hoàn tác.';
+      'Xu, cấp, kiểu tóc của Mai, các nơi đã ghé, chi nhánh và nhân viên sẽ bị xoá. Giữ nguyên ngôn ngữ và âm thanh. Không thể hoàn tác.';
 
   @override
   String get settingsResetDone => 'Đã xoá dữ liệu game';
@@ -1271,10 +1271,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get introLineKitchen => 'Một buổi sáng ở thị trấn ven biển…';
 
   @override
-  String get introLineCase => 'Tủ bánh của bà vẫn sáng như ngày nào.';
+  String get introLineCase => 'Tiệm bánh nhỏ của bà vẫn ở đó như ngày nào.';
 
   @override
-  String get introLineDoor => 'Mai lật tấm biển — tiệm Sugarleaf mở cửa!';
+  String get introLineDoor => 'Mai đã về — tiệm Sugarleaf lại mở cửa!';
 
   @override
   String get introSignOpen => 'Mở cửa';
@@ -1811,6 +1811,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get townExitShop => 'Ra phố';
 
   @override
+  String get shopExitButton => 'Ra ngoài';
+
+  @override
   String get townMap => 'Bản đồ';
 
   @override
@@ -1836,7 +1839,7 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get townLotUnlocked => 'Đã mở khoá · sắp mở bán';
+  String get townLotUnlocked => 'Đã mở · đang bán ở văn phòng địa ốc';
 
   @override
   String townLotsUnlockedToast(int count) {
@@ -1851,6 +1854,294 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get townOpening => 'Đang mở cửa…';
+
+  @override
+  String get townActionCollect => 'Thu tiền';
+
+  @override
+  String get townActionBranch => 'Chi nhánh';
+
+  @override
+  String get townActionRealty => 'Xem lô đất';
+
+  @override
+  String realtyLotN(int n) {
+    final intl.NumberFormat nNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String nString = nNumberFormat.format(n);
+
+    return 'Lô số $nString';
+  }
+
+  @override
+  String get realtyOwned => 'Của bạn';
+
+  @override
+  String get realtyConfirmTitle => 'Mua lô này?';
+
+  @override
+  String realtyConfirmBody(int price) {
+    final intl.NumberFormat priceNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String priceString = priceNumberFormat.format(price);
+
+    return '$priceString xu. Lô sẽ thành một chi nhánh nhỏ tự bán hàng.';
+  }
+
+  @override
+  String branchOpenedToast(int n) {
+    final intl.NumberFormat nNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String nString = nNumberFormat.format(n);
+
+    return 'Chi nhánh $nString khai trương!';
+  }
+
+  @override
+  String branchBannerTill(int level, int coins, int cap) {
+    final intl.NumberFormat levelNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String levelString = levelNumberFormat.format(level);
+    final intl.NumberFormat coinsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String coinsString = coinsNumberFormat.format(coins);
+    final intl.NumberFormat capNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String capString = capNumberFormat.format(cap);
+
+    return 'Cấp $levelString · Két $coinsString/$capString xu';
+  }
+
+  @override
+  String branchBannerFull(int level) {
+    final intl.NumberFormat levelNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String levelString = levelNumberFormat.format(level);
+
+    return 'Cấp $levelString · Két đầy!';
+  }
+
+  @override
+  String branchIncome(int coins) {
+    final intl.NumberFormat coinsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String coinsString = coinsNumberFormat.format(coins);
+
+    return '~$coinsString xu/giờ';
+  }
+
+  @override
+  String branchTillCap(int coins) {
+    final intl.NumberFormat coinsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String coinsString = coinsNumberFormat.format(coins);
+
+    return 'Két chứa $coinsString xu (8 giờ)';
+  }
+
+  @override
+  String get branchTill => 'Két';
+
+  @override
+  String get branchTillFull => 'Đầy rồi — thu tiền để bán tiếp';
+
+  @override
+  String branchFullIn(String time) {
+    return 'Đầy sau $time';
+  }
+
+  @override
+  String branchCollect(int coins) {
+    final intl.NumberFormat coinsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String coinsString = coinsNumberFormat.format(coins);
+
+    return 'Thu $coinsString xu';
+  }
+
+  @override
+  String branchCollectedToast(int coins) {
+    final intl.NumberFormat coinsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String coinsString = coinsNumberFormat.format(coins);
+
+    return '+$coinsString xu từ chi nhánh';
+  }
+
+  @override
+  String branchUpgrade(int coins) {
+    final intl.NumberFormat coinsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String coinsString = coinsNumberFormat.format(coins);
+
+    return 'Nâng cấp · $coinsString xu';
+  }
+
+  @override
+  String branchNextLevel(int level, int coins) {
+    final intl.NumberFormat levelNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String levelString = levelNumberFormat.format(level);
+    final intl.NumberFormat coinsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String coinsString = coinsNumberFormat.format(coins);
+
+    return 'Cấp $levelString: $coinsString xu/giờ';
+  }
+
+  @override
+  String branchNeedMaiLevel(int level) {
+    final intl.NumberFormat levelNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String levelString = levelNumberFormat.format(level);
+
+    return 'Cần Mai cấp $levelString';
+  }
+
+  @override
+  String branchUpgradedToast(int n, int level) {
+    final intl.NumberFormat nNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String nString = nNumberFormat.format(n);
+    final intl.NumberFormat levelNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String levelString = levelNumberFormat.format(level);
+
+    return 'Chi nhánh $nString lên cấp $levelString!';
+  }
+
+  @override
+  String get branchStaff => 'Nhân viên';
+
+  @override
+  String branchSlots(int used, int total) {
+    final intl.NumberFormat usedNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String usedString = usedNumberFormat.format(used);
+    final intl.NumberFormat totalNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String totalString = totalNumberFormat.format(total);
+
+    return '$usedString/$totalString chỗ';
+  }
+
+  @override
+  String get branchNoSlot => 'Hết chỗ — cấp 3 có thêm một chỗ';
+
+  @override
+  String branchHire(int coins) {
+    final intl.NumberFormat coinsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String coinsString = coinsNumberFormat.format(coins);
+
+    return 'Thuê · $coinsString xu';
+  }
+
+  @override
+  String get branchDismiss => 'Cho nghỉ';
+
+  @override
+  String branchDismissConfirm(String name, int coins) {
+    final intl.NumberFormat coinsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String coinsString = coinsNumberFormat.format(coins);
+
+    return '$name sẽ nghỉ dài ngày. Bạn được hoàn $coinsString xu.';
+  }
+
+  @override
+  String branchHiredToast(String name, int n) {
+    final intl.NumberFormat nNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String nString = nNumberFormat.format(n);
+
+    return '$name bắt đầu làm ở Chi nhánh $nString';
+  }
+
+  @override
+  String branchWorksAt(int n) {
+    final intl.NumberFormat nNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String nString = nNumberFormat.format(n);
+
+    return 'Đang làm ở Chi nhánh $nString';
+  }
+
+  @override
+  String get staffRoleServer => 'Phục vụ';
+
+  @override
+  String get staffRoleBaker => 'Thợ bánh';
+
+  @override
+  String get staffRoleManager => 'Quản lý';
+
+  @override
+  String staffEffectBonus(int pct) {
+    final intl.NumberFormat pctNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String pctString = pctNumberFormat.format(pct);
+
+    return '+$pctString% doanh thu';
+  }
+
+  @override
+  String staffEffectDeposit(int pct) {
+    final intl.NumberFormat pctNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String pctString = pctNumberFormat.format(pct);
+
+    return 'Gửi $pctString% tiền bán về ví';
+  }
+
+  @override
+  String get charAmi => 'Ami';
+
+  @override
+  String get charHanh => 'Hạnh';
+
+  @override
+  String get charBiscuit => 'Bánh Quy';
+
+  @override
+  String get charNutmeg => 'Hạt Dẻ';
+
+  @override
+  String get charCocoa => 'Ca Cao';
+
+  @override
+  String get charMaple => 'Lá Phong';
+
+  @override
+  String branchAwayToast(int coins) {
+    final intl.NumberFormat coinsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String coinsString = coinsNumberFormat.format(coins);
+
+    return 'Trong lúc bạn đi vắng, các chi nhánh đã bán được $coinsString xu — ghé thu nhé!';
+  }
+
+  @override
+  String branchDepositToast(int coins) {
+    final intl.NumberFormat coinsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String coinsString = coinsNumberFormat.format(coins);
+
+    return 'Quản lý gửi về +$coinsString xu';
+  }
+
+  @override
+  String get branchClockBehind =>
+      'Giờ trên máy đang chậm hơn lần chơi trước nên két tạm nghỉ.';
 
   @override
   String get citySeaMarketName => 'Phố Chợ Biển';
@@ -1875,7 +2166,11 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String cityPrice(int coins) {
-    return '$coins xu';
+    final intl.NumberFormat coinsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String coinsString = coinsNumberFormat.format(coins);
+
+    return '$coinsString xu';
   }
 
   @override

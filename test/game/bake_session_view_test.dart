@@ -226,6 +226,73 @@ void main() {
     expect(shown, [StationId.mould]);
   });
 
+  testWidgets('hướng dẫn món lần đầu: hiện 6 bước của đơn, báo 1 lần, chặn thao tác; đóng xong mới tới thẻ của trạm',
+      (tester) async {
+    final shown = <StationId>[];
+    var recipeShown = 0;
+    await tester.pumpWidget(_host(
+      BakeSessionView(
+        order: _order,
+        modifiers: BakeModifiers.base,
+        onComplete: (_) {},
+        tutorialFor: const {StationId.mould},
+        onTutorialShown: shown.add,
+        recipeTutorial: true,
+        onRecipeTutorialShown: () => recipeShown++,
+      ),
+      locale: const Locale('vi'),
+    ));
+    await _start(tester);
+    final g = _mapper(tester);
+    final game = _game(tester);
+    expect(recipeShown, 1);
+    expect(find.text('Công thức mới: Cupcake vani'), findsOneWidget);
+    expect(find.text('Khuôn: Cốc giấy cupcake'), findsOneWidget);
+    expect(find.text('Trộn bột: Bột vani'), findsOneWidget);
+    expect(find.text('Phủ kem: Kem vani'), findsOneWidget);
+    expect(find.text('Trang trí: Dâu tây ×2, Cốm màu ×1'), findsOneWidget);
+    expect(find.text('Đóng hộp: Hộp nhỏ'), findsOneWidget);
+    // Thẻ của trạm chờ thẻ món đóng (chưa báo đã xem).
+    expect(find.text('Đã hiểu!'), findsOneWidget);
+    expect(shown, isEmpty);
+
+    final mould = game.currentStation! as MouldStation;
+    final correct = mould.choices.indexOf(MouldType.cupcakeLiner);
+    await _drag(tester, g, MouldStation.slotCenter(correct), MouldStation.trayRect.center);
+    await _run(tester, 1.6);
+    expect(game.currentStation, isA<MouldStation>());
+
+    await tester.tap(find.text('Đã hiểu!'));
+    await tester.pump();
+    expect(find.text('Công thức mới: Cupcake vani'), findsNothing);
+    expect(shown, [StationId.mould]);
+    expect(find.text('Đã hiểu!'), findsOneWidget);
+    await tester.tap(find.text('Đã hiểu!'));
+    await tester.pump();
+    await _drag(tester, g, MouldStation.slotCenter(correct), MouldStation.trayRect.center);
+    await _run(tester, 1.6);
+    expect(game.currentStation, isA<MixStation>());
+    expect(recipeShown, 1);
+  });
+
+  testWidgets('món đã xem hướng dẫn (recipeTutorial = false): không hiện thẻ món', (tester) async {
+    var recipeShown = 0;
+    await tester.pumpWidget(_host(
+      BakeSessionView(
+        order: _order,
+        modifiers: BakeModifiers.base,
+        onComplete: (_) {},
+        onRecipeTutorialShown: () => recipeShown++,
+      ),
+      locale: const Locale('vi'),
+    ));
+    await _start(tester);
+    expect(find.text('Công thức mới: Cupcake vani'), findsNothing);
+    expect(find.text('Đã hiểu!'), findsNothing);
+    expect(_game(tester).inputLocked, isFalse);
+    expect(recipeShown, 0);
+  });
+
   testWidgets('trạm 1 chờ ảnh của nó tối đa maxArtWait (nền giấy vẽ tay trong lúc chờ) rồi vẫn vào', (tester) async {
     await tester.pumpWidget(_host(BakeSessionView(order: _order, modifiers: BakeModifiers.base, onComplete: (_) {})));
     await tester.pump();

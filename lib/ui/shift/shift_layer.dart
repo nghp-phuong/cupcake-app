@@ -499,6 +499,8 @@ class _ShiftLayerState extends State<ShiftLayer> {
                 modifiers: _session.modifiers,
                 tutorialFor: _session.tutorialFor,
                 onTutorialShown: _session.tutorialShown,
+                recipeTutorial: _session.recipeTutorial,
+                onRecipeTutorialShown: _session.recipeTutorialShown,
                 onComplete: _bakeDone,
               ),
             ),

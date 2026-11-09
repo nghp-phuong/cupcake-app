@@ -105,4 +105,80 @@ void main() {
     );
     expect(top, isNotEmpty);
   });
+
+  group('lô chi nhánh: TownBatches.buildLot (docs/v3/city-gd4-spec.md §5)', () {
+    final branches = [
+      for (final l in district.lots)
+        if (l.kind == LotKind.branch) l,
+    ];
+
+    /// Tam giác tối đa theo cấp 0..5 (bảng §5).
+    const maxTris = [1000, 800, 950, 1100, 1200, 1300];
+
+    int tris(Map<Shop3dSurfaceKey, Shop3dMesh> m) =>
+        m.values.fold(0, (s, e) => s + e.triangleCount);
+
+    test(
+      'mỗi lô ≤ 2 lưới (mờ + không chịu ánh sáng), không trong suốt; tam giác ≤ bảng §5, tăng theo cấp 1..5',
+      () {
+        for (final lot in branches) {
+          final counts = <int>[];
+          for (var lv = 0; lv <= TownLayout.branchMaxLevel; lv++) {
+            final m = TownBatches.buildLot(lot, lv);
+            expect(m.length, inInclusiveRange(1, 2), reason: '${lot.id} cấp $lv');
+            for (final e in m.entries) {
+              expect(e.key.transparent, isFalse);
+              expect(e.key.surface, isIn([Shop3dSurface.matte, Shop3dSurface.backdrop]));
+              expect(e.value.colors.length, e.value.vertexCount * 4);
+            }
+            final t = tris(m);
+            expect(t, lessThanOrEqualTo(maxTris[lv]), reason: '${lot.id} cấp $lv: $t tris');
+            counts.add(t);
+          }
+          // ignore: avoid_print
+          print('town3d branch ${lot.id} tris cấp 0..5: ${counts.join(' / ')}');
+          for (var lv = 2; lv <= TownLayout.branchMaxLevel; lv++) {
+            expect(counts[lv], greaterThan(counts[lv - 1]), reason: '${lot.id} cấp $lv');
+          }
+        }
+      },
+    );
+
+    test(
+      'ngân sách: tĩnh + 3 lô ở cấp 5 ≤ 20.000 tam giác (mục tiêu 19.500), ≤ 40 entity, ≤ 8 material',
+      () {
+        var entities = stats.entities, triangles = stats.triangles;
+        final keys = <Shop3dSurfaceKey>{
+          for (final b in batches) ...b.meshes.keys,
+        };
+        for (final lot in branches) {
+          final m = TownBatches.buildLot(lot, TownLayout.branchMaxLevel);
+          entities += m.length;
+          triangles += tris(m);
+          keys.addAll(m.keys);
+        }
+        // ignore: avoid_print
+        print(
+          'town3d tĩnh $stats + 3 lô cấp 5 = $entities entities, ${keys.length} materials, $triangles tris',
+        );
+        expect(triangles, lessThanOrEqualTo(19500));
+        expect(entities, lessThanOrEqualTo(40));
+        expect(keys.length, lessThanOrEqualTo(8));
+      },
+    );
+
+    test('lưới lô khớp tổng khối của mặt tiền (không mất, không nhân đôi)', () {
+      for (final lot in branches) {
+        for (var lv = 0; lv <= TownLayout.branchMaxLevel; lv++) {
+          var expected = 0;
+          for (final p in TownLayout.branchFacade(lot, lv)) {
+            for (final part in p.parts) {
+              expected += (Shop3dMeshBuilder()..addPart(part)).build().triangleCount;
+            }
+          }
+          expect(tris(TownBatches.buildLot(lot, lv)), expected);
+        }
+      }
+    });
+  });
 }

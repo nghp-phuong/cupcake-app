@@ -17,6 +17,7 @@ class TownMapSheet extends StatelessWidget {
     required this.maiPos,
     this.maiYaw,
     required this.playerLevel,
+    this.branches = TownBranchMarks.none,
     required this.onClose,
   });
 
@@ -26,6 +27,9 @@ class TownMapSheet extends StatelessWidget {
 
   /// Cấp hiện tại của Mai (lô có `requiresLevel` cao hơn bị khoá).
   final int playerLevel;
+
+  /// Chi nhánh đã mua / két đầy / cấp: tô màu nhấn, huy hiệu két đầy, ghi "Cấp L".
+  final TownBranchMarks branches;
   final VoidCallback onClose;
 
   @override
@@ -73,6 +77,7 @@ class TownMapSheet extends StatelessWidget {
                       maiPos: maiPos,
                       maiYaw: maiYaw,
                       playerLevel: playerLevel,
+                      branches: branches,
                       scale: s,
                     ),
                   ),
@@ -99,6 +104,7 @@ class _MapBody extends StatelessWidget {
     required this.maiPos,
     required this.maiYaw,
     required this.playerLevel,
+    required this.branches,
     required this.scale,
   });
 
@@ -106,6 +112,7 @@ class _MapBody extends StatelessWidget {
   final ValueListenable<Offset> maiPos;
   final ValueListenable<double>? maiYaw;
   final int playerLevel;
+  final TownBranchMarks branches;
   final double scale;
 
   @override
@@ -130,6 +137,7 @@ class _MapBody extends StatelessWidget {
                       dotRadius: 8,
                       playerLevel: playerLevel,
                       cornerLock: true,
+                      branches: branches,
                       repaint: repaint,
                     ),
                   ),
@@ -150,8 +158,12 @@ class _MapBody extends StatelessWidget {
                               : null,
                           unlocked:
                               lot.kind == LotKind.branch &&
-                                  lot.requiresLevel <= playerLevel
+                                  lot.requiresLevel <= playerLevel &&
+                                  !branches.owned.contains(lot.id)
                               ? l.townLotUnlocked
+                              : null,
+                          level: branches.owned.contains(lot.id)
+                              ? l.cityMaiLevel(branches.levels[lot.id] ?? 1)
                               : null,
                           scale: scale,
                         ),
@@ -209,6 +221,7 @@ class _LotLabel extends StatelessWidget {
     required this.name,
     required this.locked,
     required this.unlocked,
+    this.level,
     required this.scale,
   });
 
@@ -217,6 +230,9 @@ class _LotLabel extends StatelessWidget {
 
   /// Lô chi nhánh đã đủ cấp (chưa bán): biểu tượng mở khoá + chữ màu "đúng".
   final String? unlocked;
+
+  /// Lô chi nhánh đã mua: "Cấp L".
+  final String? level;
   final double scale;
 
   @override
@@ -253,6 +269,12 @@ class _LotLabel extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        if (level != null)
+          Text(
+            level!,
+            textAlign: TextAlign.center,
+            style: Shop3dStyle.body(13 * scale, weight: FontWeight.w700, height: 1.1),
           ),
         if (unlocked != null)
           Row(

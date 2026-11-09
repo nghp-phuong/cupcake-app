@@ -30,11 +30,11 @@ abstract final class ItemArt {
   // ------------------------------------------------------------------ Bảng màu vật liệu
 
   static Color frostingColor(FrostingId f) => switch (f) {
-        FrostingId.vanillaCream => const Color(0xFFFFF8E7),
+        FrostingId.vanillaCream => const Color(0xFFF7E7C3), // kem bơ vani ngà (ảnh món), không trắng tinh như cream cheese
         FrostingId.chocolateGanache => const Color(0xFF6B3A2A),
         FrostingId.strawberryCream => const Color(0xFFF7B6C6),
-        FrostingId.matchaCream => const Color(0xFFBFE0A4),
-        FrostingId.creamCheese => const Color(0xFFFFFDF5),
+        FrostingId.matchaCream => const Color(0xFFC5D79B), // xanh matcha ngả vàng (ảnh món)
+        FrostingId.creamCheese => const Color(0xFFFBF2DE), // ngà nhạt (ảnh red velvet, cheesecake), sáng hơn kem vani
         FrostingId.custard => const Color(0xFFFFD966),
         FrostingId.butterGlaze => const Color(0xFFF2B54A),
         FrostingId.appleFilling => const Color(0xFFD9963F),

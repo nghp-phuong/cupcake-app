@@ -20,6 +20,9 @@ class LotDef {
   final double yaw;
   final int price, requiresLevel;
 
+  /// Xu/giờ ở cấp 1 của chi nhánh; 0 = không phải chi nhánh.
+  final int baseIncome;
+
   /// Khoá AppLocalizations.
   final String nameKey;
 
@@ -35,6 +38,7 @@ class LotDef {
     required this.yaw,
     required this.price,
     required this.requiresLevel,
+    this.baseIncome = 0,
     required this.nameKey,
   });
 
@@ -80,6 +84,19 @@ class DistrictDef {
       if (l.kind == k) return l;
     }
     return null;
+  }
+}
+
+extension DistrictBranchNumber on DistrictDef {
+  /// Số thứ tự chi nhánh: s1 = 1, s3 = 2, s4 = 3 (theo thứ tự các lô có `baseIncome > 0`); 0 nếu không phải chi nhánh.
+  int branchNumber(String lotId) {
+    var n = 0;
+    for (final l in lots) {
+      if (l.baseIncome <= 0) continue;
+      n++;
+      if (l.id == lotId) return n;
+    }
+    return 0;
   }
 }
 
@@ -176,6 +193,7 @@ class CityConfig {
             yaw: _pi,
             price: 8000,
             requiresLevel: 5,
+            baseIncome: 150,
             nameKey: 'townLotForSale',
           ),
           LotDef(
@@ -204,6 +222,7 @@ class CityConfig {
             yaw: _pi,
             price: 20000,
             requiresLevel: 10,
+            baseIncome: 250,
             nameKey: 'townLotForSale',
           ),
           LotDef(
@@ -218,6 +237,7 @@ class CityConfig {
             yaw: _pi,
             price: 45000,
             requiresLevel: 15,
+            baseIncome: 400,
             nameKey: 'townLotForSale',
           ),
         ],

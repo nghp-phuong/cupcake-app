@@ -84,8 +84,8 @@ enum StorySceneId {
 }
 
 /// Thêm giá trị mới ở CUỐI (không đổi tên giá trị cũ). `offlineDouble`: x2 thu nhập khi vắng nhà (GĐ4). `booster`: một
-/// vật phẩm hỗ trợ miễn phí ở thẻ Sẵn sàng, một lần mỗi lượt (GĐ6).
-enum AdPlacement { doubleCoins, remake, freeGem, extraTime, offlineDouble, booster }
+/// vật phẩm hỗ trợ miễn phí ở thẻ Sẵn sàng, một lần mỗi lượt (GĐ6). `branchDouble`: x2 lần thu két chi nhánh (GĐ4 V3).
+enum AdPlacement { doubleCoins, remake, freeGem, extraTime, offlineDouble, booster, branchDouble }
 
 /// Thêm giá trị mới ở CUỐI. `pantryS/M/L`, `decorSetSeaside`: gói V1, ẩn khỏi cửa hàng V2 (giữ quyền sở hữu cũ).
 /// GĐ6: `gemsS/M/L` (kim cương, tiêu hao), `staffOutfits` (một lần), `seasonPass` (theo mùa).

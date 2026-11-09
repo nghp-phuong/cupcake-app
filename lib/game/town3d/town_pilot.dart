@@ -33,6 +33,9 @@ enum TownMode {
 
   /// Đang chuyển cảnh (vào / ra tiệm của bà).
   transit,
+
+  /// Bảng lô đất (văn phòng địa ốc) đang mở: Mai đứng ở quầy.
+  counter,
 }
 
 /// Trạng thái nút / joystick (đổi ít — lớp view dựng lại cụm nút khi đổi).
@@ -107,6 +110,7 @@ class TownPilot {
       for (final (kind, id, seed) in const [
         (LotKind.restaurant, restaurantKeeperId, 97),
         (LotKind.salon, salonKeeperId, 101),
+        (LotKind.realty, realtyKeeperId, 103),
       ])
         if (_spotsOf(kind)?.keeper case final k?)
           ChibiActor(ChibiSizes.fit(ChibiRegulars.build(id)), keeperLoop(k.yaw),
@@ -136,6 +140,9 @@ class TownPilot {
   /// cô poodle lông xù (`regular_10`).
   static const String restaurantKeeperId = 'regular_13';
   static const String salonKeeperId = 'regular_10';
+
+  /// Chủ văn phòng địa ốc: chú schnauzer (`regular_12`).
+  static const String realtyKeeperId = 'regular_12';
 
   /// Bậc kê sau quầy cho chủ quán (thú thấp hơn mặt quầy 0,93 m): ván dưới ô cửa che chân bậc.
   static const double keeperStep = 0.3;
@@ -178,6 +185,16 @@ class TownPilot {
 
   /// Vùng Mai đang đứng.
   TownZone? zone;
+
+  Set<String> _owned = const {};
+
+  /// Các lô chi nhánh đã mua: đổi thì tính lại nút A ([_decide]).
+  Set<String> get ownedLots => _owned;
+  set ownedLots(Set<String> v) {
+    if (setEquals(_owned, v)) return;
+    _owned = Set.unmodifiable(v);
+    _decide();
+  }
 
   /// Đồng hồ (giây).
   double now = 0;
@@ -237,6 +254,7 @@ class TownPilot {
     final id = switch (kind) {
       LotKind.restaurant => restaurantKeeperId,
       LotKind.salon => salonKeeperId,
+      LotKind.realty => realtyKeeperId,
       _ => null,
     };
     for (final k in keepers) {
@@ -264,6 +282,7 @@ class TownPilot {
         _eating();
       case TownMode.menu:
       case TownMode.salon:
+      case TownMode.counter:
       case TownMode.transit:
         mai.driveRunning = false;
     }
@@ -321,7 +340,7 @@ class TownPilot {
   void _decide() {
     final walk = _mode == TownMode.walk;
     _hud.value = TownHud(
-      action: walk ? TownRules.actionFor(zone) : TownAction.none,
+      action: walk ? TownRules.actionFor(zone, owned: _owned) : TownAction.none,
       lotId: zone?.lotId,
       controls: walk,
     );
@@ -456,6 +475,22 @@ class TownPilot {
         _events.add(TownEvent(TownEventKind.eatingDone, eat: r));
         _setMode(TownMode.walk);
     }
+  }
+
+  /// Mở bảng lô đất: Mai đứng ở quầy văn phòng địa ốc, quay vào ô cửa; chủ văn phòng nói chuyện.
+  void beginCounter() {
+    if (_mode != TownMode.walk) return;
+    final lot = layout.district.lotOfKind(LotKind.realty);
+    final c = lot == null ? null : layout.spots[lot.id]?.counter;
+    if (c != null) mai.driveFace(c.yaw);
+    final k = lot == null ? null : _keeperOf(lot.id);
+    k?.perform(ChibiAction.talk, 2.0, faceYaw: _yawTo(k, mai.pose.x, mai.pose.z));
+    _setMode(TownMode.counter);
+  }
+
+  /// Đóng bảng lô đất.
+  void endCounter() {
+    if (_mode == TownMode.counter) _setMode(TownMode.walk);
   }
 
   /// Mở bảng làm tóc: Mai quay ra phố (về phía camera chuẩn) để xem trước kiểu tóc.

@@ -4,7 +4,7 @@
 /// cho tới lần thay đổi đầu tiên). Dữ liệu hỏng → mặc định + chép dự phòng, không ném. Không đọc được bộ nhớ hoặc save
 /// do bản app mới hơn ghi (`v` > 3) → [CitySaveStore.locked]: cả phiên không ghi.
 ///
-/// Tự lưu ([CitySaveStore.attachAutosave]): nghe ví, cài đặt và [CityGame], gộp thay đổi trong
+/// Tự lưu ([CitySaveStore.attachAutosave]): nghe ví, cài đặt, chi nhánh và [CityGame], gộp thay đổi trong
 /// [CitySaveStore.autosaveDelay] rồi ghi bất đồng bộ; mỗi lúc chỉ một lần ghi, thay đổi trong lúc đang ghi được ghi
 /// tiếp ngay sau đó. Ghi lỗi chỉ log (giữ dấu "chưa lưu" để lần sau thử lại).
 library;
@@ -65,13 +65,15 @@ class CitySaveStore {
   List<String> get badFields => _badFields;
 
   /// Nạp save (xem đầu file). Nhập từ v2 thì ghi v3 ngay trong hàm này (trước `runApp`); ghi lỗi vẫn chơi được, lần
-  /// sau nhập lại. Cuối cùng kiểm ngày lịch (`CityGame.refreshDay`).
+  /// sau nhập lại. Cuối cùng gọi `CityGame.resume` (kiểm ngày lịch, bù két chi nhánh theo giờ máy). [mono]: đồng hồ
+  /// đơn điệu của két (test).
   static Future<CitySaveStore> load(
     CitySaveRepository repo, {
     DateTime Function()? clock,
+    Duration Function()? mono,
   }) async {
     final now = clock ?? DateTime.now;
-    final store = CitySaveStore._(repo, CityGame(clock: now), now);
+    final store = CitySaveStore._(repo, CityGame(clock: now, mono: mono), now);
     await store._load();
     return store;
   }
@@ -109,7 +111,7 @@ class CitySaveStore {
           );
           if (await _backup(raw)) _dirty = true;
         }
-        _refreshDay();
+        _resume();
         return;
       }
       debugPrint('CitySaveStore: save v3 hỏng, giữ bản dự phòng');
@@ -143,7 +145,7 @@ class CitySaveStore {
     } else if (rawV2 != null) {
       debugPrint('CitySaveStore: save v2 hỏng, bỏ qua (không động vào)');
     }
-    _refreshDay();
+    _resume();
   }
 
   static Object? _tryJson(String raw) {
@@ -164,8 +166,15 @@ class CitySaveStore {
     }
   }
 
-  void _refreshDay() {
-    if (game.refreshDay()) _dirty = true;
+  /// `CityGame.resume`; có gì đổi (ngày mới, két chi nhánh) → đánh dấu chưa lưu.
+  void _resume() {
+    var changed = false;
+    void mark() => changed = true;
+    final all = Listenable.merge([game, game.wallet, game.branches])
+      ..addListener(mark);
+    game.resume();
+    all.removeListener(mark);
+    if (changed) _dirty = true;
   }
 
   String _encode() => jsonEncode(game.toSave().toJson(_clock()));
@@ -173,7 +182,12 @@ class CitySaveStore {
   /// Bắt đầu tự lưu (gọi một lần, sau khi nạp và áp tham số debug).
   void attachAutosave() {
     if (_disposed || _changes != null) return;
-    final changes = Listenable.merge([game.wallet, game.settings, game]);
+    final changes = Listenable.merge([
+      game.wallet,
+      game.settings,
+      game,
+      game.branches,
+    ]);
     changes.addListener(_onChange);
     _changes = changes;
   }
@@ -217,9 +231,9 @@ class CitySaveStore {
     return _writeAll();
   }
 
-  /// Xoá dữ liệu (§2.4): về người mới **tại chỗ** (cùng các object game / ví / cài đặt), giữ ngôn ngữ, âm thanh và đồ
-  /// đã mua (`removeAds`, `iap`), `introSeen = false`, `levelSeen = 1`, mở khoá ghi rồi ghi bản v3 mặc định. Không xoá
-  /// khoá (xoá thì lần sau lại nhập v2).
+  /// Xoá dữ liệu (§2.4): về người mới **tại chỗ** (cùng các object game / ví / cài đặt / chi nhánh), giữ ngôn ngữ, âm
+  /// thanh và đồ đã mua (`removeAds`, `iap`), `introSeen = false`, `levelSeen = 1`, xoá chi nhánh và nhân viên, mở khoá
+  /// ghi rồi ghi bản v3 mặc định. Không xoá khoá (xoá thì lần sau lại nhập v2).
   Future<void> resetAll() {
     _timer?.cancel();
     _timer = null;

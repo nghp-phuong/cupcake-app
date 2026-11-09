@@ -10,6 +10,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
+import '../branch/branch_state.dart';
 import '../city/city_config.dart';
 import '../city/city_day.dart';
 import '../city/city_wallet.dart';
@@ -39,8 +40,7 @@ class CitySave {
     this.adsDate = '',
     this.rewarded = 0,
     Set<String> iap = const {},
-    Map<String, Object?> branches = const {},
-    List<Object?> staff = const [],
+    BranchBook? branches,
     this.district = defaultDistrict,
     Map<String, Object?> quests = const {},
     Map<String, Object?> login = const {},
@@ -49,8 +49,7 @@ class CitySave {
   }) : eaten = Map.unmodifiable(eaten),
        visited = Set.unmodifiable(visited),
        iap = Set.unmodifiable(iap),
-       branches = _freezeMap(branches),
-       staff = List.unmodifiable(staff.map(_freeze)),
+       branches = branches ?? BranchBook(),
        quests = _freezeMap(quests),
        login = _freezeMap(login),
        bakery = bakery ?? ShiftStats(),
@@ -128,9 +127,10 @@ class CitySave {
   /// Sản phẩm IAP đã sở hữu (giữ cả id lạ).
   final Set<String> iap;
 
-  /// Để dành cho GĐ4–5: GĐ2 giữ nguyên giá trị, không dùng.
-  final Map<String, Object?> branches;
-  final List<Object?> staff;
+  /// Chi nhánh và nhân viên (GĐ4): JSON vẫn là 2 khoá `branches` (Map) và `staff` (List).
+  final BranchBook branches;
+
+  /// Để dành cho GĐ5: giữ nguyên giá trị, không dùng.
   final String district;
   final Map<String, Object?> quests;
   final Map<String, Object?> login;
@@ -160,8 +160,8 @@ class CitySave {
     'flags': {'introSeen': introSeen, 'levelSeen': levelSeen},
     'ads': {'removeAds': removeAds, 'date': adsDate, 'rewarded': rewarded},
     'iap': iap.toList()..sort(),
-    'branches': branches,
-    'staff': staff,
+    'branches': branches.branchesJson(),
+    'staff': branches.staffJson(),
     'district': district,
     'quests': quests,
     'login': login,
@@ -308,18 +308,8 @@ class CitySave {
       (v) => r.strings('iap', v as List),
     );
 
-    final branches = r.field<Map<String, Object?>>(
-      'branches',
-      json['branches'],
-      const {},
-      (v) => Map<String, Object?>.from(v as Map),
-    );
-    final staff = r.field<List<Object?>>(
-      'staff',
-      json['staff'],
-      const [],
-      (v) => v as List,
-    );
+    final branches = BranchBook.decode(json['branches'], json['staff']);
+    r.bad.addAll(branches.bad);
     final district = r.field(
       'district',
       json['district'],
@@ -399,8 +389,7 @@ class CitySave {
       adsDate: adsDate,
       rewarded: rewarded,
       iap: iap,
-      branches: branches,
-      staff: staff,
+      branches: branches.book,
       district: district,
       quests: quests,
       login: login,
@@ -431,8 +420,7 @@ class CitySave {
     String? adsDate,
     int? rewarded,
     Set<String>? iap,
-    Map<String, Object?>? branches,
-    List<Object?>? staff,
+    BranchBook? branches,
     String? district,
     Map<String, Object?>? quests,
     Map<String, Object?>? login,
@@ -459,7 +447,6 @@ class CitySave {
     rewarded: rewarded ?? this.rewarded,
     iap: iap ?? this.iap,
     branches: branches ?? this.branches,
-    staff: staff ?? this.staff,
     district: district ?? this.district,
     quests: quests ?? this.quests,
     login: login ?? this.login,
@@ -489,8 +476,7 @@ class CitySave {
       other.adsDate == adsDate &&
       other.rewarded == rewarded &&
       setEquals(other.iap, iap) &&
-      _jsonEquals(other.branches, branches) &&
-      _jsonEquals(other.staff, staff) &&
+      other.branches == branches &&
       other.district == district &&
       _jsonEquals(other.quests, quests) &&
       _jsonEquals(other.login, login) &&
@@ -518,8 +504,7 @@ class CitySave {
     adsDate,
     rewarded,
     Object.hashAllUnordered(iap),
-    _jsonHash(branches),
-    _jsonHash(staff),
+    branches,
     district,
     _jsonHash(quests),
     _jsonHash(login),

@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 
 import '../core/art/art_sprites.dart';
 import '../core/art/cake_art.dart';
+import '../core/catalog.dart';
 import '../core/ref_frame.dart';
 import '../core/l10n_lookup.dart';
 import '../core/models/bake.dart';
@@ -30,6 +31,8 @@ class BakeSessionView extends StatefulWidget {
     required this.onComplete,
     this.tutorialFor = const {},
     this.onTutorialShown,
+    this.recipeTutorial = false,
+    this.onRecipeTutorialShown,
     this.ovenLevel,
   });
 
@@ -47,6 +50,12 @@ class BakeSessionView extends StatefulWidget {
   /// Báo trạm vừa hiện thẻ hướng dẫn (ui gọi `state.markTutorialSeen`).
   final ValueChanged<StationId>? onTutorialShown;
 
+  /// Lần đầu làm món của [order]: hiện thẻ hướng dẫn từng bước của món trước khi làm.
+  final bool recipeTutorial;
+
+  /// Báo thẻ hướng dẫn của món vừa hiện (ui ghi đã xem món này vào save).
+  final VoidCallback? onRecipeTutorialShown;
+
   /// Cấp lò (`state.ovenLevel`) để nạp sẵn ảnh lò; null → suy từ [modifiers].
   final int? ovenLevel;
 
@@ -61,6 +70,7 @@ class _BakeSessionViewState extends State<BakeSessionView> with WidgetsBindingOb
   late final BakeryGame _game;
   bool _completed = false;
   final Set<StationId> _tutorialReported = {};
+  bool _recipeReported = false;
 
   @override
   void initState() {
@@ -69,6 +79,7 @@ class _BakeSessionViewState extends State<BakeSessionView> with WidgetsBindingOb
       order: widget.order,
       modifiers: widget.modifiers,
       tutorialFor: widget.tutorialFor,
+      recipeTutorial: widget.recipeTutorial,
       ovenLevel: widget.ovenLevel,
     );
     _game.hud.addListener(_onHud);
@@ -99,6 +110,10 @@ class _BakeSessionViewState extends State<BakeSessionView> with WidgetsBindingOb
     final hud = _game.hud;
     final tut = hud.tutorial;
     if (tut != null && _tutorialReported.add(tut)) widget.onTutorialShown?.call(tut);
+    if (hud.recipeGuide && !_recipeReported) {
+      _recipeReported = true;
+      widget.onRecipeTutorialShown?.call();
+    }
     final outcome = hud.outcome;
     if (outcome != null && !_completed && mounted) {
       _completed = true;
@@ -214,8 +229,11 @@ class _Overlay extends StatelessWidget {
           height: 720,
           child: Stack(children: _content(context)),
         ),
-        // Thẻ hướng dẫn: nền tối phủ cả khung, thẻ ở giữa (giữa khung = giữa vùng 1280).
-        if (tutorial != null) Positioned.fill(child: _TutorialCard(station: tutorial, onGotIt: game.dismissTutorial)),
+        // Thẻ hướng dẫn (của món trước, rồi của trạm): nền tối phủ cả khung, thẻ ở giữa (giữa khung = giữa vùng 1280).
+        if (hud.recipeGuide)
+          Positioned.fill(child: _RecipeGuideCard(order: order, onGotIt: game.dismissRecipeGuide))
+        else if (tutorial != null)
+          Positioned.fill(child: _TutorialCard(station: tutorial, onGotIt: game.dismissTutorial)),
       ],
     );
   }
@@ -714,6 +732,101 @@ class _TutorialCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 22),
                 SLButton(label: l.gameTutorialGotIt, icon: 'check', onPressed: onGotIt, seed: 0x6071),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Thẻ hướng dẫn lần đầu làm một món: hình món + 6 bước của đơn này (trạm, thứ cần dùng, cách làm). Bấm "Đã hiểu!"
+/// để bắt đầu; thẻ hướng dẫn của trạm (nếu có) hiện sau.
+class _RecipeGuideCard extends StatelessWidget {
+  const _RecipeGuideCard({required this.order, required this.onGotIt});
+
+  final Order order;
+  final VoidCallback onGotIt;
+
+  static const double _icon = 30;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final styles = SLTextStyles.of(context);
+    final recipe = Catalog.recipe(order.recipe);
+    final toppings = [for (final t in order.toppings) '${l.toppingName(t.topping)} ×${t.count}'].join(', ');
+    final steps = <(StationId, Widget, String?)>[
+      (StationId.mould, MouldImage(recipe.mould, size: _icon), l.mouldName(recipe.mould)),
+      (StationId.mix, BatterSwatch(recipe.batter, size: _icon), l.batterName(recipe.batter)),
+      (StationId.bake, const SLIcon('oven', size: _icon), null),
+      (StationId.frost, FrostingSwatch(order.frosting, size: _icon), l.frostingName(order.frosting)),
+      (StationId.topping, ToppingImage(order.toppings.first.topping, size: _icon), toppings),
+      (StationId.box, BoxImage(order.box, size: _icon), l.boxName(order.box)),
+    ];
+    final bold = styles.body.copyWith(fontSize: 17, fontWeight: FontWeight.w800, height: 1.2);
+    final hint = styles.body.copyWith(fontSize: 15, color: SLColors.inkSoft, height: 1.2);
+    return ColoredBox(
+      color: SLColors.barrier,
+      child: Center(
+        child: SizedBox(
+          width: 820,
+          child: SLPanel(
+            title: l.unlockRecipe(l.recipeName(order.recipe)),
+            seed: 0x7E7B,
+            padding: const EdgeInsets.fromLTRB(28, 20, 28, 22),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    SizedBox(
+                      width: 170,
+                      child: Center(child: CakeImage(visual: CakeVisual.order(order), recipe: order.recipe, size: 160)),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (final (i, (station, icon, item)) in steps.indexed)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 3),
+                              child: Row(
+                                children: [
+                                  SizedBox(
+                                    width: 26,
+                                    child: Text('${i + 1}', style: styles.title.copyWith(fontSize: 20), textAlign: TextAlign.center),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  SizedBox(width: _icon, height: _icon, child: Center(child: icon)),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          item == null ? l.stationName(station) : '${l.stationName(station)}: $item',
+                                          style: bold,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        Text(l.stationHint(station), style: hint, maxLines: 1, overflow: TextOverflow.ellipsis),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                SLButton(label: l.gameTutorialGotIt, icon: 'check', onPressed: onGotIt, seed: 0x6072),
               ],
             ),
           ),

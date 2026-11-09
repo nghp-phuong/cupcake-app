@@ -1219,7 +1219,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsResetConfirmBody =>
-      'Coins, level, Mai\'s hairstyle and the places you\'ve visited will be erased. Language and sound are kept. This can\'t be undone.';
+      'Coins, level, Mai\'s hairstyle, the places you\'ve visited, your branches and staff will be erased. Language and sound are kept. This can\'t be undone.';
 
   @override
   String get settingsResetDone => 'Game data reset';
@@ -1314,10 +1314,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get introLineCase =>
-      'Grandma\'s cake case still shines like it always did.';
+      'Grandma\'s little bakery is still right where it was.';
 
   @override
-  String get introLineDoor => 'Mai flips the sign — Sugarleaf is open!';
+  String get introLineDoor => 'Mai is home — Sugarleaf opens its doors again!';
 
   @override
   String get introSignOpen => 'Open';
@@ -1868,6 +1868,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get townExitShop => 'Go outside';
 
   @override
+  String get shopExitButton => 'Go outside';
+
+  @override
   String get townMap => 'Map';
 
   @override
@@ -1893,7 +1896,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get townLotUnlocked => 'Unlocked · on sale soon';
+  String get townLotUnlocked => 'Unlocked · for sale at Harbor Realty';
 
   @override
   String townLotsUnlockedToast(int count) {
@@ -1914,6 +1917,294 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get townOpening => 'Opening the door…';
+
+  @override
+  String get townActionCollect => 'Collect';
+
+  @override
+  String get townActionBranch => 'Branch';
+
+  @override
+  String get townActionRealty => 'Browse lots';
+
+  @override
+  String realtyLotN(int n) {
+    final intl.NumberFormat nNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String nString = nNumberFormat.format(n);
+
+    return 'Lot $nString';
+  }
+
+  @override
+  String get realtyOwned => 'Yours';
+
+  @override
+  String get realtyConfirmTitle => 'Buy this lot?';
+
+  @override
+  String realtyConfirmBody(int price) {
+    final intl.NumberFormat priceNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String priceString = priceNumberFormat.format(price);
+
+    return '$priceString coins. It becomes a little branch that sells on its own.';
+  }
+
+  @override
+  String branchOpenedToast(int n) {
+    final intl.NumberFormat nNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String nString = nNumberFormat.format(n);
+
+    return 'Branch $nString is open!';
+  }
+
+  @override
+  String branchBannerTill(int level, int coins, int cap) {
+    final intl.NumberFormat levelNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String levelString = levelNumberFormat.format(level);
+    final intl.NumberFormat coinsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String coinsString = coinsNumberFormat.format(coins);
+    final intl.NumberFormat capNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String capString = capNumberFormat.format(cap);
+
+    return 'Level $levelString · Till $coinsString/$capString';
+  }
+
+  @override
+  String branchBannerFull(int level) {
+    final intl.NumberFormat levelNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String levelString = levelNumberFormat.format(level);
+
+    return 'Level $levelString · Till full!';
+  }
+
+  @override
+  String branchIncome(int coins) {
+    final intl.NumberFormat coinsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String coinsString = coinsNumberFormat.format(coins);
+
+    return '~$coinsString coins/hour';
+  }
+
+  @override
+  String branchTillCap(int coins) {
+    final intl.NumberFormat coinsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String coinsString = coinsNumberFormat.format(coins);
+
+    return 'Till holds $coinsString coins (8 h)';
+  }
+
+  @override
+  String get branchTill => 'Till';
+
+  @override
+  String get branchTillFull => 'Full — collect to keep selling';
+
+  @override
+  String branchFullIn(String time) {
+    return 'Full in $time';
+  }
+
+  @override
+  String branchCollect(int coins) {
+    final intl.NumberFormat coinsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String coinsString = coinsNumberFormat.format(coins);
+
+    return 'Collect $coinsString';
+  }
+
+  @override
+  String branchCollectedToast(int coins) {
+    final intl.NumberFormat coinsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String coinsString = coinsNumberFormat.format(coins);
+
+    return '+$coinsString coins from the branch';
+  }
+
+  @override
+  String branchUpgrade(int coins) {
+    final intl.NumberFormat coinsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String coinsString = coinsNumberFormat.format(coins);
+
+    return 'Upgrade · $coinsString';
+  }
+
+  @override
+  String branchNextLevel(int level, int coins) {
+    final intl.NumberFormat levelNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String levelString = levelNumberFormat.format(level);
+    final intl.NumberFormat coinsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String coinsString = coinsNumberFormat.format(coins);
+
+    return 'Level $levelString: $coinsString coins/hour';
+  }
+
+  @override
+  String branchNeedMaiLevel(int level) {
+    final intl.NumberFormat levelNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String levelString = levelNumberFormat.format(level);
+
+    return 'Mai needs level $levelString';
+  }
+
+  @override
+  String branchUpgradedToast(int n, int level) {
+    final intl.NumberFormat nNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String nString = nNumberFormat.format(n);
+    final intl.NumberFormat levelNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String levelString = levelNumberFormat.format(level);
+
+    return 'Branch $nString is now level $levelString!';
+  }
+
+  @override
+  String get branchStaff => 'Staff';
+
+  @override
+  String branchSlots(int used, int total) {
+    final intl.NumberFormat usedNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String usedString = usedNumberFormat.format(used);
+    final intl.NumberFormat totalNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String totalString = totalNumberFormat.format(total);
+
+    return '$usedString/$totalString spots';
+  }
+
+  @override
+  String get branchNoSlot => 'No free spot — level 3 adds one';
+
+  @override
+  String branchHire(int coins) {
+    final intl.NumberFormat coinsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String coinsString = coinsNumberFormat.format(coins);
+
+    return 'Hire · $coinsString';
+  }
+
+  @override
+  String get branchDismiss => 'Let go';
+
+  @override
+  String branchDismissConfirm(String name, int coins) {
+    final intl.NumberFormat coinsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String coinsString = coinsNumberFormat.format(coins);
+
+    return '$name will take a long rest. You get $coinsString coins back.';
+  }
+
+  @override
+  String branchHiredToast(String name, int n) {
+    final intl.NumberFormat nNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String nString = nNumberFormat.format(n);
+
+    return '$name now works at Branch $nString';
+  }
+
+  @override
+  String branchWorksAt(int n) {
+    final intl.NumberFormat nNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String nString = nNumberFormat.format(n);
+
+    return 'Works at Branch $nString';
+  }
+
+  @override
+  String get staffRoleServer => 'Server';
+
+  @override
+  String get staffRoleBaker => 'Baker';
+
+  @override
+  String get staffRoleManager => 'Manager';
+
+  @override
+  String staffEffectBonus(int pct) {
+    final intl.NumberFormat pctNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String pctString = pctNumberFormat.format(pct);
+
+    return '+$pctString% sales';
+  }
+
+  @override
+  String staffEffectDeposit(int pct) {
+    final intl.NumberFormat pctNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String pctString = pctNumberFormat.format(pct);
+
+    return 'Sends $pctString% of sales home';
+  }
+
+  @override
+  String get charAmi => 'Ami';
+
+  @override
+  String get charHanh => 'Hanh';
+
+  @override
+  String get charBiscuit => 'Biscuit';
+
+  @override
+  String get charNutmeg => 'Nutmeg';
+
+  @override
+  String get charCocoa => 'Cocoa';
+
+  @override
+  String get charMaple => 'Maple';
+
+  @override
+  String branchAwayToast(int coins) {
+    final intl.NumberFormat coinsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String coinsString = coinsNumberFormat.format(coins);
+
+    return 'While you were away your branches sold $coinsString coins — drop by to collect!';
+  }
+
+  @override
+  String branchDepositToast(int coins) {
+    final intl.NumberFormat coinsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String coinsString = coinsNumberFormat.format(coins);
+
+    return 'Your manager sent home +$coinsString coins';
+  }
+
+  @override
+  String get branchClockBehind =>
+      'Your device clock is behind your last visit, so the till is resting.';
 
   @override
   String get citySeaMarketName => 'Seaside Market';
@@ -1938,7 +2229,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String cityPrice(int coins) {
-    return '$coins coins';
+    final intl.NumberFormat coinsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String coinsString = coinsNumberFormat.format(coins);
+
+    return '$coinsString coins';
   }
 
   @override

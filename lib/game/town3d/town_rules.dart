@@ -31,6 +31,12 @@ enum TownAction {
 
   /// Mở bảng làm tóc (`cityGetHaircut`).
   getHaircut,
+
+  /// Mở bảng lô đất ở quầy văn phòng địa ốc (`townActionRealty`).
+  realty,
+
+  /// Cửa chi nhánh đã mua: thu tiền / mở bảng chi nhánh (`townActionCollect` / `townActionBranch`, view chọn theo két).
+  branch,
 }
 
 /// Một vùng tương tác: tâm ([x], [z]) bán kính [radius] (m, toạ độ lớp phố).
@@ -68,6 +74,9 @@ enum TownBannerNote {
 
   /// Lô chi nhánh đã đủ cấp (`townLotUnlocked`).
   unlocked,
+
+  /// Chi nhánh đã mua (view ghép "Chi nhánh n" + cấp / két).
+  branch,
 }
 
 /// Băng tên khi bước vào vùng của một lô: tên ([nameKey], khoá AppLocalizations — `cityText`) + dòng phụ.
@@ -97,6 +106,10 @@ abstract final class TownRules {
   static const double counterRadius = 1.15;
   static const double hysteresis = 0.35;
 
+  /// Đường bao chiều cao của mặt tiền chi nhánh (docs/v3/city-gd4-spec.md §0): khối ở độ sâu [d] (m, tính từ mép vỉa
+  /// hè vào trong lô) cao tối đa `0,6 + 0,8·d` m — nhà lô nam không che Mai trước camera phố.
+  static double branchEnvelope(double d) => 0.6 + 0.8 * d;
+
   /// Các vùng của quận (mỗi lô một vùng cửa; quán ăn / tiệm tóc thêm vùng quầy).
   static List<TownZone> zonesOf(TownLayout t) => [
         for (final lot in t.district.lots)
@@ -122,11 +135,13 @@ abstract final class TownRules {
     return best;
   }
 
-  /// Thao tác nút A trong vùng [zone].
-  static TownAction actionFor(TownZone? zone) {
+  /// Thao tác nút A trong vùng [zone]; [owned] = các lô chi nhánh đã mua (cửa lô đã mua -> [TownAction.branch]).
+  static TownAction actionFor(TownZone? zone, {Set<String> owned = const {}}) {
     if (zone == null) return TownAction.none;
     return switch ((zone.lot.kind, zone.kind)) {
       (LotKind.home, TownZoneKind.door) => TownAction.enterShop,
+      (LotKind.realty, TownZoneKind.counter) => TownAction.realty,
+      (LotKind.branch, TownZoneKind.door) when owned.contains(zone.lotId) => TownAction.branch,
       (LotKind.restaurant, TownZoneKind.counter) => TownAction.orderFood,
       (LotKind.salon, TownZoneKind.counter) => TownAction.getHaircut,
       _ => TownAction.none,
@@ -134,16 +149,21 @@ abstract final class TownRules {
   }
 
   /// Thao tác nút A khi Mai đứng ở (x, z) (không có vùng đang giữ).
-  static TownAction actionAt(List<TownZone> zones, double x, double z) => actionFor(zoneAt(zones, x, z));
+  static TownAction actionAt(List<TownZone> zones, double x, double z, {Set<String> owned = const {}}) =>
+      actionFor(zoneAt(zones, x, z), owned: owned);
 
-  /// Băng tên của lô [lot] với cấp Mai [level]: tiệm của bà / quán ăn / tiệm tóc không có dòng phụ; văn phòng địa ốc,
-  /// công viên "Sắp mở"; lô chi nhánh chưa đủ cấp "Mở ở cấp N", đủ cấp "Sắp mở" (giai đoạn 4 mới mua được).
-  static TownBanner bannerFor(LotDef lot, int level) => switch (lot.kind) {
-        LotKind.home || LotKind.restaurant || LotKind.salon => TownBanner(lot.nameKey, TownBannerNote.none),
-        LotKind.realty || LotKind.park => TownBanner(lot.nameKey, TownBannerNote.comingSoon),
-        LotKind.branch => level < lot.requiresLevel
-            ? TownBanner(lot.nameKey, TownBannerNote.locked, level: lot.requiresLevel)
-            : TownBanner(lot.nameKey, TownBannerNote.unlocked),
+  /// Băng tên của lô [lot] với cấp Mai [level]: tiệm của bà / quán ăn / tiệm tóc / văn phòng địa ốc không có dòng phụ;
+  /// công viên "Sắp mở"; lô chi nhánh đã mua ([owned]) -> [TownBannerNote.branch], chưa đủ cấp "Mở ở cấp N", đủ cấp
+  /// [TownBannerNote.unlocked] (đang bán ở văn phòng địa ốc).
+  static TownBanner bannerFor(LotDef lot, int level, {bool owned = false}) => switch (lot.kind) {
+        LotKind.home || LotKind.restaurant || LotKind.salon || LotKind.realty =>
+          TownBanner(lot.nameKey, TownBannerNote.none),
+        LotKind.park => TownBanner(lot.nameKey, TownBannerNote.comingSoon),
+        LotKind.branch => owned
+            ? TownBanner(lot.nameKey, TownBannerNote.branch)
+            : level < lot.requiresLevel
+                ? TownBanner(lot.nameKey, TownBannerNote.locked, level: lot.requiresLevel)
+                : TownBanner(lot.nameKey, TownBannerNote.unlocked),
       };
 
   /// Các lô chi nhánh vừa mở khi cấp tăng từ [from] lên [to] (`from < requiresLevel <= to`), theo cấp tăng dần.

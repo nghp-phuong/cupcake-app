@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/painting.dart';
@@ -243,4 +244,69 @@ void main() {
     }).timeout(const Duration(seconds: 60));
     expect(tester.takeException(), isNull);
   }, timeout: const Timeout(Duration(minutes: 2)));
+
+  testWidgets('hình theo ảnh món: macaron chồng 3 chiếc, cheesecake không chảy giọt, muffin rắc đường không phủ kem đặc',
+      (tester) async {
+    Future<ByteData> pixels(CakeVisual v) async {
+      final recorder = ui.PictureRecorder();
+      CakeArt.paint(Canvas(recorder), _rect, v);
+      final image = await recorder.endRecording().toImage(_n, _n);
+      final data = (await image.toByteData(format: ui.ImageByteFormat.rawStraightRgba))!;
+      image.dispose();
+      return data;
+    }
+
+    int channelDiff(ByteData a, ByteData b, int x, int y) {
+      final i = (y * _n + x) * 4;
+      var d = 0;
+      for (var k = 0; k < 3; k++) {
+        final v = (a.getUint8(i + k) - b.getUint8(i + k)).abs();
+        if (v > d) d = v;
+      }
+      return d;
+    }
+
+    await tester.runAsync(() async {
+      ArtSprites.debugReset();
+      const moulds = [MouldType.macaronMat, MouldType.springformPan, MouldType.muffinCup];
+      await ArtSprites.preload([for (final m in moulds) ArtSprites.baked(m, _batters[m]!)]);
+
+      // Macaron: hai chiếc phía sau nhô cao hơn chiếc đơn cũ (đáy, bề ngang giữ như test khung ở trên).
+      const mac = CakeVisual(mould: MouldType.macaronMat, batter: BatterType.almond, frosting: FrostingId.strawberryCream);
+      final macBox = await _alphaBox((c) => CakeArt.paint(c, _rect, mac));
+      expect(macBox.top, lessThan(CakeArt.artBodyRect(_rect, MouldType.macaronMat).top - _n * 0.08));
+      expect(macBox.top, greaterThanOrEqualTo(0));
+
+      // Cheesecake: dải ngay dưới mép trước mặt bánh vẫn là thành bánh của ảnh (không có giọt kem chảy).
+      const cheese = CakeVisual(mould: MouldType.springformPan, batter: BatterType.cheese);
+      final top = CakeArt.topSurface(_rect, MouldType.springformPan);
+      final plain = await pixels(cheese), frosted = await pixels(cheese.copyWith(frosting: FrostingId.creamCheese));
+      var band = 0, dripped = 0;
+      for (var x = (top.center.dx - top.width * 0.3).round(); x < top.center.dx + top.width * 0.3; x += 2) {
+        final u = (x - top.center.dx) / (top.width / 2);
+        final edge = top.center.dy + top.height / 2 * math.sqrt(1 - u * u);
+        for (var y = (edge + _n * 0.015).round(); y < edge + _n * 0.06; y += 2) {
+          band++;
+          if (channelDiff(plain, frosted, x, y) > 24) dripped++;
+        }
+      }
+      expect(dripped / band, lessThan(0.03), reason: 'cheesecake: $dripped/$band điểm dưới mép mặt bánh đổi màu');
+
+      // Muffin: kem vani = đường bột mờ — phần lớn mặt bánh vẫn thấy màu vỏ nướng (kem đặc cũ đổi gần hết).
+      const muffin = CakeVisual(mould: MouldType.muffinCup, batter: BatterType.vanilla);
+      final mt = CakeArt.topSurface(_rect, MouldType.muffinCup);
+      final bare = await pixels(muffin), dusted = await pixels(muffin.copyWith(frosting: FrostingId.vanillaCream));
+      var inside = 0, changed = 0;
+      for (var y = mt.top.ceil(); y < mt.bottom; y += 2) {
+        for (var x = mt.left.ceil(); x < mt.right; x += 2) {
+          final u = (x - mt.center.dx) / (mt.width / 2), w = (y - mt.center.dy) / (mt.height / 2);
+          if (u * u + w * w > 0.8) continue;
+          inside++;
+          if (channelDiff(bare, dusted, x, y) > 100) changed++;
+        }
+      }
+      expect(changed / inside, lessThan(0.25), reason: 'muffin: $changed/$inside điểm đổi mạnh');
+    }).timeout(const Duration(seconds: 60));
+    expect(tester.takeException(), isNull);
+  }, timeout: const Timeout(Duration(minutes: 1)));
 }

@@ -23,19 +23,72 @@ void main() {
     return out;
   }
 
-  test('xuất hiện trước cửa tiệm của bà: nút A "Vào tiệm", không băng tên; 2 chủ quán đứng sau quầy', () {
+  test('xuất hiện trước cửa tiệm của bà: nút A "Vào tiệm", không băng tên; 3 chủ quán đứng sau quầy', () {
     final p = TownPilot(town, CityWallet());
     expect(p.mai.pose.x, town.spawn.x);
     expect(p.mai.pose.z, town.spawn.z);
     expect(p.hud.value.action, TownAction.enterShop);
     expect(p.hud.value.controls, isTrue);
-    expect(p.keepers.map((k) => k.id), [TownPilot.restaurantKeeperId, TownPilot.salonKeeperId]);
-    for (final (id, k) in [('n3', p.keepers[0]), ('n4', p.keepers[1])]) {
+    expect(p.keepers.map((k) => k.id),
+        [TownPilot.restaurantKeeperId, TownPilot.salonKeeperId, TownPilot.realtyKeeperId]);
+    expect(TownPilot.realtyKeeperId, 'regular_12');
+    for (final (id, k) in [('n3', p.keepers[0]), ('n4', p.keepers[1]), ('n1', p.keepers[2])]) {
       final spot = town.spots[id]!.keeper!;
       expect(k.pose.x, spot.x);
       expect(k.pose.z, spot.z);
     }
     expect(run(p, 0.5), isEmpty);
+  });
+
+  test('văn phòng địa ốc: quầy -> nút "realty"; beginCounter / endCounter', () {
+    final p = TownPilot(town, CityWallet());
+    final c = town.spots['n1']!.counter!;
+    p.beginCounter(); // đang đi dạo nhưng chưa phải ở quầy: vẫn mở được (view chỉ gọi khi A = realty)
+    expect(p.mode, TownMode.counter);
+    expect(p.hud.value.controls, isFalse);
+    expect(p.hud.value.action, TownAction.none);
+    p.endCounter();
+    expect(p.mode, TownMode.walk);
+    p.placeAt(c.x, c.z, c.yaw);
+    expect(p.hud.value.action, TownAction.realty);
+    expect(p.hud.value.lotId, 'n1');
+    p.beginCounter();
+    expect(p.mode, TownMode.counter);
+    expect(p.hud.value.action, TownAction.none);
+    expect(p.hud.value.controls, isFalse);
+    // Đang mở bảng thì beginMenu / beginCounter lần nữa không đổi chế độ; update không đẩy Mai đi.
+    p.setStick(0, -1);
+    final x = p.mai.pose.x, z = p.mai.pose.z;
+    run(p, 0.5);
+    expect(p.mai.pose.x, x);
+    expect(p.mai.pose.z, z);
+    p.endMenu();
+    expect(p.mode, TownMode.counter);
+    p.endCounter();
+    expect(p.mode, TownMode.walk);
+    expect(p.hud.value.action, TownAction.realty);
+    p.endCounter(); // không đang mở: vô hại
+    expect(p.mode, TownMode.walk);
+  });
+
+  test('ownedLots: đổi tập lô đã mua thì nút A tính lại', () {
+    final p = TownPilot(town, CityWallet());
+    final d = town.spots['s1']!.door;
+    p.placeAt(d.x, d.z, d.yaw);
+    expect(p.hud.value.lotId, 's1');
+    expect(p.hud.value.action, TownAction.none);
+    p.ownedLots = {'s1'};
+    expect(p.hud.value.action, TownAction.branch);
+    p.ownedLots = {'s3'};
+    expect(p.hud.value.action, TownAction.none);
+    p.ownedLots = {'s1'};
+    var notified = 0;
+    p.hud.addListener(() => notified++);
+    p.ownedLots = {'s1'}; // không đổi: không tính lại
+    expect(notified, 0);
+    // Đang mở bảng thì A mờ dù đã mua.
+    p.beginCounter();
+    expect(p.hud.value.action, TownAction.none);
   });
 
   test('joystick: đi theo hướng camera, va chạm; vào vùng quầy → băng tên + ghé lần đầu (+XP) + nút "Gọi món"', () {

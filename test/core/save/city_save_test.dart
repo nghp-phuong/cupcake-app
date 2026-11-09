@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sugarleaf_bakery/core/branch/branch_state.dart';
+import 'package:sugarleaf_bakery/core/branch/staff.dart';
 import 'package:sugarleaf_bakery/core/city/city_game.dart';
 import 'package:sugarleaf_bakery/core/city/city_wallet.dart';
 import 'package:sugarleaf_bakery/core/city/mai_look.dart';
@@ -31,13 +33,26 @@ CitySave _full() => CitySave(
   adsDate: '2026-11-03',
   rewarded: 5,
   iap: {'starterPack', 'removeAds'},
-  branches: {
-    's1': {'owned': true, 'level': 2},
-  },
-  staff: [
-    {'id': 'an', 'lv': 1},
-    'x',
-  ],
+  branches: BranchBook(
+    clock: 1700000400000,
+    lots: {
+      's1': const BranchState(
+        lotId: 's1',
+        level: 2,
+        tillMilli: 845123,
+        boughtAt: 1700000100000,
+        earned: 12345,
+        adDate: '2026-11-03',
+      ),
+    },
+    staff: [const StaffMember(id: 'ami', lotId: 's1', since: 1700000200000)],
+    extraLots: {
+      'z9': {'lv': 1, 'moi': true},
+    },
+    extraStaff: [
+      {'id': 'pierre', 'lot': 's1'},
+    ],
+  ),
   district: 'sea_market',
   quests: {
     'date': '2026-11-03',
@@ -90,8 +105,7 @@ void main() {
     expect(s.adsDate, '2026-11-04');
     expect(s.rewarded, 0);
     expect(s.iap, isEmpty);
-    expect(s.branches, isEmpty);
-    expect(s.staff, isEmpty);
+    expect(s.branches, BranchBook());
     expect(s.district, 'bakery_street');
     expect(s.quests, isEmpty);
     expect(s.login, isEmpty);
@@ -99,6 +113,8 @@ void main() {
     final j = s.toJson(_now);
     expect(j['v'], 3);
     expect(j.containsKey('migratedFrom'), isFalse);
+    expect(j['branches'], {'clock': 0, 'lots': {}});
+    expect(j['staff'], []);
   });
 
   test('§2.5-2 khứ hồi mọi trường, CitySave ==', () {
@@ -111,8 +127,9 @@ void main() {
       r.save.hashCode,
       s.copyWith(savedAt: _now.millisecondsSinceEpoch).hashCode,
     );
-    // Qua CityGame cũng y nguyên.
-    final g = CityGame(clock: () => _now)..restore(s);
+    // Qua CityGame cũng y nguyên (đồng hồ đơn điệu đứng yên: két không chạy thêm).
+    final g = CityGame(clock: () => _now, mono: () => Duration.zero)
+      ..restore(s);
     expect(g.toSave(), s);
     // Khác một trường bất kỳ → khác.
     final changes = <CitySave Function(CitySave)>[
@@ -135,8 +152,8 @@ void main() {
       (x) => x.copyWith(adsDate: ''),
       (x) => x.copyWith(rewarded: 0),
       (x) => x.copyWith(iap: {}),
-      (x) => x.copyWith(branches: {}),
-      (x) => x.copyWith(staff: []),
+      (x) => x.copyWith(branches: BranchBook()),
+      (x) => x.copyWith(branches: BranchBook(clock: 1)),
       (x) => x.copyWith(district: 'bakery_street'),
       (x) => x.copyWith(quests: {}),
       (x) => x.copyWith(login: {}),
@@ -220,7 +237,6 @@ void main() {
       ('ads.date', 7, ''),
       ('ads.rewarded', 'x', 0),
       ('iap', {'a': 1}, []),
-      ('branches', [1], {}),
       ('staff', {'a': 1}, []),
       ('district', 5, 'bakery_street'),
       ('quests', 'x', {}),
@@ -248,6 +264,15 @@ void main() {
     expect(rs.bad, ['savedAt']);
     expect(rs.save.savedAt, 0);
     expect(rs.save.coins, 4321);
+    // branches sai kiểu → sổ rỗng; Ami ở lô chưa mua nên bị bỏ (ghi riêng), nhân viên lạ vẫn giữ.
+    final br = _copy(base)..['branches'] = [1];
+    final rb = CitySave.decode(br);
+    expect(rb.bad, ['branches', 'staff.ami']);
+    expect(_wire(rb.save)['branches'], {'clock': 0, 'lots': {}});
+    expect(_wire(rb.save)['staff'], [
+      {'id': 'pierre', 'lot': 's1'},
+    ]);
+    expect(rb.save.coins, 4321);
   });
 
   test(
@@ -337,7 +362,7 @@ void main() {
     expect(w.xp, CityWallet.xpCap);
   });
 
-  test('§2.5-9 khoá lạ, branches, district còn nguyên', () {
+  test('§2.5-9 khoá lạ, lô / nhân viên lạ, district còn nguyên', () {
     final json = {
       'v': 3,
       'wallet': {'coins': 10},
@@ -345,9 +370,17 @@ void main() {
         'x': [1, 'a'],
       },
       'branches': {
-        's1': {'owned': true},
+        'clock': 5,
+        'lots': {
+          'z9': {
+            'x': [1],
+          },
+        },
       },
-      'staff': ['an'],
+      'staff': [
+        {'id': 'pierre', 'lot': 'z9'},
+        {'id': 'ami', 'lot': 'z9', 'since': 3},
+      ],
       'district': 'sea_market',
       'quests': {'q': 1},
       'login': {'d': '2026-11-01'},
@@ -363,9 +396,17 @@ void main() {
     });
     expect(out.containsKey('aaa'), isTrue);
     expect(out['branches'], {
-      's1': {'owned': true},
+      'clock': 5,
+      'lots': {
+        'z9': {
+          'x': [1],
+        },
+      },
     });
-    expect(out['staff'], ['an']);
+    expect(out['staff'], [
+      {'id': 'pierre', 'lot': 'z9'},
+      {'id': 'ami', 'lot': 'z9', 'since': 3},
+    ]);
     expect(out['district'], 'sea_market');
     expect(out['quests'], {'q': 1});
     expect(out['login'], {'d': '2026-11-01'});
@@ -375,7 +416,11 @@ void main() {
     // Bất biến.
     expect(() => r.save.extra['y'] = 1, throwsUnsupportedError);
     expect(
-      () => (r.save.branches['s1'] as Map)['owned'] = false,
+      () => (r.save.branches.extraLots['z9'] as Map)['x'] = 0,
+      throwsUnsupportedError,
+    );
+    expect(
+      () => (r.save.branches.extraStaff[0] as Map)['id'] = 'a',
       throwsUnsupportedError,
     );
     expect(() => r.save.visited.add('n9'), throwsUnsupportedError);

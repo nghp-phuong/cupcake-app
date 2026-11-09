@@ -1,3 +1,4 @@
+import '../../core/branch/staff.dart';
 import '../../core/city/mai_look.dart';
 import '../../l10n/gen/app_localizations.dart';
 
@@ -67,4 +68,22 @@ String hairColorText(AppLocalizations l, MaiHairColor c) => switch (c) {
   MaiHairColor.caramel => l.hairColorCaramel,
   MaiHairColor.black => l.hairColorBlack,
   MaiHairColor.strawberry => l.hairColorStrawberry,
+};
+
+/// Tên nhân viên chi nhánh theo id; id lạ → trả chính id.
+String staffName(AppLocalizations l, String staffId) => switch (staffId) {
+  'ami' => l.charAmi,
+  'hanh' => l.charHanh,
+  'biscuit' => l.charBiscuit,
+  'nutmeg' => l.charNutmeg,
+  'cocoa' => l.charCocoa,
+  'maple' => l.charMaple,
+  _ => staffId,
+};
+
+/// Tên vai nhân viên.
+String staffRoleText(AppLocalizations l, StaffRole r) => switch (r) {
+  StaffRole.server => l.staffRoleServer,
+  StaffRole.baker => l.staffRoleBaker,
+  StaffRole.manager => l.staffRoleManager,
 };

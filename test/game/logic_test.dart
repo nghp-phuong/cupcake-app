@@ -168,16 +168,28 @@ void main() {
       expect(m.release, 1.0);
     });
 
-    test('thả tay ghi vị trí; chạm quá ngắn bỏ qua', () {
+    test('thả tay ghi vị trí; chạm quá ngắn bỏ qua và kim về 0', () {
       final m = BakeMeter();
       m.press();
       m.tick(0.06);
       m.lift();
       expect(m.released, isFalse);
+      expect(m.value, 0);
       m.press();
       m.tick(1.8);
       m.lift();
-      expect(m.release, closeTo(0.62, 1e-9));
+      expect(m.release, closeTo(0.6, 1e-9));
+    });
+
+    test('nhiều lần chạm ngắn không cộng dồn thành một lần thả', () {
+      final m = BakeMeter();
+      for (var k = 0; k < 10; k++) {
+        m.press();
+        m.tick(0.1); // 0.033 < 0.04
+        m.lift();
+        expect(m.released, isFalse);
+        expect(m.value, 0);
+      }
     });
 
     test('bakedVisual: 0 → mục tiêu → 1.0 ứng với sống → vàng → cháy', () {

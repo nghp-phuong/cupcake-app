@@ -4,7 +4,8 @@
 // Chạy: flutter run -d chrome --cross-origin-isolation          (máy chủ tĩnh của bản web phải gửi COOP / COEP)
 //       flutter build web --release / flutter build apk --debug
 // Tham số URL (web) / route ban đầu (Android, `--es route '/?…'`), xem `CityDebugParams`:
-//   save=memory (không đụng save thật; có coins= / xp= / level= thì tự bật); intro=0|1; lang=vi|en (chỉ trong phiên);
+//   save=memory (không đụng save thật; có coins= / xp= / level= / day= / branches= / staff= / till= / away= thì tự
+//   bật); chi nhánh branches=s1:3,s3:1, staff=ami@s1, till=full, away=<giờ>; intro=0|1; lang=vi|en (chỉ trong phiên);
 //   spawn=<x>,<z>; debug=1|0; log=1; mochi=1; đồ hoạ quality, scale, fps, shadows, smap, post, aa, blob, soft, ibl, tm,
 //   maxpx; ánh sáng sun / amb / fill / sky=<RRGGBB>, ambi=<n>; tex=producer (Android).
 import 'dart:async';
@@ -26,6 +27,8 @@ import 'core/services/ad_service.dart';
 import 'core/services/audio_service.dart';
 import 'game/town3d/town3d_page.dart';
 import 'ui/city_routes.dart';
+import 'ui/intro/intro_screen.dart';
+import 'ui/intro/intro_stage3d.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -68,7 +71,7 @@ Future<void> main() async {
   final store = await CitySaveStore.load(repo);
   final game = store.game;
   debug.applyTo(game);
-  game.refreshDay();
+  game.resume();
   store.attachAutosave();
 
   final services = AppServices(
@@ -80,12 +83,15 @@ Future<void> main() async {
   );
 
   // Ẩn / tạm dừng: lưu ngay (bất đồng bộ, không chặn UI). Quay lại: kiểm ngày lịch (sang ngày mới → bộ đếm ăn, quảng
-  // cáo thưởng đặt lại).
+  // cáo thưởng đặt lại) và bù két chi nhánh theo giờ máy (phố lấy kết quả qua `branches.takeAway()`).
   AppLifecycleListener(
     onHide: () => unawaited(store.flush()),
     onPause: () => unawaited(store.flush()),
-    onShow: game.refreshDay,
+    onShow: game.resume,
   );
+
+  // Intro: cảnh 3D (Mai + phố) do lớp thermion dựng; không gắn thì intro chạy trên nền giấy.
+  IntroScreen.stageBuilder = IntroStage3d.new;
 
   runApp(
     SugarleafApp(

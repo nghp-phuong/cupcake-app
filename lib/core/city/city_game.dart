@@ -1,12 +1,14 @@
 /// Trạng thái thành phố của một phiên (save v3, docs/v3/city-gd2-spec.md §2): ví + cài đặt + cờ (đã xem intro, mốc
-/// cấp đã báo), quảng cáo thưởng trong ngày, IAP đã sở hữu, thống kê tiệm của bà (GĐ3, khoá `bakery`). Mỗi hàm ghi gọi `notifyListeners` (không đổi thì không);
-/// `CitySaveStore` nghe [CityGame.wallet], [CityGame.settings] và chính đối tượng này để tự lưu.
+/// cấp đã báo), quảng cáo thưởng trong ngày, IAP đã sở hữu, thống kê tiệm của bà (GĐ3, khoá `bakery`), chi nhánh (GĐ4,
+/// khoá `branches` / `staff`). Mỗi hàm ghi gọi `notifyListeners` (không đổi thì không); `CitySaveStore` nghe
+/// [CityGame.wallet], [CityGame.settings], [CityGame.branches] và chính đối tượng này để tự lưu.
 library;
 
 import 'dart:collection';
 
 import 'package:flutter/foundation.dart';
 
+import '../branch/city_branches.dart';
 import '../economy.dart';
 import '../models/ids.dart';
 import '../save/city_save.dart';
@@ -29,15 +31,23 @@ abstract interface class AdLedger {
 }
 
 class CityGame extends ChangeNotifier implements AdLedger {
+  /// [mono]: đồng hồ đơn điệu cho két chi nhánh (mặc định `Stopwatch`; test truyền đồng hồ giả).
   CityGame({
     CityWallet? wallet,
     CitySettings? settings,
     DateTime Function()? clock,
-  }) : wallet = wallet ?? CityWallet(),
-       settings = settings ?? CitySettings(),
-       _clock = clock ?? DateTime.now {
+    Duration Function()? mono,
+  }) : this._(
+         wallet ?? CityWallet(),
+         settings ?? CitySettings(),
+         clock ?? DateTime.now,
+         mono,
+       );
+
+  CityGame._(this.wallet, this.settings, this._clock, Duration Function()? mono)
+    : branches = CityBranches(wallet: wallet, clock: _clock, mono: mono) {
     _base = CitySave(createdAt: _clock().millisecondsSinceEpoch);
-    _levelSeen = this.wallet.level;
+    _levelSeen = wallet.level;
   }
 
   /// Quảng cáo thưởng tối đa mỗi ngày lịch.
@@ -51,6 +61,9 @@ class CityGame extends ChangeNotifier implements AdLedger {
 
   final CityWallet wallet;
   final CitySettings settings;
+
+  /// Chi nhánh, nhân viên, két (GĐ4).
+  final CityBranches branches;
   final DateTime Function() _clock;
 
   /// Phần save mà phiên này không sửa (thời điểm tạo, nguồn nhập, khoá để dành, khoá lạ): giữ nguyên khi ghi lại.
@@ -108,6 +121,12 @@ class CityGame extends ChangeNotifier implements AdLedger {
     final ads = _rollAds(today);
     if (ads) notifyListeners();
     return day || ads;
+  }
+
+  /// Mở app / quay lại app: [refreshDay] rồi `branches.resume()` (bù két theo giờ máy).
+  BranchAway resume([DateTime? now]) {
+    refreshDay(now);
+    return branches.resume();
   }
 
   bool _rollAds(String today) {
@@ -170,6 +189,15 @@ class CityGame extends ChangeNotifier implements AdLedger {
     _setBakery(_bakery.copyWith(tutorial: {..._bakery.tutorial, s.name}));
   }
 
+  /// Món đã xem hướng dẫn từng bước (chung tập `bakery.tutorial`, mục `recipe.<id>`).
+  bool recipeTutorialSeen(RecipeId r) => _bakery.tutorial.contains('recipe.${r.name}');
+
+  void markRecipeTutorialSeen(RecipeId r) {
+    final key = 'recipe.${r.name}';
+    if (_bakery.tutorial.contains(key)) return;
+    _setBakery(_bakery.copyWith(tutorial: {..._bakery.tutorial, key}));
+  }
+
   /// Cấp đã báo "Mở mới!" (1..30); 0 = chưa có mốc (ca bán lấy cấp hiện tại, không báo bù).
   int get recipeSeen => _bakery.recipeSeen;
 
@@ -200,26 +228,30 @@ class CityGame extends ChangeNotifier implements AdLedger {
   /// Khoá lạ ở cấp trên cùng của save (bản app mới hơn ghi); chỉ đọc.
   Map<String, Object?> get extra => _base.extra;
 
-  /// Bản chụp để ghi.
-  CitySave toSave() => _base.copyWith(
-    coins: wallet.coins,
-    xp: wallet.xp,
-    look: wallet.look,
-    dayKey: wallet.dayKey,
-    dayNumber: wallet.dayNumber,
-    eaten: wallet.eatenToday,
-    fullBuff: wallet.fullBuff,
-    visited: wallet.visited,
-    language: settings.language,
-    sound: settings.sound,
-    introSeen: _introSeen,
-    levelSeen: _levelSeen,
-    removeAds: _removeAds,
-    adsDate: _adsDate,
-    rewarded: _rewarded,
-    iap: _iap,
-    bakery: _bakery,
-  );
+  /// Bản chụp để ghi. Chụp chi nhánh trước khi đọc ví: phần quản lý gửi về đã vào ví, két và ví khớp cùng một lúc.
+  CitySave toSave() {
+    final book = branches.snapshot();
+    return _base.copyWith(
+      coins: wallet.coins,
+      xp: wallet.xp,
+      look: wallet.look,
+      dayKey: wallet.dayKey,
+      dayNumber: wallet.dayNumber,
+      eaten: wallet.eatenToday,
+      fullBuff: wallet.fullBuff,
+      visited: wallet.visited,
+      language: settings.language,
+      sound: settings.sound,
+      introSeen: _introSeen,
+      levelSeen: _levelSeen,
+      removeAds: _removeAds,
+      adsDate: _adsDate,
+      rewarded: _rewarded,
+      iap: _iap,
+      bakery: _bakery,
+      branches: book,
+    );
+  }
 
   /// Nạp [s] tại chỗ: giữ nguyên các object [wallet], [settings] và chính nó (màn đang nghe không phải gắn lại).
   void restore(CitySave s) {
@@ -246,6 +278,7 @@ class CityGame extends ChangeNotifier implements AdLedger {
     _adsDate = s.adsDate;
     _rewarded = s.rewarded < 0 ? 0 : s.rewarded;
     _bakery = s.bakery;
+    branches.restore(s.branches);
     notifyListeners();
   }
 }

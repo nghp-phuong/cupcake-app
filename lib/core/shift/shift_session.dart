@@ -211,6 +211,12 @@ class ShiftSession extends ChangeNotifier {
   /// Ghi đã xem hướng dẫn trạm [s] (vào save; không notify phiên).
   void tutorialShown(StationId s) => _game.markTutorialSeen(s);
 
+  /// Lần đầu làm món của khách hiện tại (đọc lúc dựng `BakeSessionView`).
+  bool get recipeTutorial => !_game.recipeTutorialSeen(current.order.recipe);
+
+  /// Ghi đã xem hướng dẫn món của khách hiện tại (vào save; không notify phiên).
+  void recipeTutorialShown() => _game.markRecipeTutorialSeen(current.order.recipe);
+
   /// Món mở từ lần báo "Mở mới!" trước tới cấp lúc mở ca (thẻ "Mở mới!" trước khách đầu); rỗng = không có.
   List<RecipeId> get recipeNews => _recipeNews;
 

@@ -2183,7 +2183,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsResetConfirmBody.
   ///
   /// In en, this message translates to:
-  /// **'Coins, level, Mai\'s hairstyle and the places you\'ve visited will be erased. Language and sound are kept. This can\'t be undone.'**
+  /// **'Coins, level, Mai\'s hairstyle, the places you\'ve visited, your branches and staff will be erased. Language and sound are kept. This can\'t be undone.'**
   String get settingsResetConfirmBody;
 
   /// No description provided for @settingsResetDone.
@@ -2279,13 +2279,13 @@ abstract class AppLocalizations {
   /// Opening scene: subtitle of scene 2 (glass cake case).
   ///
   /// In en, this message translates to:
-  /// **'Grandma\'s cake case still shines like it always did.'**
+  /// **'Grandma\'s little bakery is still right where it was.'**
   String get introLineCase;
 
   /// Opening scene: subtitle of scene 3 (shop door). Mai is the main character; Sugarleaf is the bakery name.
   ///
   /// In en, this message translates to:
-  /// **'Mai flips the sign — Sugarleaf is open!'**
+  /// **'Mai is home — Sugarleaf opens its doors again!'**
   String get introLineDoor;
 
   /// Opening scene: word painted on the wooden door sign after it is flipped. One short line, shown in big letters.
@@ -3272,6 +3272,12 @@ abstract class AppLocalizations {
   /// **'Go outside'**
   String get townExitShop;
 
+  /// Shop scene: button that leaves the bakery and goes back to the town street. Keep short.
+  ///
+  /// In en, this message translates to:
+  /// **'Go outside'**
+  String get shopExitButton;
+
   /// No description provided for @townMap.
   ///
   /// In en, this message translates to:
@@ -3317,7 +3323,7 @@ abstract class AppLocalizations {
   /// Branch lot note once the player's level has reached this lot. The lot opens for business later.
   ///
   /// In en, this message translates to:
-  /// **'Unlocked · on sale soon'**
+  /// **'Unlocked · for sale at Harbor Realty'**
   String get townLotUnlocked;
 
   /// Toast shown after a level-up unlocks new branch lots. count = number of new lots.
@@ -3343,6 +3349,264 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Opening the door…'**
   String get townOpening;
+
+  /// Action button at a branch door when the till has coins. Collects them now.
+  ///
+  /// In en, this message translates to:
+  /// **'Collect'**
+  String get townActionCollect;
+
+  /// Action button at a branch door when the till is empty. Opens the branch sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch'**
+  String get townActionBranch;
+
+  /// Action button at the Harbor Realty counter. Opens the lot list.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse lots'**
+  String get townActionRealty;
+
+  /// Lot name in the realty sheet. n = lot number.
+  ///
+  /// In en, this message translates to:
+  /// **'Lot {n}'**
+  String realtyLotN(int n);
+
+  /// Tag on a lot the player already owns.
+  ///
+  /// In en, this message translates to:
+  /// **'Yours'**
+  String get realtyOwned;
+
+  /// Title of the buy confirmation panel in the realty sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Buy this lot?'**
+  String get realtyConfirmTitle;
+
+  /// Body of the buy confirmation panel. price = lot price.
+  ///
+  /// In en, this message translates to:
+  /// **'{price} coins. It becomes a little branch that sells on its own.'**
+  String realtyConfirmBody(int price);
+
+  /// Toast after buying a lot. n = branch number.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch {n} is open!'**
+  String branchOpenedToast(int n);
+
+  /// Branch sign note: level, till coins and till cap.
+  ///
+  /// In en, this message translates to:
+  /// **'Level {level} · Till {coins}/{cap}'**
+  String branchBannerTill(int level, int coins, int cap);
+
+  /// Branch sign note when the till is full. level = branch level.
+  ///
+  /// In en, this message translates to:
+  /// **'Level {level} · Till full!'**
+  String branchBannerFull(int level);
+
+  /// Branch sheet: income per hour. coins = coins per hour.
+  ///
+  /// In en, this message translates to:
+  /// **'~{coins} coins/hour'**
+  String branchIncome(int coins);
+
+  /// Branch sheet: till capacity. coins = till cap.
+  ///
+  /// In en, this message translates to:
+  /// **'Till holds {coins} coins (8 h)'**
+  String branchTillCap(int coins);
+
+  /// Section title for the till in the branch sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Till'**
+  String get branchTill;
+
+  /// Branch sheet note when the till is full.
+  ///
+  /// In en, this message translates to:
+  /// **'Full — collect to keep selling'**
+  String get branchTillFull;
+
+  /// Branch sheet: time until the till is full. time = formatted duration.
+  ///
+  /// In en, this message translates to:
+  /// **'Full in {time}'**
+  String branchFullIn(String time);
+
+  /// Collect button in the branch sheet. coins = coins in the till.
+  ///
+  /// In en, this message translates to:
+  /// **'Collect {coins}'**
+  String branchCollect(int coins);
+
+  /// Toast after collecting from a branch.
+  ///
+  /// In en, this message translates to:
+  /// **'+{coins} coins from the branch'**
+  String branchCollectedToast(int coins);
+
+  /// Upgrade button in the branch sheet. coins = upgrade cost.
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade · {coins}'**
+  String branchUpgrade(int coins);
+
+  /// Branch sheet: next level and its income. level = next level, coins = coins per hour.
+  ///
+  /// In en, this message translates to:
+  /// **'Level {level}: {coins} coins/hour'**
+  String branchNextLevel(int level, int coins);
+
+  /// Branch sheet: reason an upgrade is blocked. level = Mai's level needed.
+  ///
+  /// In en, this message translates to:
+  /// **'Mai needs level {level}'**
+  String branchNeedMaiLevel(int level);
+
+  /// Toast after upgrading a branch. n = branch number, level = new level.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch {n} is now level {level}!'**
+  String branchUpgradedToast(int n, int level);
+
+  /// Section title for staff in the branch sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff'**
+  String get branchStaff;
+
+  /// Branch sheet: used and total staff spots.
+  ///
+  /// In en, this message translates to:
+  /// **'{used}/{total} spots'**
+  String branchSlots(int used, int total);
+
+  /// Branch sheet note when all staff spots are taken.
+  ///
+  /// In en, this message translates to:
+  /// **'No free spot — level 3 adds one'**
+  String get branchNoSlot;
+
+  /// Hire button in the branch sheet. coins = hire cost.
+  ///
+  /// In en, this message translates to:
+  /// **'Hire · {coins}'**
+  String branchHire(int coins);
+
+  /// Button to dismiss a staff member from a branch.
+  ///
+  /// In en, this message translates to:
+  /// **'Let go'**
+  String get branchDismiss;
+
+  /// Confirmation for dismissing staff. name = staff name, coins = refund.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} will take a long rest. You get {coins} coins back.'**
+  String branchDismissConfirm(String name, int coins);
+
+  /// Toast after hiring staff. name = staff name, n = branch number.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} now works at Branch {n}'**
+  String branchHiredToast(String name, int n);
+
+  /// Label on a staff card that is already working at a branch. n = branch number.
+  ///
+  /// In en, this message translates to:
+  /// **'Works at Branch {n}'**
+  String branchWorksAt(int n);
+
+  /// Staff role: server.
+  ///
+  /// In en, this message translates to:
+  /// **'Server'**
+  String get staffRoleServer;
+
+  /// Staff role: baker.
+  ///
+  /// In en, this message translates to:
+  /// **'Baker'**
+  String get staffRoleBaker;
+
+  /// Staff role: manager.
+  ///
+  /// In en, this message translates to:
+  /// **'Manager'**
+  String get staffRoleManager;
+
+  /// Staff effect: sales bonus. pct = percent.
+  ///
+  /// In en, this message translates to:
+  /// **'+{pct}% sales'**
+  String staffEffectBonus(int pct);
+
+  /// Staff effect: manager sends part of sales to the wallet. pct = percent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sends {pct}% of sales home'**
+  String staffEffectDeposit(int pct);
+
+  /// Staff name: Ami (baker).
+  ///
+  /// In en, this message translates to:
+  /// **'Ami'**
+  String get charAmi;
+
+  /// Staff name: Hanh (manager).
+  ///
+  /// In en, this message translates to:
+  /// **'Hanh'**
+  String get charHanh;
+
+  /// Staff name: Biscuit (server).
+  ///
+  /// In en, this message translates to:
+  /// **'Biscuit'**
+  String get charBiscuit;
+
+  /// Staff name: Nutmeg (server).
+  ///
+  /// In en, this message translates to:
+  /// **'Nutmeg'**
+  String get charNutmeg;
+
+  /// Staff name: Cocoa (baker).
+  ///
+  /// In en, this message translates to:
+  /// **'Cocoa'**
+  String get charCocoa;
+
+  /// Staff name: Maple (baker).
+  ///
+  /// In en, this message translates to:
+  /// **'Maple'**
+  String get charMaple;
+
+  /// Toast on opening the app after being away. coins = coins sold while away.
+  ///
+  /// In en, this message translates to:
+  /// **'While you were away your branches sold {coins} coins — drop by to collect!'**
+  String branchAwayToast(int coins);
+
+  /// Toast on opening the app: manager deposited coins to the wallet. coins = deposited amount.
+  ///
+  /// In en, this message translates to:
+  /// **'Your manager sent home +{coins} coins'**
+  String branchDepositToast(int coins);
+
+  /// Note shown when the device clock has been set back; the till pauses.
+  ///
+  /// In en, this message translates to:
+  /// **'Your device clock is behind your last visit, so the till is resting.'**
+  String get branchClockBehind;
 
   /// No description provided for @citySeaMarketName.
   ///

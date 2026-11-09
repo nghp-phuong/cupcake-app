@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sugarleaf_bakery/core/models/ids.dart';
@@ -5,6 +7,7 @@ import 'package:sugarleaf_bakery/core/routes.dart';
 import 'package:sugarleaf_bakery/core/services/audio_service.dart';
 import 'package:sugarleaf_bakery/ui/intro/intro_art.dart';
 import 'package:sugarleaf_bakery/ui/intro/intro_screen.dart';
+import 'package:sugarleaf_bakery/ui/intro/intro_stage.dart';
 
 import 'city_test_helpers.dart';
 
@@ -22,7 +25,32 @@ class _Audio implements AudioService {
   void fail() {}
 }
 
-/// Cảnh mở đầu / màn chơi chạy liên tục: bước khung thủ công thay cho pumpAndSettle.
+/// Lớp 3D giả (test không dựng thermion): giữ [host], đếm số lần gỡ; [gate] (nếu có) giữ việc gỡ chưa xong.
+class _FakeStage {
+  IntroStageHost? host;
+  int builds = 0;
+  int releases = 0;
+  Completer<void>? gate;
+
+  Widget build(IntroStageHost h) {
+    builds++;
+    host = h;
+    h.release = () {
+      releases++;
+      return gate?.future ?? Future<void>.value();
+    };
+    return const SizedBox.expand(key: ValueKey('fake-stage'));
+  }
+}
+
+_FakeStage _useFakeStage() {
+  final fake = _FakeStage();
+  IntroScreen.stageBuilder = fake.build;
+  addTearDown(() => IntroScreen.stageBuilder = null);
+  return fake;
+}
+
+/// Cảnh mở đầu chạy liên tục: bước khung thủ công thay cho pumpAndSettle.
 Future<void> _frames(
   WidgetTester tester,
   Duration total, {
@@ -37,29 +65,17 @@ Future<void> _frames(
 
 Finder get _skip => find.byKey(const ValueKey('intro-skip'));
 
-/// Độ lệch ngang hiện tại của Mai ở cảnh 3 (0 = đứng trước cửa); null khi chưa tới cảnh 3.
-double? _maiDx(WidgetTester tester) {
-  final f = find.byKey(const ValueKey('intro-mai'));
-  if (f.evaluate().isEmpty) return null;
-  return tester.widget<Transform>(f).transform.getTranslation().x;
-}
-
-/// Ảnh của Mai đang có trong cây (tên file, vd. `mai_walk_a`).
-Set<String> _maiPoses(WidgetTester tester) => {
-  for (final img in tester.widgetList<Image>(
-    find.descendant(
-      of: find.byKey(const ValueKey('intro-mai')),
-      matching: find.byType(Image),
-    ),
-  ))
-    if (img.image case ResizeImage(imageProvider: AssetImage(:final assetName)))
-      assetName.split('/').last.replaceAll('.webp', ''),
-};
+double _coverOpacity(WidgetTester tester) =>
+    tester.widget<AnimatedOpacity>(find.byKey(const ValueKey('intro-cover'))).opacity;
 
 Iterable<CustomPainter> _painters(WidgetTester tester) => tester
     .widgetList<CustomPaint>(find.byType(CustomPaint))
     .map((w) => w.painter)
     .whereType<CustomPainter>();
+
+const _line1 = 'One morning in a little seaside town…';
+const _line2 = 'Grandma\'s little bakery is still right where it was.';
+const _line3 = 'Mai is home — Sugarleaf opens its doors again!';
 
 void main() {
   testWidgets(
@@ -78,13 +94,12 @@ void main() {
       expect(_skip, findsOneWidget);
       expect(find.text('Skip'), findsOneWidget);
 
-      // Chạy vài giây (ảnh nạp / hết chờ, cảnh 1 → 2): nút Bỏ qua vẫn hiện.
-      await _frames(tester, const Duration(seconds: 8));
+      // Không có lớp 3D: chạy ngay trên nền giấy, phụ đề theo cảnh.
+      await _frames(tester, const Duration(seconds: 2));
+      expect(find.text(_line1), findsOneWidget);
+      await _frames(tester, const Duration(seconds: 5));
+      expect(find.text(_line2), findsOneWidget);
       expect(_skip, findsOneWidget);
-      expect(
-        find.text('Grandma\'s cake case still shines like it always did.'),
-        findsOneWidget,
-      );
       expect(game.introSeen, isFalse);
 
       await tester.tap(_skip);
@@ -102,25 +117,23 @@ void main() {
   );
 
   testWidgets(
-    'cảnh mở đầu chạy hết (~22 giây): bảng "Open" lật, chuông kêu một lần, rồi về phố',
+    'chạy hết (~18 giây): phụ đề cảnh 3, chuông kêu một lần, logo, rồi về phố',
     (tester) async {
       final audio = _Audio();
       final services = await cityServices(audio: audio);
       final game = services.game;
       await pumpCityApp(tester, services, initialRoute: AppRoutes.intro);
-      // Cảnh 1 có hơi nước + bụi nắng (vẽ code).
-      await _frames(tester, const Duration(seconds: 3));
-      expect(_painters(tester).whereType<IntroSteamPainter>(), isNotEmpty);
-      expect(_painters(tester).whereType<IntroDustPainter>(), isNotEmpty);
-
-      // Tới cảnh cửa tiệm, sau khi Mai đi tới cửa, lật bảng + chuông rung.
-      await _frames(tester, const Duration(milliseconds: 14500));
-      expect(find.byKey(const ValueKey('intro-sign-text')), findsOneWidget);
-      expect(find.text('Open'), findsOneWidget);
+      await _frames(tester, const Duration(seconds: 12));
+      expect(find.text(_line3), findsOneWidget);
       expect(audio.successes, 1);
+      expect(find.byType(IntroLogo), findsNothing);
+
+      await _frames(tester, const Duration(seconds: 4));
+      expect(find.byType(IntroLogo), findsOneWidget);
+      expect(_painters(tester).whereType<IntroSparklePainter>(), isNotEmpty);
       expect(game.introSeen, isFalse);
 
-      await _frames(tester, const Duration(milliseconds: 7500));
+      await _frames(tester, const Duration(seconds: 3));
       expect(game.introSeen, isTrue);
       expect(audio.successes, 1);
       expect(find.byKey(kTownStubKey), findsOneWidget);
@@ -129,52 +142,118 @@ void main() {
   );
 
   testWidgets(
-    'cảnh 3: Mai đi bộ từ mép phải tới cửa (khung bước chân), với tay lúc lật bảng, rồi cười',
+    'lớp 3D: chờ dựng xong mới chạy ("Đang mở cửa…" khi lâu), bỏ nền giấy, đồng hồ + mốc cảnh cho lớp 3D',
     (tester) async {
-      await pumpCityApp(
-        tester,
-        await cityServices(),
-        initialRoute: AppRoutes.intro,
-      );
-      // Chờ tới cảnh 3 (Mai xuất hiện, đang ở ngoài bên trái).
-      var guard = 0;
-      while (_maiDx(tester) == null && guard++ < 300) {
-        await tester.pump(const Duration(milliseconds: 100));
-      }
-      await _frames(tester, const Duration(milliseconds: 600));
-      final dx1 = _maiDx(tester)!;
-      expect(dx1, greaterThan(0));
-      expect(
-        _maiPoses(tester).intersection({'mai_walk_a', 'mai_walk_b'}),
-        isNotEmpty,
-      );
-      await _frames(tester, const Duration(milliseconds: 600));
-      final dx2 = _maiDx(tester)!;
-      expect(
-        dx2,
-        lessThan(dx1),
-        reason: 'Mai đi dần sang trái (từ mép phải tới cửa)',
-      );
-      // Tới cửa: đứng yên, ảnh với tay (thiếu file → ảnh thường làm dự phòng trong cùng ô).
-      guard = 0;
-      while ((_maiDx(tester) ?? -1).abs() > 0.01 && guard++ < 60) {
-        await tester.pump(const Duration(milliseconds: 50));
-      }
-      await _frames(tester, const Duration(milliseconds: 400));
-      expect(_maiDx(tester)!.abs(), lessThan(0.01));
-      expect(_maiPoses(tester), contains('mai_reach'));
-      // Chuông rung → cười.
+      final fake = _useFakeStage();
+      await pumpCityApp(tester, await cityServices(), initialRoute: AppRoutes.intro);
+      expect(find.byKey(const ValueKey('fake-stage')), findsOneWidget);
+      final host = fake.host!;
+      expect(host.starts, [0, 5, 10, 15, 18]);
+      expect(host.reduceMotion, isFalse);
+      expect(_coverOpacity(tester), 1);
+
       await _frames(tester, const Duration(milliseconds: 1500));
-      expect(_maiPoses(tester), contains('mai_joy'));
-      expect(
-        _maiPoses(tester).intersection({'mai_walk_a', 'mai_walk_b'}),
-        isEmpty,
-      );
+      expect(find.text('Opening the door…'), findsOneWidget);
+      expect(find.text(_line1), findsNothing);
+      expect(host.time.value, 0, reason: 'chưa dựng xong thì đồng hồ chưa chạy');
+
+      host.ready();
+      await _frames(tester, const Duration(seconds: 2));
+      expect(find.text('Opening the door…'), findsNothing);
+      expect(find.text(_line1), findsOneWidget);
+      expect(_coverOpacity(tester), 0);
+      expect(host.time.value, closeTo(2, 0.15));
+      expect(fake.releases, 0);
+      expect(tester.takeException(), isNull);
+
+      await tester.tap(_skip);
+      await _frames(tester, const Duration(seconds: 1));
+      expect(fake.releases, 1);
+      expect(find.byKey(kTownStubKey), findsOneWidget);
+    },
+  );
+
+  testWidgets('lớp 3D: hết cảnh / bỏ qua → chờ gỡ viewer xong rồi mới sang phố', (tester) async {
+    final fake = _useFakeStage()..gate = Completer<void>();
+    final services = await cityServices();
+    await pumpCityApp(tester, services, initialRoute: AppRoutes.intro);
+    fake.host!.ready();
+    await _frames(tester, const Duration(seconds: 1));
+
+    await tester.tap(_skip);
+    await _frames(tester, const Duration(seconds: 1));
+    expect(services.game.introSeen, isTrue);
+    expect(fake.releases, 1);
+    expect(_coverOpacity(tester), 1, reason: 'nền giấy che lớp 3D đang gỡ');
+    expect(find.byKey(kTownStubKey), findsNothing);
+
+    fake.gate!.complete();
+    await _frames(tester, const Duration(seconds: 1));
+    expect(find.byKey(kTownStubKey), findsOneWidget);
+    expect(fake.releases, 1);
+  });
+
+  testWidgets('lớp 3D gỡ quá lâu → vẫn sang phố sau releaseWait', (tester) async {
+    final fake = _useFakeStage()..gate = Completer<void>();
+    await pumpCityApp(tester, await cityServices(), initialRoute: AppRoutes.intro);
+    fake.host!.ready();
+    await tester.pump();
+    await tester.tap(_skip);
+    await _frames(tester, IntroScreen.releaseWait + const Duration(seconds: 1));
+    expect(find.byKey(kTownStubKey), findsOneWidget);
+  });
+
+  testWidgets(
+    'đổi cỡ cửa sổ qua mốc khung rộng (RefFrame dựng lại cây): intro không chạy lại, không tạo / gỡ lớp 3D',
+    (tester) async {
+      final fake = _useFakeStage();
+      await pumpCityApp(tester, await cityServices(), initialRoute: AppRoutes.intro);
+      fake.host!.ready();
+      await _frames(tester, const Duration(seconds: 6));
+      expect(find.text(_line2), findsOneWidget);
+      final before = fake.host!.time.value;
+
+      tester.view.physicalSize = const Size(1600, 720);
+      await _frames(tester, const Duration(milliseconds: 500));
+      tester.view.physicalSize = const Size(1280, 720);
+      await _frames(tester, const Duration(milliseconds: 500));
+      expect(fake.builds, 1, reason: 'không dựng lớp 3D (viewer) thứ hai');
+      expect(fake.releases, 0);
+      expect(fake.host!.time.value, greaterThan(before));
+      expect(find.text(_line2), findsOneWidget, reason: 'vẫn ở cảnh 2, không quay về đầu');
+      expect(_coverOpacity(tester), 0);
       expect(tester.takeException(), isNull);
       await tester.tap(_skip);
       await _frames(tester, const Duration(seconds: 1));
+      expect(fake.releases, 1);
     },
   );
+
+  testWidgets('lớp 3D hỏng → chạy trên nền giấy', (tester) async {
+    final fake = _useFakeStage();
+    await pumpCityApp(tester, await cityServices(), initialRoute: AppRoutes.intro);
+    fake.host!.failed();
+    await _frames(tester, const Duration(seconds: 2));
+    expect(find.text(_line1), findsOneWidget);
+    expect(_coverOpacity(tester), 1);
+    await tester.tap(_skip);
+    await _frames(tester, const Duration(seconds: 1));
+    expect(find.byKey(kTownStubKey), findsOneWidget);
+  });
+
+  testWidgets('lớp 3D không xong sau stageWait → chạy trên nền giấy; xong muộn thì hiện', (tester) async {
+    final fake = _useFakeStage();
+    await pumpCityApp(tester, await cityServices(), initialRoute: AppRoutes.intro);
+    await _frames(tester, IntroScreen.stageWait + const Duration(seconds: 2), step: const Duration(milliseconds: 500));
+    expect(find.text(_line1), findsOneWidget);
+    expect(_coverOpacity(tester), 1);
+    fake.host!.ready();
+    await _frames(tester, const Duration(milliseconds: 500));
+    expect(_coverOpacity(tester), 0);
+    await tester.tap(_skip);
+    await _frames(tester, const Duration(seconds: 1));
+    expect(find.byKey(kTownStubKey), findsOneWidget);
+  });
 
   testWidgets('nút Back của máy ở cảnh mở đầu = Bỏ qua', (tester) async {
     final services = await cityServices();
@@ -187,40 +266,34 @@ void main() {
   });
 
   testWidgets(
-    'giảm chuyển động: cảnh mở đầu ngắn hơn, không hạt / không lia, chuông vẫn kêu',
+    'giảm chuyển động: cảnh mở đầu ngắn hơn, không lấp lánh, chuông vẫn kêu, lớp 3D biết để cắt cảnh',
     (tester) async {
       tester.platformDispatcher.accessibilityFeaturesTestValue =
           const FakeAccessibilityFeatures(disableAnimations: true);
       addTearDown(
         tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
       );
+      final fake = _useFakeStage();
       final audio = _Audio();
       final services = await cityServices(audio: audio);
       await pumpCityApp(tester, services, initialRoute: AppRoutes.intro);
-      await _frames(tester, const Duration(seconds: 2));
-      expect(_painters(tester).whereType<IntroSteamPainter>(), isEmpty);
-      expect(_painters(tester).whereType<IntroDustPainter>(), isEmpty);
-      expect(_painters(tester).whereType<IntroSparklePainter>(), isEmpty);
-
+      final host = fake.host!;
+      expect(host.reduceMotion, isTrue);
       final total = IntroScreen.reducedSceneSeconds.reduce((a, b) => a + b);
       expect(total, lessThan(IntroScreen.sceneSeconds.reduce((a, b) => a + b)));
-      // Cảnh 3: Mai đứng sẵn trước cửa (không đi bộ), chỉ đổi ảnh; không có khung bước chân.
-      var seenMai = false;
-      var waited = 2000;
-      final end =
-          (total * 1000).round() + IntroScreen.preloadWait.inMilliseconds;
-      while (waited < end) {
+      expect(host.starts.last, total);
+      host.ready();
+
+      var sawLogo = false;
+      var waited = 0;
+      while (waited < (total * 1000).round() - 200) {
         await tester.pump(const Duration(milliseconds: 100));
         waited += 100;
-        final dx = _maiDx(tester);
-        if (dx == null) continue;
-        seenMai = true;
-        expect(dx, 0);
-        expect(_maiPoses(tester), isNot(contains('mai_walk_a')));
+        expect(_painters(tester).whereType<IntroSparklePainter>(), isEmpty);
+        if (find.byType(IntroLogo).evaluate().isNotEmpty) sawLogo = true;
       }
-      expect(seenMai, isTrue);
-      // Hết thời lượng rút gọn (+ chờ nạp ảnh tối đa) → đã về phố.
-      await _frames(tester, const Duration(milliseconds: 300));
+      expect(sawLogo, isTrue);
+      await _frames(tester, const Duration(milliseconds: 600));
       expect(audio.successes, 1);
       expect(services.game.introSeen, isTrue);
       expect(find.byKey(kTownStubKey), findsOneWidget);
@@ -228,7 +301,7 @@ void main() {
     },
   );
 
-  testWidgets('tiếng Việt: phụ đề + chữ "Mở cửa" + Bỏ qua', (tester) async {
+  testWidgets('tiếng Việt: phụ đề + Bỏ qua', (tester) async {
     await pumpCityApp(
       tester,
       await cityServices(language: LanguagePref.vi),
@@ -237,8 +310,8 @@ void main() {
     await _frames(tester, const Duration(seconds: 2));
     expect(find.text('Bỏ qua'), findsOneWidget);
     expect(find.text('Một buổi sáng ở thị trấn ven biển…'), findsOneWidget);
-    await _frames(tester, const Duration(seconds: 14));
-    expect(find.text('Mở cửa'), findsOneWidget);
+    await _frames(tester, const Duration(seconds: 10));
+    expect(find.text('Mai đã về — tiệm Sugarleaf lại mở cửa!'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.tap(_skip);
     await _frames(tester, const Duration(seconds: 1));

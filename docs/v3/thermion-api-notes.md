@@ -507,3 +507,95 @@ không có ý nghĩa; phải đo trên máy thật. Chụp ảnh khung: `viewer.
       Máy người chơi chậm hơn 2–3 lần: bản JS ước 20–40 khung/s ở trạm thường, trạm trộn ~15. Test:
       `test/game/bake_raster_test.dart` (ảnh raster đủ nét — so tổng alpha với vẽ Picture < 2 %, đổi tỉ lệ / cỡ màn → raster
       lại, bánh chỉ dựng khi cỡ đứng yên, `_Snap` chạy trực tiếp khi đổi trạm, Esc tới lớp ngoài).
+32. **G0 (05/11): lô chi nhánh tách khỏi lưới phố, mặt tiền theo cấp, ô quầy văn phòng địa ốc** (`docs/v3/city-gd4-spec.md`
+    §0, §5; `town_layout.dart`, `town_batches.dart`). Dart thuần, đo bằng `town3d_batches_test` trong gói tạm (mục 26).
+    - *Số đo trước* (lưới tĩnh của phố, `TownBatches.build`): **19 052 tam giác**, 12 entity, 2 material (mờ + không chịu
+      ánh sáng), 6 ô. Con số "19,1k" trong spec trùng hợp với lưới tĩnh **nội thất tiệm** (mục 28: 5,9k → 19,1k), không
+      phải của phố. Theo nhóm: s2 2 552, n3 2 164, n4 2 076, bồn hoa 1 512, **s1 / s3 / s4 mỗi lô 1 368** (lô trống: rào
+      có cổng mở, biển, cây, 2 bụi cầu 168 tam giác), n2 1 204, n1 916, đèn 888, bãi biển 488, trạm buýt 376, vạch 300,
+      hai đầu phố 2 × 228, bụi khe lô 3 × 224 + 3 × 24, mặt đất 1 272 (72 ô đất, cắt theo ô 16 m).
+    - *Sau:* lưới tĩnh **15 528** (bỏ 3 × 1 368 của lô chi nhánh, n1 916 → 1 496 vì thêm ô quầy), vẫn 12 entity / 2
+      material. Mặt tiền mỗi lô (`TownBatches.buildLot`, cả ba lô như nhau, chỉ khác màu nhấn) cấp 0..5: **940 / 464 / 728 /
+      960 / 1 140 / 1 252** (trần §5: 1 000 / 800 / 950 / 1 100 / 1 200 / 1 300), 2 lưới (mờ + không chịu ánh sáng: cửa sổ,
+      đèn). Tĩnh + 3 lô cấp 5 = **19 284 tam giác, 18 entity, 2 material** (trần 20k / 40 / 8, mục tiêu 19,5k) — chưa cần
+      bước cắt nào của §5 (cầu (6, 10), đơn giản nửa sau nhà, bỏ rào sau), nên `Shop3dMeshBuilder` không thêm tham số.
+    - *Bố cục chung* (`TownLayout.forDistrict`): lô chi nhánh không còn khối nào, chỉ một hộp chặn cố định
+      `TownLayout.branchBlockL/D0/D1` = l ∈ [−5,4; 5,4] × d ∈ [0,3; 9,95] (khung lô) cho mọi cấp → `TownPilot` dựng `nav` một
+      lần vẫn đúng. Cửa lô (d = 0) cách hộp đúng 0,3 m: Mai (bán kính 0,27) đứng được; test BFS lưới 0,15 m của
+      `town_layout_test` chấp nhận ô kề vì tâm ô có thể gần hộp hơn điểm thật vài cm. Bụi khe giữa hai lô (`gap:s*`) vẫn ở
+      lưới chung (nằm ngoài lô).
+    - *Mặt tiền* (`TownLayout.branchFacade(lot, level)`, toạ độ lớp phố, một `Shop3dProp('branch:<id>')`, cấp kẹp 0..5;
+      lớp riêng `_BranchFacade`, dùng lại `_window` / `_door` / `_awning` / `_fence` — nay là hàm static của
+      `_TownBuilder`). Đường bao `TownRules.branchEnvelope(d) = 0,6 + 0,8·d` được kiểm theo **từng đỉnh** của lưới (khối lồi,
+      đường bao tuyến tính → kiểm đỉnh là đủ). Cách dựng cho vừa đường bao:
+      - tường trước d = 2,4 cao 2,45; **mái lệch** = lăng trụ tam giác (chỉ có lăng trụ cân, xoay quanh y) đáy y 2,3 từ d =
+        2,15 tới đỉnh 3,9 ở mặt trước **khối sau** (d 4,4–7,4, cao 3,85 + nắp màu nhấn) — nửa sau lăng trụ nằm trong khối sau;
+        dốc 0,71 < 0,8;
+      - mái hiên đáy 2,05, nhô 0,55, cao 0,38 (mép trước d = 1,85 → trần 2,08); cửa sổ khung tới 2,05; ô dù sân thấp (vành
+        1,15 m ở d ≈ 0,75); biển sân ở d = 1,4 (trần 1,7), sao cấp 5 cao tới 1,56; rào lô trống ở d = 0,45 (cột 0,85, cột cổng
+        0,8 + nắp); bụi viền chi nhánh 0,6 m ở d ≥ 0,2.
+      - Cấp 0: rào trắng kín (cổng hai cánh đóng + chốt), biển hai mặt (sọc màu nhấn xuyên qua bảng nên thấy cả hai mặt),
+        cây non hình nón, hoa dại, một bụi. Cấp 1: bụi viền + cột cổng, lối lát, tiệm nhỏ l ∈ [−2; 4,6], 1 cửa sổ, cửa màu
+        nhấn, biển cupcake hai mặt. Cấp 2: + mái hiên sọc trên cửa sổ, 2 chậu. Cấp 3: nhà l ∈ [−5; 5], 2 cửa sổ, bàn ô dù
+        ở (l 3,6; d 1,3). Cấp 4: mái hiên dài suốt mặt tiền (sọc 1,6 m), dây đèn 4 bóng dưới mép, bồn hoa bệ cửa sổ. Cấp 5:
+        ống khói trên khối sau, sao 6 cánh trên biển, 2 đèn lồng cạnh cửa.
+      - Chừa chỗ: nhân viên ở (l −1,6; d 1,0) và biểu tượng két đầy ở (l 2,5; d 1,4; y 2,3) đều trống.
+      - Màu nhấn (mái, nắp, cửa, mái hiên, ô dù, nắp cột cổng): s1 hồng dâu, s3 bạc hà, s4 vàng bơ; tông nhạt cho chân tường
+        và kem biển.
+    - *Văn phòng địa ốc (n1):* thân nhà như tiệm tóc (khối sau + hai cánh, hốc ô cửa) với `_hatch` ở l = +3, mái hiên bạc hà
+      trên ô cửa, bỏ cửa sổ phải (chỗ ô cửa), chậu phải lùi về l = 1,15. `spots['n1']` có `counter` (−15; −5,0) và `keeper`
+      (−15; −7,2) như tiệm tóc → `TownRules.zonesOf` tự thêm vùng quầy n1 (cách vùng cửa 3,04 m > 1,5 + 1,15). Hiện
+      `actionFor` vẫn trả `none` và băng tên "Sắp mở" cho n1 cho tới G1.
+    - *Ảnh xem trước* (bộ chụp phần mềm: test tạm xuất lưới JSON + `render.py` rasterize numpy, fov 40°): góc cận
+      (yaw π − 0,5) cấp 0..5, ba màu nhấn, camera phố yaw 0 / ±60° và Mai đứng ở cửa lô (pitch 40°, cách 10 m — góc gắt
+      nhất): Mai không bị che, chỉ chân sát mép bụi khi đứng ngay cửa lô; Mai giữa đường thì lô nam ngoài khung. Ảnh:
+      `docs/design/art-preview/v3/city/gd4-facade-*.png` (thư mục dự án chính).
+    - *Chưa làm (G2):* chưa ghép vào cảnh — trong game hiện tại lô chi nhánh tạm trống (chỉ còn hộp chặn) cho tới khi
+      `TownScene.setBranchLevel` dựng `buildLot`.
+33. **G2 (05/11): ghép chi nhánh vào phố** (`docs/v3/city-gd4-spec.md` §4, §5; `town3d_view.dart`, `town_scene.dart`,
+    `town3d_page.dart`, phần Dart thuần `town_branch_ui.dart`, biểu tượng `TownMeshes.tillFull`). Đo trên web (Chrome
+    headless có GPU, máy test, 1280×720, CDP như mục 27/30; bản trước GĐ4 = bản build GĐ3 G2 chạy song song cổng khác,
+    đo xen kẽ). Chưa đo Android.
+    - *Cảnh (`TownScene`):* `setBranchLevel(lot, level)` dựng `TownBatches.buildLot` (≤ 2 lưới, material màu đỉnh dùng
+      chung theo `Shop3dSurfaceKey`, toạ độ phố, transform = dời gốc lớp phố), tạo **ngoài scene**
+      (`ThermionViewerFFI.createGeometry(addToScene: false)` — có cả trên web; viewer khác thì gỡ ngay), gán material rồi
+      mới thêm vào scene, sau đó gỡ + `destroyAsset` lưới cũ (huỷ không đụng material dùng chung: `GeometrySceneAsset`
+      chỉ huỷ vertex / index buffer + entity). Gọi lại cùng cấp → bỏ qua; gọi chồng → nối tiếp, chỉ cấp cuối được dựng.
+      Không truyền `materialInstances` lúc tạo (web, mục 9.1). Biểu tượng két đầy: một entity / lô (material chibi,
+      164 tam giác), dựng lần đầu cần, mỗi khung quay mặt về camera (`pilot.cameraYaw`) + lắc / nhấp nhô, ẩn ở lô Mai
+      đang đứng ở vùng cửa. Nhân viên ở sân: `setBranchActors(TownBranchCast.plan(...))` mỗi giây; mỗi chibi (7–9
+      entity, ~3k tam giác) dựng một lần, giữ lại, chỉ add / remove scene; actor mới (kịch bản chủ quán quay ra đường)
+      khi đổi lô; bóng tròn dựng khi mức đồ hoạ cần.
+    - *View:* nút A `realty` → `pilot.beginCounter()` + góc cận như quầy quán ăn + `RealtySheet`; `branch` → `collect`
+      (được: toast, Mai `happy`, nhân viên vẫy, chip x2 nếu `canDouble` và còn lượt quảng cáo) hoặc `BranchSheet` với
+      góc cận `TownBranchUi.closeUp` (yaw π − 0,5, pitch 30°, cách 12 m, điểm nhìn dời 2,6 m sang phải màn để mặt tiền
+      nằm phần trái). Nhãn A "Thu tiền" / "Chi nhánh" theo két ≥ 25% trần hoặc đầy (`TownBranchUi.collectable`, `_collectable`, đổi khi vùng đổi / mỗi giây /
+      sau khi thu). Bộ đếm 1 Hz (`_sampleFps`, ngoài build): `TownBranchMarks` (chỉ notify khi khác), `setFullIcons`,
+      plan nhân viên, `takeAway()` → hàng toast nối tiếp (vắng nhà / quản lý gửi về / giờ lùi; trong tiệm để dành).
+      Bảng chi nhánh dựng lại chỉ khi (két, đầy, phút còn lại) đổi — dựng lại mỗi giây làm web mất ~1 khung mỗi lần.
+      Đóng bảng → `requestFocus` cho view (khung bảng giữ focus riêng, không trả thì WASD chết).
+    - *Số đo* (chip `town … ent (static) · mat · tri`): trước GĐ4 `38 ent (static 12) · 8 mat · 29,3k tri (static 19,1k)`;
+      sau, không chi nhánh `49 (static 15) · 31,5k (static 18,3k)` (+3 lô trống, +chủ văn phòng địa ốc `regular_12`);
+      s1 cấp 3 + s3 cấp 1, 2 nhân viên, 2 két đầy (Mai giữa s1 và s3) `70 (static 17) · 8 mat · 38,1k (static 17,9k)`.
+      Material không đổi (8, kể cả của tiệm). Tĩnh tối đa (3 lô cấp 5) 18 entity / 19,3k tam giác (mục 32).
+      rAF 60 ở mọi kịch bản. Luồng chính (ms / s, 3 lượt xen kẽ): đứng yên trước 106–161 → sau 108–149 (không chi
+      nhánh), 133–163 (2 nhân viên); chạy dọc phố trước 217–351 → sau 239–302 / 226–269. Chip `dart` (cập nhật mỗi
+      khung) với 2 nhân viên 0,52–1,04 ms (trung vị ~0,8; trước 0,36–0,77), có mẫu đỉnh 1,1–1,46 ms — ngưỡng spec
+      ≤ 1,0 ms đạt ở trung vị, vượt ở đỉnh (thêm chủ văn phòng địa ốc + 1–2 nhân viên = +16–25 bộ phận chibi cập nhật mỗi khung).
+    - *Giật (khoảng cách rAF > 40 ms):* dựng mặt tiền (`buildLot` Dart 1–5 ms, sẵn sàng sau 94–480 ms bất đồng bộ) khi mua
+      lô: tệ nhất 33 ms, không khung nào > 40 ms. Nâng cấp **trong bảng chi nhánh** 50–133 ms (3–5 khung) nhưng mở panel
+      xác nhận "Cho nghỉ" (chỉ đổi UI, không đụng 3D) cũng 50–100 ms → phần lớn do CanvasKit vẽ lại bảng (mục 31), không
+      phải lưới. Nhân viên vào sân khi Mai đi tới (dựng chibi tại chỗ): 3–5 khung ~50 ms (model Dart 10–30 ms + 9
+      `createGeometry`) → sửa: `prepareStaff` dựng sẵn chibi mọi nhân viên đang làm dưới màn đen lúc mở phố (và lúc
+      thuê), vào sân chỉ còn add scene: tệ nhất 17–33 ms, không khung nào > 40 ms (3 lượt; trước khi sửa 3 lượt đều có 1–5
+      khung 45–67 ms). Đổi lại: mở phố chậm thêm ~200–340 ms (dưới màn đen, song song mặt tiền) và chip "đã tạo" thêm 7–9
+      entity / nhân viên đang làm (ngoài scene, không vẽ).
+    - *Cạm bẫy:* `RealtySheet` / `BranchSheet` trả `Positioned.fill` → đặt làm con trực tiếp của `Stack` (qua
+      `ListenableBuilder` vẫn được, ParentData đi xuyên widget không có RenderObject). Toast hiện dưới lớp bảng (thứ tự
+      `Stack`), không đè bảng. Két tăng theo giờ không notify → mọi thứ hiển thị két phải đọc lại theo nhịp (1 Hz), không
+      chờ notify. File `town3d_view.dart` dùng CRLF — sửa bằng script Python phải giữ `\r\n`.
+    - *Ghi nhận cho thiết kế:* từ camera phố (pitch 45°, cách 11 m), Mai đứng ở cửa lô nam cấp ≥ 3 thì mái lệch màu nhấn
+      phủ ~1/3 dưới màn (đúng §0: chỉ thấy mái), trông nặng; nhân viên đứng (l −1,6; d 1,0) sau bụi viền 0,6 m nên ở góc
+      cận chỉ thấy nửa trên (chibi thấp như hamster `regular_01` gần như chỉ thấy đầu). Lô cấp cao bán ~1 xu / 3–4 s nên
+      ngưỡng ban đầu "két ≥ 1 xu" làm nút A gần như luôn là "Thu tiền" → đã chốt (05/11) ngưỡng 25% trần (hoặc đầy).
+      Ảnh: `docs/design/art-preview/v3/city/gd4-g2-*.jpg` (thư mục dự án chính).

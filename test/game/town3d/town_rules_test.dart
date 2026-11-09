@@ -10,9 +10,10 @@ void main() {
   final town = TownLayout.forDistrict(district);
   final zones = TownRules.zonesOf(town);
 
-  test('mỗi lô một vùng cửa; quán ăn + tiệm tóc thêm vùng quầy; vùng không chồng nhau', () {
+  test('mỗi lô một vùng cửa; quán ăn + tiệm tóc + văn phòng địa ốc thêm vùng quầy; vùng không chồng nhau', () {
     expect(zones.where((z) => z.kind == TownZoneKind.door).length, district.lots.length);
-    expect({for (final z in zones.where((z) => z.kind == TownZoneKind.counter)) z.lotId}, {'n3', 'n4'});
+    // GĐ4: văn phòng địa ốc (n1) có ô quầy (TownLayout.spots['n1'].counter) → zonesOf tự thêm vùng quầy.
+    expect({for (final z in zones.where((z) => z.kind == TownZoneKind.counter)) z.lotId}, {'n1', 'n3', 'n4'});
     for (var i = 0; i < zones.length; i++) {
       for (var j = i + 1; j < zones.length; j++) {
         final a = zones[i], b = zones[j];
@@ -57,12 +58,39 @@ void main() {
     expect(b('n2', 1), const TownBanner('townHomeShop', TownBannerNote.none));
     expect(b('n3', 1), const TownBanner('cityRestaurantName', TownBannerNote.none));
     expect(b('n4', 1), const TownBanner('citySalonName', TownBannerNote.none));
-    expect(b('n1', 1), const TownBanner('cityRealtyName', TownBannerNote.comingSoon));
+    expect(b('n1', 1), const TownBanner('cityRealtyName', TownBannerNote.none));
     expect(b('s2', 1), const TownBanner('cityParkName', TownBannerNote.comingSoon));
     expect(b('s1', 1), const TownBanner('townLotForSale', TownBannerNote.locked, level: 5));
     expect(b('s4', 3), const TownBanner('townLotForSale', TownBannerNote.locked, level: 15));
     expect(b('s1', 4), const TownBanner('townLotForSale', TownBannerNote.locked, level: 5));
     expect(b('s1', 5), const TownBanner('townLotForSale', TownBannerNote.unlocked));
+  });
+
+  test('nút A GĐ4: quầy địa ốc -> realty; lô chi nhánh đã mua -> branch, chưa mua -> none; cửa địa ốc -> none', () {
+    final owned = {'s1', 's4'};
+    final n1c = town.spots['n1']!.counter!, n1d = town.spots['n1']!.door;
+    expect(TownRules.actionAt(zones, n1c.x, n1c.z), TownAction.realty);
+    expect(TownRules.actionAt(zones, n1c.x, n1c.z, owned: owned), TownAction.realty);
+    expect(TownRules.actionAt(zones, n1d.x, n1d.z, owned: owned), TownAction.none);
+    for (final id in ['s1', 's3', 's4']) {
+      final d = town.spots[id]!.door;
+      expect(TownRules.actionAt(zones, d.x, d.z), TownAction.none, reason: id);
+      expect(TownRules.actionAt(zones, d.x, d.z, owned: owned), owned.contains(id) ? TownAction.branch : TownAction.none,
+          reason: id);
+    }
+    // Lô không phải chi nhánh không thành branch dù có trong tập.
+    final n3 = town.spots['n3']!.door;
+    expect(TownRules.actionAt(zones, n3.x, n3.z, owned: {'n3'}), TownAction.none);
+  });
+
+  test('băng tên GĐ4: đã mua -> branch; đủ cấp -> unlocked; thiếu cấp -> locked', () {
+    TownBanner b(String id, int level, {bool owned = false}) =>
+        TownRules.bannerFor(district.lot(id), level, owned: owned);
+    expect(b('s1', 5, owned: true), const TownBanner('townLotForSale', TownBannerNote.branch));
+    expect(b('s1', 1, owned: true), const TownBanner('townLotForSale', TownBannerNote.branch));
+    expect(b('s1', 5), const TownBanner('townLotForSale', TownBannerNote.unlocked));
+    expect(b('s4', 14), const TownBanner('townLotForSale', TownBannerNote.locked, level: 15));
+    expect(b('n1', 1, owned: true).note, TownBannerNote.none);
   });
 
   test('newlyUnlocked: lô chi nhánh vừa mở khi lên cấp', () {
